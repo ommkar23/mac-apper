@@ -1,0 +1,156 @@
+service:
+  identifier: com.macapper.dev-tools.xpc
+  maxPayloadBytes: 65536
+types:
+  - name: BuildRequest
+    fields:
+      - { name: projectRoot, type: string, maxLength: 4096, injected: projectRoot }
+  - name: TestRequest
+    fields:
+      - { name: projectRoot, type: string, maxLength: 4096, injected: projectRoot }
+  - name: RunRequest
+    fields:
+      - { name: projectRoot, type: string, maxLength: 4096, injected: projectRoot }
+  - name: PreviewScreenSize
+    fields:
+      - { name: width, type: int }
+      - { name: height, type: int }
+  - name: PreviewRequest
+    fields:
+      - { name: projectRoot, type: string, maxLength: 4096, injected: projectRoot }
+      - { name: viewPath, type: string, maxLength: 1024 }
+      - { name: screenSize, type: PreviewScreenSize, optional: true }
+  - name: PlanTask
+    fields:
+      - { name: id, type: string, maxLength: 64 }
+      - { name: title, type: string, maxLength: 256 }
+      - { name: status, type: string, maxLength: 32 }
+  - name: PlanRequest
+    fields:
+      - { name: projectRoot, type: string, maxLength: 4096, injected: projectRoot }
+      - { name: action, type: string, maxLength: 32 }
+      - { name: tasks, type: PlanTask, optional: true, array: true, maxItems: 100 }
+      - { name: ids, type: string, optional: true, array: true, maxLength: 64, maxItems: 100 }
+  - name: BuildResult
+    fields:
+      - { name: summary, type: string, maxLength: 4096 }
+      - { name: target, type: string, maxLength: 256 }
+  - name: TestResult
+    fields:
+      - { name: status, type: string, maxLength: 32 }
+      - { name: summary, type: string, maxLength: 1024 }
+      - { name: exitCode, type: int, optional: true }
+      - { name: diagnostics, type: string, maxLength: 4096 }
+      - { name: outputTruncated, type: bool }
+  - name: RunResult
+    fields:
+      - { name: summary, type: string, maxLength: 4096 }
+      - { name: target, type: string, maxLength: 256 }
+      - { name: relativePath, type: string, maxLength: 4096 }
+  - name: PreviewArtifact
+    fields:
+      - { name: relativePath, type: string, maxLength: 4096 }
+      - { name: reviewPath, type: string, maxLength: 4096 }
+      - { name: kind, type: string, maxLength: 32 }
+  - name: PreviewResult
+    fields:
+      - { name: status, type: string, maxLength: 32 }
+      - { name: summary, type: string, maxLength: 4096 }
+      - { name: width, type: int, optional: true }
+      - { name: height, type: int, optional: true }
+      - { name: artifact, type: PreviewArtifact, optional: true }
+  - name: PlanResult
+    fields:
+      - { name: summary, type: string, maxLength: 4096 }
+      - { name: tasks, type: PlanTask, array: true, maxItems: 100 }
+operations:
+  - name: build
+    request: BuildRequest
+    response: BuildResult
+    tool:
+      label: Build Mac App
+      description: Build the current generated macOS application through DevTools.
+      parameters: { type: object, additionalProperties: false, required: [], properties: {} }
+  - name: test
+    request: TestRequest
+    response: TestResult
+    tool:
+      label: Test Mac App
+      description: |
+        Run swift test for the current generated package, including all package test targets, using disposable isolated build scratch. No shell command, target, or filter is accepted. Returns status passed (SwiftPM exit 0), failed (nonzero exit), or error (execution failure), optional exitCode, and bounded tail diagnostics with outputTruncated. Check status and exitCode, not transport success: a completed tool call can contain failed tests. Fix behavioral or compilation failures and rerun before claiming verification. A passing command does not prove that meaningful tests exist. Deadline 180 seconds; total captured output at most 65536 bytes. This runs model/unit tests, not UI interactions or production packaging.
+      parameters: { type: object, additionalProperties: false, required: [], properties: {} }
+  - name: run
+    request: RunRequest
+    response: RunResult
+    tool:
+      label: Run Mac App
+      description: Build and launch the current generated macOS application through DevTools.
+      parameters: { type: object, additionalProperties: false, required: [], properties: {} }
+  - name: preview
+    request: PreviewRequest
+    response: PreviewResult
+    tool:
+      label: Preview Mac App
+      description: |
+        Render a project-owned SwiftUI file containing exactly one top-level public @MainActor synchronous, nonthrowing, zero-argument apperPreview_NAME() returning some View. Wrap only the preview factory in #if MAC_APPER_PREVIEW ... #endif; keep the normal view outside that guard. A #Preview macro alone is not supported. Edit an existing factory rather than adding a second one.
+        Example in the selected SwiftUI file (with import SwiftUI and import AppModel; adapt the view/model and state):
+        ```swift
+        #if MAC_APPER_PREVIEW
+        @MainActor
+        public func apperPreview_Example() -> some View {
+            let model = ApplicationModel()
+            model.title = "Preview state" // Set representative model data here.
+            return ApplicationRoot(model: model)
+        }
+        #endif
+        ```
+        Call preview with that file's viewPath. Optional screenSize specifies canvas width/height in points (64-2048 each, at most 2097152 pixels); default 640x480. Returns text only: status, dimensions, PNG artifact metadata, project-relative artifact.relativePath, and absolute artifact.reviewPath under ~/.mac-apper/previews/<project-id>/<session-id>/preview-<Unix-microseconds>.png. The validated review copy survives project cleanup; no automatic pruning. No image content is attached. For optional image inspection, call the existing read tool with artifact.reviewPath (or artifact.relativePath while in this project). Successful Preview does not prove the image was seen. Check status: rendering errors return status error and diagnostics without an artifact; transport/scope errors fail the tool.
+        preview_in_production means the factory was found when compiling without MAC_APPER_PREVIEW, not that Preview was called in production. Correct its guard and retry. Other discovery failures include source context and a repair example.
+      parameters:
+        type: object
+        additionalProperties: false
+        required: [viewPath]
+        properties:
+          viewPath: { type: string, maxLength: 1024, pattern: '^Sources/AppViews/(?:[A-Za-z0-9_-]+/)*[A-Za-z0-9_-]+\.swift$' }
+          screenSize:
+            type: object
+            additionalProperties: false
+            required: [width, height]
+            properties:
+              width: { type: integer, minimum: 64, maximum: 2048 }
+              height: { type: integer, minimum: 64, maximum: 2048 }
+  - name: plan
+    request: PlanRequest
+    response: PlanResult
+    tool:
+      label: Plan
+      description: Manage the current project's implementation plan. Create a plan with add_plan, optionally supplying initial tasks, then add_tasks, update_tasks, delete_tasks or get_tasks. Task IDs must be unique and at most one task may be in_progress. The response contains the complete current plan.
+      parameters:
+        type: object
+        additionalProperties: false
+        required: [action]
+        properties:
+          action: { type: string, enum: [add_plan, add_tasks, update_tasks, delete_tasks, get_tasks] }
+          tasks:
+            type: array
+            minItems: 1
+            maxItems: 100
+            items:
+              type: object
+              additionalProperties: false
+              required: [id, title, status]
+              properties:
+                id: { type: string, minLength: 1, maxLength: 64, pattern: '^[a-z0-9-]+$' }
+                title: { type: string, minLength: 1, maxLength: 256 }
+                status: { type: string, enum: [pending, in_progress, completed, blocked] }
+          ids:
+            type: array
+            minItems: 1
+            maxItems: 100
+            items: { type: string, minLength: 1, maxLength: 64, pattern: '^[a-z0-9-]+$' }
+        oneOf:
+          - { properties: { action: { const: add_plan } }, not: { required: [ids] } }
+          - { properties: { action: { const: get_tasks } }, not: { anyOf: [{ required: [tasks] }, { required: [ids] }] } }
+          - { properties: { action: { const: add_tasks } }, required: [tasks], not: { required: [ids] } }
+          - { properties: { action: { const: update_tasks } }, required: [tasks], not: { required: [ids] } }
+          - { properties: { action: { const: delete_tasks } }, required: [ids], not: { required: [tasks] } }

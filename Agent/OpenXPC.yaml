@@ -1,0 +1,163 @@
+service:
+  identifier: com.macapper.AgentXPCService
+  maxPayloadBytes: 65536
+types:
+  - name: PresetListRequest
+    fields: []
+  - name: AgentPresetRecord
+    fields:
+      - { name: id, type: string, maxLength: 256 }
+      - { name: displayName, type: string, maxLength: 256 }
+      - { name: runtimeMode, type: string, maxLength: 32 }
+  - name: PresetListResponse
+    fields:
+      - { name: descriptors, type: AgentPresetRecord, array: true, maxItems: 128 }
+  - name: StartSessionRequest
+    fields:
+      - { name: sessionID, type: string, maxLength: 256 }
+      - { name: agentID, type: string, maxLength: 256 }
+      - { name: projectPath, type: string, maxLength: 4096 }
+      - { name: sessionFilePath, type: string, maxLength: 4096 }
+      - { name: title, type: string, optional: true, maxLength: 4096 }
+      - { name: firstRequest, type: bool }
+  - name: SessionAttachment
+    fields:
+      - { name: cursor, type: int }
+  - name: PromptSessionRequest
+    fields:
+      - { name: sessionID, type: string, maxLength: 256 }
+      - { name: message, type: string, maxLength: 65536 }
+  - name: SessionHistoryRequest
+    fields:
+      - { name: sessionID, type: string, maxLength: 256 }
+      - { name: cursor, type: int }
+  - name: AgentTaskRecord
+    fields:
+      - { name: id, type: string, maxLength: 256 }
+      - { name: title, type: string, maxLength: 4096 }
+      - { name: status, type: string, maxLength: 32 }
+  # 'kind' discriminates the existing AgentServiceEvent cases. Adapters validate which
+  # optional fields belong to each kind; transport sequences are not journal cursors.
+  - name: AgentEventRecord
+    fields:
+      - { name: kind, type: string, maxLength: 32 }
+      - { name: id, type: string, optional: true, maxLength: 256 }
+      - { name: command, type: string, optional: true, maxLength: 256 }
+      - { name: success, type: bool, optional: true }
+      - { name: error, type: string, optional: true, maxLength: 4096 }
+      - { name: text, type: string, optional: true, maxLength: 60000 }
+      - { name: name, type: string, optional: true, maxLength: 256 }
+      - { name: isError, type: bool, optional: true }
+      - { name: tasks, type: AgentTaskRecord, optional: true, array: true, maxItems: 128 }
+  - name: SessionEvent
+    fields:
+      - { name: sequence, type: int }
+      - { name: event, type: AgentEventRecord }
+  - name: SessionEventBatch
+    fields:
+      - { name: events, type: SessionEvent, array: true, maxItems: 128 }
+      - { name: nextCursor, type: int }
+      - { name: terminal, type: bool }
+      - { name: failure, type: string, optional: true, maxLength: 4096 }
+  - name: SessionHistoryResponse
+    fields:
+      - { name: batch, type: SessionEventBatch }
+  - name: SessionIdentifier
+    fields:
+      - { name: sessionID, type: string, maxLength: 256 }
+  - name: Acknowledgement
+    fields:
+      - { name: success, type: bool }
+  - name: PrepareChatSessionRequest
+    fields:
+      - { name: request, type: string, maxLength: 65536 }
+  - name: PrepareCreateProjectRequest
+    fields:
+      - { name: request, type: string, maxLength: 65536 }
+  - name: PrepareCreateSessionRequest
+    fields:
+      - { name: projectPath, type: string, maxLength: 4096 }
+      - { name: request, type: string, maxLength: 65536 }
+  - name: ResumeSessionRequest
+    fields:
+      - { name: projectPath, type: string, maxLength: 4096 }
+      - { name: sessionFilePath, type: string, maxLength: 4096 }
+  # WorkspaceRequest carries read-only workspace operations; creation and resumption
+  # have separate typed requests above, with no shared mode flag.
+  - name: WorkspaceRequest
+    fields:
+      - { name: kind, type: string, maxLength: 32 }
+      - { name: projectPath, type: string, optional: true, maxLength: 4096 }
+      - { name: sessionPath, type: string, optional: true, maxLength: 4096 }
+      - { name: relativePath, type: string, optional: true, maxLength: 4096 }
+  - name: WorkspaceMessageRecord
+    fields:
+      - { name: isUser, type: bool }
+      - { name: text, type: string, maxLength: 60000 }
+  # modified is seconds since Apple's 2001-01-01 reference date, matching Date's
+  # existing JSON encoding; adapters must not interpret it as Unix seconds.
+  - name: WorkspaceSessionRecord
+    fields:
+      - { name: filePath, type: string, maxLength: 4096 }
+      - { name: title, type: string, maxLength: 4096 }
+      - { name: modified, type: double }
+  - name: WorkspaceAppRecord
+    fields:
+      - { name: name, type: string, maxLength: 256 }
+      - { name: projectName, type: string, maxLength: 256 }
+      - { name: bundlePath, type: string, maxLength: 4096 }
+  - name: WorkspaceGroupRecord
+    fields:
+      - { name: projectPath, type: string, maxLength: 4096 }
+      - { name: title, type: string, maxLength: 4096 }
+      - { name: isChatOnly, type: bool }
+      - { name: app, type: WorkspaceAppRecord, optional: true }
+      - { name: sessions, type: WorkspaceSessionRecord, array: true, maxItems: 128 }
+  - name: WorkspaceLibraryRecord
+    fields:
+      - { name: groups, type: WorkspaceGroupRecord, array: true, maxItems: 128 }
+  - name: WorkspaceHistoryRecord
+    fields:
+      - { name: summary, type: WorkspaceSessionRecord }
+      - { name: messages, type: WorkspaceMessageRecord, array: true, maxItems: 128 }
+  - name: WorkspaceOpenRecord
+    fields:
+      - { name: projectPath, type: string, maxLength: 4096 }
+      - { name: sessions, type: WorkspaceSessionRecord, array: true, maxItems: 128 }
+      - { name: history, type: WorkspaceHistoryRecord, optional: true }
+      - { name: isChatOnly, type: bool }
+  - name: WorkspacePreparedRecord
+    fields:
+      - { name: projectPath, type: string, maxLength: 4096 }
+      - { name: sessionFilePath, type: string, maxLength: 4096 }
+      - { name: title, type: string, maxLength: 4096 }
+      - { name: isNew, type: bool }
+      - { name: creatingApp, type: bool }
+  - name: SessionPreparationResponse
+    fields:
+      - { name: prepared, type: WorkspacePreparedRecord }
+  - name: WorkspaceResponse
+    fields:
+      - { name: kind, type: string, maxLength: 32 }
+      - { name: library, type: WorkspaceLibraryRecord, optional: true }
+      - { name: openedProject, type: WorkspaceOpenRecord, optional: true }
+      - { name: sessions, type: WorkspaceSessionRecord, optional: true, array: true, maxItems: 128 }
+      - { name: prepared, type: WorkspacePreparedRecord, optional: true }
+      - { name: path, type: string, optional: true, maxLength: 4096 }
+  - name: SessionSubscriptionRequest
+    fields:
+      - { name: sessionID, type: string, maxLength: 256 }
+operations:
+  - { name: listPresets, request: PresetListRequest, response: PresetListResponse }
+  - { name: startSession, request: StartSessionRequest, response: SessionAttachment }
+  - { name: promptSession, request: PromptSessionRequest, response: Acknowledgement }
+  - { name: sessionHistory, request: SessionHistoryRequest, response: SessionHistoryResponse }
+  - { name: abortSession, request: SessionIdentifier, response: Acknowledgement }
+  - { name: stopSession, request: SessionIdentifier, response: Acknowledgement }
+  - { name: workspace, request: WorkspaceRequest, response: WorkspaceResponse }
+  - { name: prepareChatSession, request: PrepareChatSessionRequest, response: SessionPreparationResponse }
+  - { name: prepareCreateProject, request: PrepareCreateProjectRequest, response: SessionPreparationResponse }
+  - { name: prepareCreateSession, request: PrepareCreateSessionRequest, response: SessionPreparationResponse }
+  - { name: resumeSession, request: ResumeSessionRequest, response: SessionPreparationResponse }
+subscriptions:
+  - { name: sessionEvents, request: SessionSubscriptionRequest, response: SessionAttachment, event: SessionEvent }

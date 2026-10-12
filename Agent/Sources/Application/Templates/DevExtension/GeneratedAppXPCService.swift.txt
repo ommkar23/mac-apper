@@ -1,0 +1,87 @@
+import Foundation
+
+private let toolServiceID = "com.macapper.devtools"
+
+@objc private protocol ToolServiceAdministrationXPCProtocol {
+	func registerDevelopmentEndpoint(
+		_ identity: Data,
+		endpoint: NSXPCListenerEndpoint,
+		reply: @escaping @Sendable (Bool) -> Void
+	)
+}
+
+@objc private protocol GeneratedAppDevelopmentXPCProtocol {
+	func developmentHandshake(reply: @escaping @Sendable (Data) -> Void)
+}
+
+private struct DevelopmentIdentity: Codable, Sendable {
+	let version: Int
+	let appID: String
+	let requestID: String
+	let instanceID: String
+	let devServiceID: String
+
+	static func decode(_ data: Data) throws -> Self {
+		guard data.count <= 2_048,
+			let object = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+			Set(object.keys) == ["version", "appID", "requestID", "instanceID", "devServiceID"]
+		else { throw CocoaError(.coderReadCorrupt) }
+		let value = try JSONDecoder().decode(Self.self, from: data)
+		guard value.version == 1,
+			[value.appID, value.requestID, value.instanceID].allSatisfy({
+				$0.utf8.count == 36 && UUID(uuidString: $0) != nil
+			}),
+			value.appID == value.appID.lowercased(),
+			value.instanceID == value.instanceID.lowercased(),
+			value.devServiceID == "com.macapper.generated." + value.appID
+		else { throw CocoaError(.coderReadCorrupt) }
+		return value
+	}
+}
+
+public final class GeneratedAppXPCService: NSObject, NSXPCListenerDelegate,
+	GeneratedAppDevelopmentXPCProtocol, @unchecked Sendable
+{
+	private let identityData: Data
+	private let listener: NSXPCListener
+	private var registrationConnection: NSXPCConnection?
+
+	@MainActor public init(model: Any) throws {
+		guard let raw = ProcessInfo.processInfo.environment["DEVTOOLS_DEVELOPMENT_IDENTITY"] else {
+			throw CocoaError(.coderReadCorrupt)
+		}
+		let data = Data(raw.utf8)
+		_ = try DevelopmentIdentity.decode(data)
+		identityData = data
+		listener = NSXPCListener.anonymous()
+		super.init()
+		listener.delegate = self
+	}
+
+	public func start() {
+		listener.resume()
+		let connection = NSXPCConnection(machServiceName: toolServiceID)
+		connection.remoteObjectInterface = NSXPCInterface(with: ToolServiceAdministrationXPCProtocol.self)
+		connection.invalidationHandler = {}
+		connection.interruptionHandler = {}
+		connection.resume()
+		registrationConnection = connection
+		guard let proxy = connection.remoteObjectProxyWithErrorHandler({ _ in })
+			as? ToolServiceAdministrationXPCProtocol else { return }
+		proxy.registerDevelopmentEndpoint(identityData, endpoint: listener.endpoint) { _ in }
+	}
+
+	public func listener(
+		_ listener: NSXPCListener,
+		shouldAcceptNewConnection connection: NSXPCConnection
+	) -> Bool {
+		connection.exportedInterface = NSXPCInterface(with: GeneratedAppDevelopmentXPCProtocol.self)
+		connection.exportedObject = self
+		connection.resume()
+		return true
+	}
+
+	public func developmentHandshake(reply: @escaping @Sendable (Data) -> Void) {
+		reply(identityData)
+	}
+}

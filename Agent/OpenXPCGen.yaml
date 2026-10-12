@@ -1,0 +1,9 @@
+service:
+  target: AgentApplication
+  generate: service
+  timeoutSeconds: 60
+clients:
+  - target: AgentMacosClientModel
+    generate: client
+    operations: [startSession, promptSession, sessionHistory, abortSession, stopSession, workspace, prepareChatSession, prepareCreateProject, prepareCreateSession, resumeSession]
+    subscriptions: [sessionEvents]

@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "VisionCLI verification request v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "requestID",
+    "imagePath",
+    "criteria"
+  ],
+  "properties": {
+    "version": {
+      "const": 1
+    },
+    "requestID": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "imagePath": {
+      "type": "string",
+      "pattern": "^/",
+      "maxLength": 4096,
+      "description": "Absolute nonlinked PNG/JPEG path. Runtime rejects dot components and control characters. Use /private/tmp rather than /tmp."
+    },
+    "context": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1,
+      "maxLength": 4096
+    },
+    "model": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^gemini-[a-z0-9.-]+$",
+      "maxLength": 128,
+      "default": "gemini-3.8-flash"
+    },
+    "criteria": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 20,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "description"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9_-]*$",
+            "maxLength": 64
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2048
+          }
+        }
+      },
+      "description": "IDs must be unique. Descriptions/context must be nonblank. Runtime string bounds are UTF-8 bytes."
+    }
+  }
+}

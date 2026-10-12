@@ -1,0 +1,161 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "VisionCLI result v1",
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "version",
+        "requestID",
+        "status",
+        "model",
+        "providerModel",
+        "verdict",
+        "summary",
+        "checks",
+        "image"
+      ],
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "requestID": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "status": {
+          "const": "completed"
+        },
+        "model": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "providerModel": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "verdict": {
+          "enum": [
+            "pass",
+            "fail",
+            "uncertain"
+          ]
+        },
+        "summary": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2048
+        },
+        "checks": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 20,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "verdict",
+              "evidence"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 64
+              },
+              "verdict": {
+                "enum": [
+                  "pass",
+                  "fail",
+                  "uncertain"
+                ]
+              },
+              "evidence": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 2048
+              }
+            }
+          }
+        },
+        "image": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "width",
+            "height",
+            "sha256"
+          ],
+          "properties": {
+            "width": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 8192
+            },
+            "height": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 8192
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "version",
+        "requestID",
+        "status",
+        "error"
+      ],
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "requestID": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "uuid"
+        },
+        "status": {
+          "const": "error"
+        },
+        "error": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "code",
+            "message"
+          ],
+          "properties": {
+            "code": {
+              "enum": [
+                "invalid_request",
+                "invalid_image",
+                "missing_api_key",
+                "invalid_credentials",
+                "network_error",
+                "timeout",
+                "http_error",
+                "invalid_response",
+                "provider_incomplete"
+              ]
+            },
+            "message": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    }
+  ]
+}

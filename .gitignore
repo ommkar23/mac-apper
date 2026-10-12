@@ -1,0 +1,67 @@
+# Local Pi configuration, skills, sessions and evidence
+.pi/
+
+# SwiftPM and other dependency/build output
+.build/
+.swiftpm/
+build/
+dist/
+DerivedData/
+node_modules/
+__pycache__/
+*.py[cod]
+
+# Generated projects, scenario hosts and runtime artifacts
+Generated/
+HostBuilds/
+Projects/
+.mac-apper/
+*.app/
+*.xctest/
+*.dSYM/
+*.xcresult/
+*.o
+*.a
+*.dylib
+*.pcm
+*.swiftmodule
+*.swiftdoc
+*.swiftsourceinfo
+
+# Evidence, execution reports and logs
+evidence/
+Evidence/
+*-evidence/
+evidence.md
+/docs/verification-archive.md
+/docs/documentation-review.md
+*.log
+*.jsonl
+*.profraw
+*.profdata
+*.sqlite
+*.sqlite-*
+*.db
+*.db-*
+
+# Local credentials and signing material
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+
+# macOS and editor-local state
+.DS_Store
+._*
+xcuserdata/
+*.xcuserstate
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Keep Package.resolved files and authored test assets under version control.

@@ -1,0 +1,8 @@
+service:
+  target: DevToolsApplication
+  generate: service
+  timeoutSeconds: 600
+clients:
+  - target: DevToolsTerminalClient
+    generate: agentClient
+    operations: [build, test, run, preview, plan]

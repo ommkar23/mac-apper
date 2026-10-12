@@ -1,0 +1,34 @@
+# Repository instructions
+
+- **Scope and document ownership**
+  - These instructions apply throughout `mac-apper`, with unrelated files and existing user work preserved.
+  - Read the [root README](README.md) product overview and the owning module README specifications, architecture, runtime contracts, commands and verification paths before changing the project: [Agent](Agent/README.md), [Scenario](Scenario/README.md), [DevTools](apps/built-in/dev-tools/README.md), [Plugins](Plugins/README.md), [VisionCLI](VisionCLI/README.md) and [OpenXPCGenerator](OpenXPCGenerator/README.md).
+  - Follow `.pi/CONVENTIONS.yaml` for dependencies, source/artifact ownership and formatting, and `.pi/GUIDANCE.yaml` for implementation, safety, verification and completion practices.
+  - Consult `.pi/LEARNINGS.yaml` for observed failures, recoveries and established limits rather than treating historical workarounds as current instructions.
+- **Documentation changes**
+  - Update the owning document without waiting for an explicit documentation request when user intent and verified project state imply changes to product behavior, architecture, conventions or guidance.
+  - Root README owns the product front door/navigation; module READMEs own local specifications and runbooks. Use Markdown README entry points, including `Agent/README.md`, without duplicate authoritative YAML READMEs.
+  - Keep cross-references aligned without duplicating policy, and add learnings only for observed failures, recoveries or established limits rather than speculation. Preserve historical checkpoints/evidence and unresolved failures in the [verification archive](docs/verification-archive.md); do not present them as new checks.
+- **How to write READMEs**
+  - Prefer short, simple sentences. Express one idea per sentence. Split composite sentences.
+  - READMEs document the product or module for readers and must not refer or link to `AGENTS.md`.
+  - `AGENTS.md` concisely refers to the relevant README for product/module documentation rather than duplicating it.
+  - READMEs may link to child READMEs in inner directories to delegate module-specific documentation.
+- **Swift toolchain setup**
+  - Before Swift builds or tests, check the standalone Swift 6.4.0 toolchain at `~/Library/Developer/Toolchains/swift-6.4.0-RELEASE.xctoolchain/usr/bin/`.
+  - Confirm that `swift` and `swiftc` are executable. Run both with `--version` and confirm version 6.4.0.
+  - If the toolchain is missing, install Swift 6.4.0 using the official [Swift macOS installer](https://www.swift.org/install/macos/). Verify the installed executables and versions before continuing.
+  - Use the explicit standalone executable paths. Do not fall back to the older CLT compiler or install Xcode.
+  - Report installation failures or required user approval. Do not bypass system security checks.
+- **Behavior changes and verification**
+  - Start underlying behavior changes with a focused failing test, implement the smallest complete fix, rerun that test and run each affected package suite through its own [package entry point](README.md#package-tests).
+  - Run only the selected scenario cases for scenario-only changes, with unit verification required only when underlying runtime or library code changes.
+  - Use the optional [Plugins clean-test guidance](Plugins/README.md) for fresh-build verification or stale SwiftPM diagnostics, with a nonempty validated private scratch path and removal limited to that exact owned directory.
+- **Scenario boundaries**
+  - Use package-local Swift tests and scenario-specific packaging rather than a full product bundle, following the [Agent scenario architecture](Agent/README.md) and [Scenario hosting contracts](Scenario/README.md).
+  - Agent cases must drive `AgentMacosClientModel` through the production native adapter/generated client without a scenario-specific client or transport.
+  - Keep packaging and temporary hosting in `Scenario` and prompts/assertions in tests, with the root `Scenarios/`, standalone runner and Scenario command plugin retired.
+  - Load [scenario-run](.pi/skills/scenario-run/SKILL.md) for authorized execution/monitoring and [scenario-write](.pi/skills/scenario-write/SKILL.md) for test authoring or changes.
+- **App-affecting changes and completion**
+  - Recreate `dist/com.ommkar.mac-apper/Mac Apper.app` after app-affecting source or resource changes using the [bundle command](README.md#build-and-run).
+  - Apply the owning verification guidance and README commands only within authorization, and report checks or runtime paths that could not be exercised.
