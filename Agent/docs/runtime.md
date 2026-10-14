@@ -4,12 +4,58 @@
 
 This document owns Agent runtime contracts. Provider-specific tool/rendering specifications belong to [DevTools](../../apps/built-in/dev-tools/README.md).
 
+## Pi installation and authentication
+
+Pi is a local runtime dependency for Chat/Create, not a prerequisite for compiling or packaging Mac Apper. Setup commands below are for the Mac owner to run with installation and authentication authorization. They are not offline documentation checks.
+
+1. Install Pi using the [official quickstart](https://pi.dev/docs/latest/quickstart):
+
+   ```sh
+   curl -fsSL https://pi.dev/install.sh | sh
+   ```
+
+   Review the official installer before running it. It pins dependencies and can install Node.js when needed. Pi requires **Node.js 22.19 or newer**. Alternatively, with a supported Node.js and npm already installed, use:
+
+   ```sh
+   node --version
+   npm --version
+   npm install -g --ignore-scripts @earendil-works/pi-coding-agent
+   ```
+
+   Choose one installation method. The npm alternative does not pin transitive dependencies. No separate Codex CLI, MCP adapter package or `parallel-cli` is required. The product's authored MCP/codemode integration was verified against Pi 1.1.0; installing the current Pi release is not proof of product compatibility.
+
+2. Open a new terminal if the installer changed your shell setup. Check local executable discovery without starting a session:
+
+   ```sh
+   command -v pi
+   pi --version
+   ```
+
+   Agent checks its own PATH, `~/.local/bin/pi`, `/opt/homebrew/bin/pi`, `/usr/local/bin/pi`, then `~/.nvm/versions/node/*/bin/pi`. A successful shell lookup alone does not prove Finder/XPC discovery. Finder does not inherit your full shell environment. Keep Pi and its Node runtime installed in a location available to the service; do not change launchd's global environment to work around discovery.
+
+3. For authenticated use, initialize [repository temporary storage](../../README.md#temporary-work) before starting Pi from this checkout. Review project resources before granting trust. Start Pi, run `/login`, and choose the provider for **`openai-codex`**. Complete its offered authentication flow. Do not submit a model prompt just to configure sign-in.
+
+   ```sh
+   # Disables configured MCP connections for this sign-in session.
+   pi --no-mcp
+   ```
+
+   [Pi authentication guidance](https://pi.dev/docs/latest/providers) explains the interactive flow. Credentials normally live in `~/.pi/agent/auth.json`; keep them private and untracked. Sign in as the same macOS user that runs Mac Apper. Shell-only API-key exports are not reliable Finder configuration. An OpenAI API key for another provider is not evidence of access to `openai-codex`.
+
+   Mac Apper explicitly selects `openai-codex/gpt-6.1-sol` with `medium` thinking. Changing Pi's interactive default does not change that selection. The `/model` picker can show authenticated availability without sending a task. If this model is unavailable to your account or Pi installation, stop and report the prerequisite; do not silently switch models. Installation/version checks do not verify account entitlement or a successful model request.
+
+4. No additional Parallel installation or account is required for the default web configuration. The [authored extension](../Extensions/parallel-codemode.ts) supplies `https://search.parallel.ai/mcp` and exposes only `web_search` and `web_fetch` through codemode. Do not add a duplicate user/project MCP entry for normal product setup.
+
+   [Parallel's current guidance](https://docs.parallel.ai/integrations/mcp/getting-started) documents anonymous access at this endpoint. It accepts optional Bearer credentials for higher limits but does not advertise OAuth. The distinct `/mcp-oauth` endpoint requires authentication; the product does not select it. Merely exporting `PARALLEL_API_KEY` does not attach a header to the authored configuration. Authenticated/higher-limit setup needs a separately reviewed configuration change, not an invented login step.
+
+   [Pi MCP shell commands](https://pi.dev/docs/latest/mcp) do not load extension-defined servers. Therefore `pi mcp list` or `pi mcp login parallel` is not a product setup/verification shortcut. Endpoint discovery, auth refresh and actual search/fetch require separate live authorization, even for anonymous access. Anonymous availability and current rate limits have not been exercised by this documentation check.
+
 ## Service and client boundary
 
 - AgentApplication owns storage and Pi; neither client target depends on that server core. Authored controllers route generated typed requests to service-owned managers.
 - AgentMacosClientModel generates client records/calls separately and owns presentation/domain values. Domain events, journal batches and workspace operation enums remain target-local.
 - WorkspaceSession holds in-memory presentation and forwards XPC operations; it persists no second conversation. WorkspacePresentation owns navigation/action validation, expansion state, rename drafts/errors and refresh lifecycle. Views retain layout, styling and native scrolling, not workflow state.
-- WorkspaceHostActions is injected at the composition root; native AgentMacosHostActions implements launch, Zed, clipboard and log reveal. Test convenience initializers omit host integration.
+- WorkspaceHostActions is injected at the composition root; native AgentMacosHostActions implements app launching, optional external-editor opening, clipboard and log reveal. The editor is looked up only when its action is invoked. Test convenience initializers omit host integration.
 - Generated workspace timestamps are seconds since Apple's 2001 reference date, not Unix seconds.
 - The OpenXPC envelope uses UUID project/session IDs (zero for Chat or unnamed sessions); the service checks follow-up IDs against request and stored binding. Scope/identity checks are not peer authentication.
 - The retired AgentXPC product/target, request/reply envelope, dynamic agent registry and pollSession are not current interfaces.
@@ -95,6 +141,6 @@ This document owns Agent runtime contracts. Provider-specific tool/rendering spe
 - Projects: `~/.mac-apper/<project-uuid>/`; Pi conversations: project `.pi/sessions/`; Agent presentation journals: project `.pi/agent-events/<session-id>.jsonl`.
 - Chat conversations/events use the corresponding directories under `~/.mac-apper/.chat/`. Pi filenames may include timestamps; do not assume a bare session UUID filename.
 - Preview delivery: project `.mac-apper/Artifacts/<request-uuid>/render.png`. Retained review images: `~/.mac-apper/previews/<project-id>/<session-id>/preview-<Unix-microseconds>.png`, with no automatic pruning.
-- Production bundles: `~/.mac-apper/output/<project-uuid>/<app-name>.app`. Valid bundles enable Launch App; Chat disables launch/Zed and creates no app scaffold.
+- Production bundles: `~/.mac-apper/output/<project-uuid>/<app-name>.app`. Valid bundles enable Launch App; Chat disables app launching and external-editor opening and creates no app scaffold.
 - New App prepares only after the first message. Saved conversation opening/reattachment preserves files and Pi continuity; new conversation does not replace project files. Further messages steer Pi; Plan shows progress, Activity shows tools/diagnostics, and Stop is explicit cancellation.
 - Preview images are not displayed in the workspace. Build/Run are development operations, not production packaging.

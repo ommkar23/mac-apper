@@ -1,0 +1,110 @@
+purpose: Forward-looking practices for safely implementing and verifying changes; not a record of past failures.
+implementation:
+  boundaries: >-
+    Preserve the product overview in README.md and boundary contracts in Agent/README.md,
+    apps/built-in/dev-tools/README.md and OpenXPCGenerator/README.md: keep clients separate
+    from server core, Pi history distinct from Agent event history, XPC event handoff
+    reliable, and operations scoped to their project.
+  protected_infrastructure: Preserve the trusted generated-project scaffold and its protected preview, rendering, and packaging infrastructure.
+  approach: For behavior changes, start with a focused failing test and implement the smallest complete fix.
+security:
+  untrusted_inputs: Treat prompts, paths, JSON, generated source, and subprocess output as untrusted.
+  safeguards: Preserve traversal checks, size limits, strict decoding, project scoping, and process cleanup; do not invoke untrusted strings through a shell.
+  scenario_scope_identity: >-
+    Audit recorded cwd against the exact existing project directory, not path spelling or suffixes.
+    Preserve production traversal/link validators; accept only validated trusted OS aliases and
+    reject user/project links on either side. The offline audit contract and point-in-time limits
+    are documented in Agent/README.md; recorded repair evidence is in docs/verification-archive.md.
+  owned_process_teardown: >-
+    Preserve exact kernel executable path/start identity validation before each TERM/KILL.
+    Failed validation or signaling is already-reaped success only after a fresh ESRCH probe;
+    live mismatched/uninspectable identities and observed PID reuse fail closed without further signals.
+    Preserve inner/outer cleanup confirmation and fixture retention gates. Do not equate a demonstrated
+    offline race with an uninstrumented historical root cause; point-in-time PID checks are not atomic.
+    See Scenario/README.md for the contract and docs/verification-archive.md for recorded repair evidence.
+  logging: Do not log credentials, provider tokens, complete environment dictionaries, or sensitive generated content.
+  permissions: Generated apps and Pi execute with the user's permissions; the project boundary is not a sandbox. Do not call it one.
+verification:
+  scenario_workflow: >-
+    Use scenario-run for authorized execution and exact-run progress monitoring, and scenario-write
+    for Swift test authoring. Supplied Swift helpers only launch selected swift test commands;
+    Scenario and package tests retain hosting and cleanup ownership. See Scenario/README.md and the scenario-run/scenario-write skills.
+  affected_packages: For underlying runtime/library changes, run focused tests and affected package suites. For scenario-only changes, run only the selected scenario cases; do not run unrelated units.
+  standalone_toolchain: >-
+    Verify generated-app framework integration with standalone Swift 6.4.0 and the CLT SDK
+    before paid Create scenarios. Preserve README.md's no-Xcode product contract; v7's historical
+    SwiftData macro failure is not a requirement to install Xcode for the new Core Data scaffold.
+    Inspect candidate toolchain distributions and prove real entity save/reload/rollback before
+    claiming compatibility. Do not change persistence engines or hand-write macro substitutes
+    without an agreed architecture change. Scaffold v8 now uses programmatic Core Data for new Create projects,
+    with always-run typed-entity scaffold tests. Active guidance/fixtures are aligned under task 4;
+    task-5 fresh no-model packaged Test/Preview/Build/Run and fixture-home persistence passed
+    (docs/verification-archive.md; current runbook in Agent/README.md). Task-6 final signed artifact/resources, deployed native v8 preparation and actual protected-production
+    default-home relaunch checks passed (docs/verification-archive.md Final v8 artifact and production-path smoke).
+    Original-product GUI isolation/smoke is separate from headless scaffold/Create verification and is not
+    a prerequisite for an explicitly authorized headless counter run. Client HOME overrides alone do not
+    establish the launchd service's home before automatic workspace reads. Do not launch the original GUI
+    without approved isolation, change global configuration or hand-edit signed artifacts to obtain it.
+    Development PID liveness and explicit fixture-home helpers alone do not prove production-home relaunch;
+    task-6 fixture-only model actions and pre-write default-home refusal checks are not UI-interaction evidence. Do not claim relationships,
+    schema migration, corrupt-store preservation, path hardening or immediate context deallocation.
+    The rollout provides neither dual-engine support nor automatic legacy source/store conversion;
+    preserved same-ID legacy stores refuse startup without opening or modifying them.
+    Existing generated projects were explicitly disposable; separate stored data is not authorized
+    for deletion by that project-cleanup request. Require fresh authorization before paid counter/plan reruns.
+  compiler_selection: >-
+    Invoke the standalone usr/bin/swift explicitly when harness PATH may be stale. Use default
+    Swift Build, not --build-system native; xcrun remains for CLT SDK discovery. Preserve
+    non-Swift preparation environments and injected tools. Scenario standalone compiler/import probes must
+    resolve the system-selected installed macOS SDK through bounded xcrun discovery and pass it explicitly,
+    independent of inherited SDKROOT. Gate Create submission on a small offline compile/transitive-import
+    check using the actual probe configuration; distinguish setup/import failure from unsupported generated APIs.
+    See Scenario/README.md and Agent/README.md for bounds and scope; historical SDK repair evidence is in docs/verification-archive.md. Verify both production swift/swiftc
+    preflight errors without CLT fallback. Distinguish earlier packaged scenario passes from
+    later preflight/environment fixes; do not claim the former verify the latter.
+  preview_contract: >-
+    Preview returns validated PNG paths, dimensions and text/metadata only. Preserve service decoding,
+    bounded nonlinked project/archive scope and byte identity; do not restore automatic Pi image delivery.
+    Publish the complete descriptor-derived canonical archive pathname, validating nonlinked ancestors
+    and same-file identity before returning it; Foundation symlink-resolved URLs can reintroduce OS aliases.
+    Preserve kernel spelling through response adaptation, scenario evidence and VisionCLI requests;
+    compare validated existing archive directory identity rather than reconstructed client URL spelling.
+    Reuse trusted-OS-alias identity validation for client scope while strictly no-follow reading the
+    returned canonical archive path. Preserve strict consumer link rejection. Document
+    point-in-time replacement-race limits rather than promising a filesystem sandbox.
+    Optional inspection uses existing production read, preferably absolute artifact.reviewPath retained
+    after project cleanup. Rendering success does not prove inspection; do not require read or tool order
+    unless the scenario's explicit purpose calls for it. Generic OpenXPC imageArtifact remains opt-in
+    for other contracts. Check typed rendering status separately from transport/tool success.
+  preview_capture: >-
+    Preserve the isolated factory/discovery executable and requested scale-1 canvas when capturing
+    the owned NSHostingView in its nonactivating Aqua window. Keep layout settling bounded,
+    detach/close the window before publishing, and retain process reaping on crash/cancellation.
+    Verify styled labels and composed content through the production renderer, not spike code alone.
+    PNG creation is separate from fidelity and async readiness; document inactive-window, tab-label
+    and layer-backed-view limits in apps/built-in/dev-tools/README.md rather than claiming universal support.
+  packaged_xpc: Stage minimal scenario-specific signed dependencies and exercise the real XPC path after boundary, signing, resource, or hosting changes; do not bundle/copy the full app just to run scenarios.
+  counter_harness: >-
+    Verify model-owned presentation without imposing a generated convenience accessor. Compiler-check exactly one
+    supported signed-integer direct/state count API, fail ambiguous/unsupported layouts, and require actual independent
+    Swift Testing compilation/execution with initial, increment, decrement, reset and negative assertions. Bound compiler
+    work and retain logs privately; never accept compilation failure as behavioral evidence. Reap exact owned XPC service
+    kernel-path/PID/start identities with bounded TERM/KILL before removing signed hosts; retain on cleanup failure.
+    Do not claim generated-counter persistence across relaunch from this in-memory independent check.
+    Create scenario hosts must scope client/service/development-child homes before startup, capture exact Pi identities,
+    confirm ESRCH before project deletion, and gate service/host/home removal on successful inner cleanup. Keep
+    credential snapshots private and non-refreshable, require sufficient remaining lifetime, never borrow or copy
+    whole user config/home trees, and retain owned fixtures/evidence when cleanup is unconfirmed. The Scenario APIs
+    and selective Codex snapshot contract are documented in Scenario/README.md and Agent/README.md; recorded isolation repair evidence is in docs/verification-archive.md.
+  release: >-
+    For release or user-facing changes, run package-local packaged provider scenario tests,
+    compare generated provider extensions with their copies in the signed app, and
+    verify signing and Info.plist. Do not mistake source-tree or SwiftPM build-directory
+    resources for proof of a self-contained bundle.
+  bundle: Rebuild, sign, validate, launch, and inspect the final .app after bundle changes when authorized. Swift 6.4 rebuild/static checks, GUI startup and scoped no-model native XPC resource preparation passed after fixing Agent's service-local resource placement. Local --service-presets output alone does not exercise XPC or resources. Keep startup/resource evidence separate from interactions, provider tools and model workflows; see docs/verification-archive.md Swift 6.4 upgrade status.
+  live_calls: Start Pi sessions that connect remote MCP, discover MCP endpoints, refresh auth, or run real Parallel/model/Gemini API calls only when explicitly authorized for research or live verification; they may incur charges. Credential availability alone does not authorize calls. VisionCLI reviews are probabilistic evidence, not a replacement for model tests or process checks.
+  agent_xpc: Opt-in Chat cases drive the production MacOS client model/native adapter inside a minimal signed Swift test host with the real Agent service and authored MCP/codemode resources. They require authenticated Pi and Parallel, verify openai-codex/gpt-6.1-sol/medium, and cover greeting, news/context, live disconnect/replay, resume, isolation, abort/reuse, and codemode/MCP-only Chat capabilities. Service-restart replay and historical retroactive coverage remain unverified; no dedicated Agent scenario client or full app prerequisite is allowed.
+completion:
+  standard: A change is complete only after relevant tests pass and the affected runtime path is exercised.
+  report: Report the exact artifact path, verified commands, and any remaining blocker.
+  claims: Do not claim retroactive Agent tool/event replay or unlimited UI history; see Agent/README.md runtime history limits.

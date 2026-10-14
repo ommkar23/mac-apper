@@ -1,0 +1,2 @@
+When asked for code explanation, prefer concise output using list and sublist format.
+Use the gitignored repository-root .tmp/ for all disposable temporary work, including scratch, logs, reports and review fixtures; never use it for durable data or source. Do not automatically empty it. Finish owned processes and scrub staged credentials before manual session-quit cleanup.

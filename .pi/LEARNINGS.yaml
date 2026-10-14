@@ -1,0 +1,439 @@
+schema_version: 1
+purpose: Failures and recoveries observed while moving provider tools and Agent sessions behind XPC.
+learnings:
+  - area: HTView independent verifier resource compatibility
+    failure: >-
+      The single authorized retained HTView attempt exited 1 after 643.8585 seconds.
+      Authored Test, Build, Run and private storage checks reached successful evidence.
+      The independent source copier rejected Sources/AppModel/Resources/example.html.
+      The generated manifest legitimately declared .process("Resources").
+      This establishes a verifier compatibility failure rather than a generated feature defect.
+    limits: >-
+      Independent HTML/CSS/JavaScript checks did not run for this generated app.
+      The document-opening route and user file picker remain unverified.
+      No repair or paid retry occurred.
+    cleanup: >-
+      Inner Pi/development cleanup and exact outer Agent/DevTools reaping completed.
+      Staged credentials were scrubbed before retaining the project and home for user review.
+      All four captured PIDs independently returned ESRCH.
+    evidence: /private/tmp/mac-apper-htview-live.KpZIeR/report.md
+  - area: Owned-process exit races during teardown
+    failure: >-
+      Deterministic offline tests reproduced six failures when a child exited during path/start
+      validation before TERM or escalation, or at TERM/KILL. The existing helper treated these as
+      identity mismatch or signal failure despite subsequent ESRCH. An invalid-PID regression also
+      demonstrated that teardown could reach a probe without rejecting the PID first.
+    recovery: >-
+      Exact path/start checks remain required before every signal; failures are accepted only after
+      a fresh ESRCH probe, and invalid PIDs are rejected before probing. Final 23 deterministic cases
+      and real captured-child cleanup with unrelated-child preservation passed; the affected Scenario
+      suite passed 33 tests (unrelated hosted-loader smoke excluded), with three-file format/guard/strict
+      lint clean. Create ordering/retention gates and native Preview sources are unchanged. The retained
+      lifecycle report establishes a mismatch but neither its component nor an exit-race historical
+      cause; retained historical processes, snapshot and fixtures were not accessed or cleaned.
+      Evidence and verification limits: /private/tmp/mac-apper-owned-exit-1791699403/report.md.
+    live_follow_up: >-
+      One newly authorized counter-only helper attempt passed after native Preview and exit-race fixes:
+      456.456 seconds helper, 418.873 hosted, 440.432 outer, actual selected-test starts/passes and
+      per-selection exit 0. Built-in SDK/isolation/credential-lifetime gates, settlement (journal 145),
+      authored passing Tests, direct 440x400 native Preview/archive checks, Build/Run/private storage,
+      independent seven-test behavior and development liveness passed. One integrated gemini-3.8-flash
+      review passed unchanged count/Increment-Decrement-Reset-label/layout criteria. Inner Pi/development
+      confirmation preceded exact Agent/DevTools TERM/KILL reaping, snapshot scrub and host/home removal;
+      all four recorded PIDs independently returned ESRCH and new roots/snapshot are absent. Source hashes
+      match; no external retry, other case, standalone probe or historical-fixture cleanup occurred.
+      This positive fixture is live workflow/cleanup evidence, not historical mismatch root-cause proof,
+      historical safety cleanup, universal fidelity, calibrated vision or production relaunch persistence.
+      Report /private/tmp/mac-apper-counter-native-live.YqLXwX/report.md; helper
+      /private/tmp/scenario-run-3AE06802-7A22-4DF9-B0DF-8A8502D65AFC; private archive
+      /private/tmp/mac-apper-create-evidence-06FC36D9-0618-4B11-9A54-24D6CD1CECCE.
+    plan_live_follow_up: >-
+      One separately authorized agentCreatePlanScenario helper selection passed under explicit Swift 6.4/default
+      Swift Build with SDKROOT unset: 503.319 seconds helper, 473.608 hosted and 494.709 outer, with actual
+      selected-test started/passed markers and per-selection exit 0. SDK preflight took 10.552398 seconds;
+      private home/non-refreshable snapshot/lifetime gates passed before submission. Saved add_plan seeded
+      three tasks; successful source writes/edits occurred while implementation was in_progress, subsequent
+      updates completed implementation and verification, and the final three completed tasks matched client
+      presentation. Journal settled at sequence 172. A failed Test was repaired within the sole normal Pi
+      workflow before passing latest authored Test evidence. Native direct 460x400 Preview/archive identity,
+      Build/Run/private storage, seven generated-plus-independent counter tests and development liveness
+      passed separately. One integrated gemini-3.8-flash review passed unchanged count/button-label/layout
+      criteria with matching PNG hash. Inner exact Pi/development confirmation preceded outer Agent/DevTools
+      TERM/KILL reaping, snapshot scrub and host/home removal; all four recorded PIDs independently returned
+      ESRCH and exact new roots/snapshot are absent. Source hashes match; no external retry, other case,
+      standalone probe, MCP/Web call or historical cleanup occurred. This is fixture-specific plan workflow
+      recovery, not historical mismatch root-cause proof, historical cleanup, production packaging/relaunch,
+      physical button interactions, live nested Preview or calibrated/general vision evidence.
+      Report /private/tmp/mac-apper-plan-native-live.GKBxyn/report.md; helper
+      /private/tmp/scenario-run-CE9D8D8A-0096-4E0A-AC28-3CB6DA4503FD; private archive
+      /private/tmp/mac-apper-create-evidence-B6D5DDBB-C72F-477F-A3B5-E5E2F6A1A8B2.
+  - area: Production Preview native-control capture
+    failure: >-
+      The focused offline production-renderer fixture (styled Increment/Decrement/Reset,
+      seeded count, NSTextField representable and progress) produced 16472 yellow/red
+      placeholder pixels and only 366 dark pixels through ImageRenderer; both assertions failed.
+      The first test build also lacked the DevToolsApplication import, corrected before this behavioral red.
+    recovery: >-
+      Retaining the isolated factory executable but capturing its owned NSHostingView in a
+      nonactivating Aqua window passed the same regression and subsequent per-label ink checks.
+      The 55-test affected DevTools unit/contract/service run passed under explicit Swift 6.4/default
+      Swift Build. The retained 460x430 production PNG locally shows the seeded count and styled labels;
+      this does not prove arbitrary visual fidelity, async readiness or recovery of the historical
+      live counter. Evidence: /private/tmp/mac-apper-native-preview.L0Wz8N/.
+  - area: Post-lifecycle counter visual failure and recurrent unconfirmed cleanup
+    failure: One authorized counter-only helper selection exited 1 after 522.834 seconds (514.085 outer, 505.081 hosted). Integrated Gemini completed with count/layout pass but buttons_visible fail because Increment/Decrement text was not visible; the unchanged visual assertion failed. Hosted teardown additionally threw owned process identity mismatch, so outer finishHost refused service reaping, credential scrubbing and host/home removal. The staged 0600 non-refreshable snapshot remains; exact-PID read-only checks found Pi 55388 absent and development 57524 still present, not immutable identity/ESRCH cleanup confirmation.
+    current_state: Explicit Swift 6.4/default Swift Build with SDKROOT unset passed built-in SDK preflight in 9.762528 seconds, private lifetime/home gates, production client-model/generated XPC, runtime/scope, latest authored passing Test, canonical direct 460x430 path-only Preview, Build/Run/private storage, independent generated-plus-counter tests and post-independent development liveness. Journal records one actual settled event at sequence 158; the current parser emits it only for agent_settled. One integrated VisionCLI invocation made one gemini-3.8-flash review request with matching canonical path/image identity; 17 assistant completions and no assistant errorMessage are persisted, while underlying provider network attempt counts are not instrumented. No full workflow/cleanup pass or retry/abort/exhaustion recovery is claimed. Failed home/host/project/store/history/PNG remain; source fingerprints and historical evidence are preserved. No fixes, bypass/manual signals, external retries, other cases, units, bundle, GUI or standalone remote/auth probe occurred. Further execution requires separate exact-owned safety cleanup authorization and renewed live authorization. Report /private/tmp/mac-apper-counter-lifecycle-live.xE4QZx/report.md; helper /private/tmp/scenario-run-10D371A0-6042-468F-BECC-6B1BA6E26E3A; home /private/tmp/scenario-home-1BE08ABA-1E72-484D-B09F-10C6F41FCB58.
+  - area: Retired scenario-skill reference and retained counter cleanup follow-up
+    failure: The focused scaffoldV8GuidanceAndCompositionStayAligned rerun reproduced the missing retired scenario skill file after the split; the prior failed counter still had two exact host-owned XPC services and its owner-only non-refreshable auth snapshot retained.
+    recovery: The test now references scenario-write with explicit scaffold/schema/UUID storage guidance, and its focused rerun plus scoped format/guard/strict lint passed. Separately authorized cleanup captured exact kernel paths/PID/start for Agent 32834 and DevTools 32863, reused OwnedProcessIdentity bounded reaping, confirmed both services and original Pi PID 32843 ESRCH, and removed only the exact staged snapshot through no-follow directory descriptors. Host/home/project/history/journal and original credentials remain untouched. The helper's split-skill regression also initially rejected preserved historical README references; restricting that prohibition to active AGENTS instructions retained history and passed all nine helper-only tests. No live scenario or full suite was rerun, and future cleanup-race semantics remain unchanged. Evidence is /private/tmp/mac-apper-blocker-cleanup.RTs6dv/report.md.
+  - area: Pi RPC premature session settlement
+    failure: Focused offline red produced 22 unexpected issues because PiRPCParser mapped low-level agent_end to settlement, including willRetry true, false and absent; the client cleared busy before actual session completion. Installed Pi agent-session.js emits agent_end before its post-run recovery/continuation loop and agent_settled from the finalizer. This source inspection does not establish the cause of the earlier WebSocket error.
+    recovery: Mapping only agent_settled passed the focused parser and client lifecycle tests without implementing recovery or changing Pi settings. Two existing subprocess fixtures that awaited settlement emitted only agent_end and hung during broader verification; they now also emit the installed session-level completion event. The initial 250-second tool timeout left the exact test-owned loader and two fixture shells alive; terminating only those confirmed fixture shells allowed the loader to exit. No historical host, service, credential snapshot or fixture was signaled or deleted. Broader results, unrelated retired-skill-path failure and signed bundle/static evidence are recorded in /private/tmp/mac-apper-pi-lifecycle.dAIlAm/report.md; live recovery and historical cleanup/credential retention remain unverified.
+  - area: Preview archive canonical producer pathname
+    failure: The focused offline producer regression returned /tmp/scenario-home-... for an archive created beneath /private/tmp; exact descriptor-relative no-follow reading of the typed reviewPath failed with errno 20. A standalone Swift 6.4/explicit-SDK Foundation probe confirmed that resolvingSymlinksInPath itself abbreviates /private/tmp to /tmp, while F_GETPATH on the opened directory reports /private/tmp. Standardizing/appending the resolved URL preserves the linked spelling. The first broader unit run also exposed an old rendering-test expectation for Foundation's /var spelling rather than the new /private/var kernel path; its only failure was that literal expectation.
+    recovery: PreviewArchive now derives the configured root and completed file pathname with F_GETPATH, validates canonical ancestors/leaf with descriptor-relative no-follow opens and device/inode equality, requires the expected scoped archive pathname, and preserves it without URL resolution/standardization. Exclusive creation, bounds, private modes, collisions and retention remain unchanged. Five final focused tests passed, including alias/canonical private-home input, typed record round-trip, equivalent VisionCore no-follow PNG reading, and actual rendered Preview response readability after project removal. The final 54-test DevTools unit suite passed in 158 seconds with all scenarios excluded; unchanged VisionCLI's five offline tests passed in 101 seconds. Three-file format/guard/strict lint passed. No Agent scenario, Pi session, model/Gemini/MCP call, auth refresh or GUI occurred. This is point-in-time producer/consumer compatibility, not race-proof path identity or a live counter/Gemini recovery; retained historical fixtures/evidence remain unchanged. Commands, bundle/static results and limits are recorded in /private/tmp/mac-apper-preview-canonical-1791637226/report.md.
+    live_follow_up: One newly authorized counter-only invocation through the supplied scenario-run Swift helper failed unchanged CreateCounterPreviewEvidence.swift:106 because the canonical producer /private/tmp archive parent did not equal the expected URL derived from the client's /tmp project. Exit 1 after 394.296 seconds (382.182 outer test, 354.630 hosted), standalone Swift 6.4/default Swift Build with SDKROOT unset. Explicit-SDK compile/transitive-import preflight passed in 9.753251 seconds; private credential/lifetime/home gates, runtime/scope and authored passing Test audit passed. Actual tools include two passing Test calls, nested Build and text-only 420x370 Preview, then Run. The complete archive/scratch audit, explicit development identity/storage/liveness guards, independent counter import/actions, production-output reporting and integrated VisionCLI were not reached; zero reviewer invocations or Gemini calls occurred. Read-only post-run canonical no-follow traversal and artifact/archive/evidence SHA-256 equality passed, but do not bypass the failed assertion. Inner Pi/development confirmation preceded exact-service TERM/KILL; Pi/service ESRCH and no kernel-path survivors under the exact new roots were independently checked. Development PID/start was not printed before the failure. Failed fixtures/archive retained, staged credentials absent, source fingerprints and original credential metadata unchanged; no fix, weakening, paid retry, other case, unit suite, bundle, original GUI or auth refresh. This verifies live canonical producer output, not full consumer/workflow or Gemini recovery. Report /private/tmp/mac-apper-counter-canonical-live.2M1eC6/report.md; helper run /private/tmp/scenario-run-8B2887D1-1889-4B03-877A-56335522F075; archive /private/tmp/mac-apper-create-evidence-CB80F00F-C950-4661-98B1-332A5523D531. Historical failures remain unchanged.
+    offline_consumer_follow_up: The focused offline alias-client regression reproduced the exact line-106 URL equality failure (exit 1), then passed after sharing existing trusted-OS-alias directory identity validation with the Preview audit and strictly no-follow reading the unchanged canonical archive path. Final selected Agent checks passed nine tests, including 37 negative mutations exercised directly and nested, with 66 intentional known issues and no unexpected failures. Foreign project/session directories contained existing matching PNGs and still failed identity checks. The canonical reviewPath remained unchanged in the actual VisionCLI request builder; selected VisionCore request-decode/image-load coverage passed while the /tmp alias still failed strict reading. Five changed Swift files passed scoped formatting/guard/strict lint. No producer/runtime rewrite, packaged/live scenario, Pi/Gemini call, historical fixture deletion or app rebuild occurred; all source changes are test-only. This is offline consumer recovery, not a live workflow/visual-review pass or race-proof path lease. Report /private/tmp/mac-apper-preview-consumer.gS3fh5/report.md.
+  - area: Post-consumer counter operational failure and credential retention
+    failure: One authorized counter-only helper selection exited 1 after 115.827086 seconds (106.008 outer, 94.386 hosted). Pi history records WebSocket error after naming/scaffold inspection/codemode/plan activity; cause unestablished. The unchanged authored-test guard failed CreateCounterTestEvidence.swift:12 because no qualifying latest authored revision followed by passing Test existed. Hosted teardown also failed owned-process identity validation, leaving inner cleanup unconfirmed. Outer IsolatedScenarioHome.finishHost throws at that gate before service reaping and scrubCredentials, so the owner-only staged non-refreshable snapshot remains in the retained home. Exact-service cleanup and credential scrubbing are not verified successes.
+    current_state: Built-in explicit-SDK compile/transitive-import preflight passed in 9.772416949272156 seconds under standalone Swift 6.4/default Swift Build with SDKROOT unset. Private lifetime/home gates and production native generated-client XPC were exercised; runtime/scope checks preceding Test audit passed. No Test/Preview/Build/Run call occurred; canonical archive audit, independent counter actions, development checks and integrated review were not reached. Zero reviewer invocations or Gemini calls. Captured Pi PID 32843 was absent in later exact-PID read-only ps, but identity-reaping confirmation is missing; no broad scan/manual signaling or guard bypass was performed. Failed host/home/project/history/journal and 0600 staged auth snapshot remain. Source fingerprints match, historical fixtures unchanged; no fixes/retry/other case/units/bundle/GUI/auth refresh/standalone probe. Further execution requires renewed authorization and resolution of this observed safety failure, not a blind retry. Report /private/tmp/mac-apper-counter-consumer-live.36Fjxa/report.md; helper /private/tmp/scenario-run-708D238C-C42C-4CEA-ADEE-D7EA7C1A1C2A; home /private/tmp/scenario-home-572C87AC-2AC1-4E12-BC2C-8E88CDD45EFB.
+  - area: Path-only counter integrated VisionCLI archive alias rejection
+    failure: One authorized agentCreateCounterScenario completed once with standalone Swift 6.4/default Swift Build and SDKROOT unset, then failed the integrated reviewer with local invalid_image exit 3 after 483.509 seconds (456.298 hosted). The validated typed archived reviewPath used /tmp/scenario-home-...; VisionCore.LocalFile traverses ancestors with O_DIRECTORY/O_NOFOLLOW and rejected the /tmp symlink. Read-only exact ancestor-open diagnostics confirmed errno 20 at /tmp. VisionCLIMain loads the image before constructing GeminiClient, so one staged CLI invocation occurred but zero Gemini API calls or visual verdicts. No source/prompt/assertion fix, path rewrite, standalone bypass or retry occurred.
+    current_state: Built-in explicit-SDK compile/transitive-import preflight passed in 9.919977 seconds against CLT macOS 26.2. Private credential/lifetime/home gates, runtime scope/profile, authored passing Test evidence, direct text-only 480x400 Preview with strengthened complete PNG/source/archive/canvas/scratch audit, Build/Run/private storage, actual AppModel import/compiler-selected model.state.count, generated plus independent action tests and post-independent development liveness passed. Production output was absent. Inner Pi/development reaping confirmation preceded outer exact-service TERM/KILL; captured Pi/development/Agent/DevTools identities independently reached ESRCH and no kernel-path survivors remain under the new home/host. Failed fixtures/private archive retained, staged snapshot scrubbed, source fingerprints and original credential metadata unchanged. Short bounded polls/status updates used; no other case, unit suite, bundle, original GUI, Web tool call or auth refresh. This verifies live SDK/import and direct path-only audit recovery, not a complete workflow pass, nested live ancestry, model inspection, Gemini appearance or independent production relaunch persistence. Report /private/tmp/mac-apper-counter-path-live.iOYSdW/report.md; archive /private/tmp/mac-apper-create-evidence-5E822FB5-91B6-4369-9DE6-42F256BAF7EF. Historical failures remain unchanged.
+  - area: Path-only Create Preview offline evidence gaps
+    failure: Focused offline fixtures reproduced acceptance of a PNG missing its terminal IEND despite ImageIO decoding, missing or linked selected source files, nonempty or linked PreviewBuild scratch, malformed supplied canvas metadata when reported dimensions matched the default, and a successful grandchild beneath a failed intermediate codemode call. Initial red exited 1 in 17 seconds; the default-canvas-specific red exited 1 in 5 seconds. These are audit gaps observed with synthetic evidence, not new production render or live workflow failures.
+    recovery: Scenario-only checks now require a complete bounded single PNG envelope and declared dimensions before decoding, an existing bounded nonlinked scoped source, correctly typed supplied canvas metadata, absent or empty nonlinked render scratch, bounded archive byte identity and successful intermediate ancestry. Final 19 selected Agent offline audit/support tests passed in 13 seconds, including 33 direct/nested negative Preview cases and preserved generic image evidence; five-file scoped format/guard/strict lint passed. Opt-in gates remained unset, no packaged/native XPC host or Pi/model/Gemini/MCP call ran, and historical fixtures/archives were untouched. Earlier live failures remain failures; image inspection and live Create recovery remain unverified. Exact commands and limits are in /private/tmp/mac-apper-preview-audit.RVc0yU/report.md.
+  - area: Isolated Create literal runtime scope audit
+    failure: Both freshly authorized single counter and plan attempts failed wrongScope after settled Create state because Pi recorded a /private/tmp/scenario-home-... cwd while the production client presented the same project through Foundation's /tmp alias. ScenarioSessionAudit compares literal strings; owned-file inspection independently confirmed canonical path equality. Hosted durations were 332.138 and 421.319 seconds; later behavioral/tool/plan audits and Gemini were not reached. No assertion weakening, post-failure source fix or paid retry occurred.
+    current_state: The separately authorized safety repair passed five focused Scenario tests, its 28-test suite, two selected Agent snapshot/signed-home tests and ten-file format/guard/strict lint. Private scoped service/client/development homes and non-refreshable Codex access snapshots were exercised by both paid Pi runs. All six captured Pi/service identities reached ESRCH before outer cleanup; development exact-path reaping completed but its PID/start values were not printed. Failed hosts/homes/projects/history/PNGs remain private, snapshots were scrubbed, and an independent kernel-path scan found no survivors under either owned home/host. This resolves the earlier isolation/cleanup gate but not the literal alias incompatibility or full Create/Gemini workflow. Report /private/tmp/mac-apper-create-isolation.gt7sSm/report.md.
+    follow_up: A separately authorized offline-only repair replaces literal equality with validated existing-directory canonical path plus device/inode identity. The focused red reproduced the alias rejection and acceptance of identical nonexistent/unsafe paths; four final focused tests and 179 Agent offline package tests passed after implementation. Root-controlled OS aliases pass while untrusted project/ancestor links and traversal fail on either side. All packaged/native-host entry points were skipped, gates unset, and no Pi startup or live call occurred. The initial broader run reproduced the two historical missing-output-file fixtures; both focused rechecks and the final broader run passed without fixture changes, with no established cause. Two-file formatting/guard/strict lint passed. This is offline audit recovery only, not a paid counter/plan or Gemini pass; prior retained fixtures/evidence are untouched. Report /private/tmp/mac-apper-scope-identity.n56PEv/report.md.
+    live_follow_up: One subsequently authorized counter-only execution passed the repaired exact-directory scope guard with real Pi /private/tmp cwd versus client /tmp project spelling and the required runtime profile. It failed later in independent compiler probes, not scope validation; no plan execution or paid retry occurred. See Isolated counter compiler-probe SDK diagnostic below. Earlier live failures and offline evidence remain historical, not converted to complete workflow passes.
+  - area: Isolated counter compiler-probe SDK diagnostic
+    failure: The single authorized post-scope-fix agentCreateCounterScenario failed after 435 seconds (424.610 outer test, 411.138 hosted). Independent AppModel build passed, but both unchanged standalone swiftc count-layout typechecks failed missing Darwin and Darwin.os.lock with SDK-selection guidance. The probes supply no explicit -sdk/SDKROOT; supported=[] is therefore not evidence of a genuinely unsupported generated presentation API. Independent action assertions and Gemini were not reached.
+    current_state: Existing credential lifetime/private-home preflight, repaired scope/runtime audit, passing authored Swift Testing results, two validated 460x400 PNG/Pi/archive previews, Build/Run and private development CoreData storage checks passed. A nested Test Client failed was followed by a successful Test within normal agent work; its cause is unestablished. No Web/MCP tools were called. Exact Pi/development/Agent/DevTools identities are ESRCH; inner confirmation gated outer cleanup, failed fixtures retained, staged credentials scrubbed and private history/previews archived. No code/prompt/assertion changes, repair/probe rerun, unit suite, plan scenario, paid retry or standalone Gemini review occurred. Report /private/tmp/mac-apper-counter-scope-live.pctZXF/report.md; archive /private/tmp/mac-apper-create-evidence-B6CDEF61-3D4C-4AEA-950C-20AD97444F8A. This verifies live scope compatibility, not independent counter behavior, visual correctness, generated-counter relaunch persistence or full workflow recovery.
+    offline_recovery: The authorized SDK-only repair adds Scenario.SDKCompiler with bounded system xcrun SDK discovery and explicit SDK arguments on the existing standalone Swift 6.4 selection. A small mandatory compile/transitive-import check and actual AppModel import guard share the real counter probe configuration; failure prevents creating the Pi submission task rather than becoming supported=[]. Four focused SDK tests and 31 Scenario offline tests passed (hosted-loader smoke explicitly excluded); final two counter/cleanup regressions and 179 Agent offline tests passed with all six packaged/live/native-host entry points excluded and gates unset. Unset/misleading SDKROOT compile/import checks took about 10 seconds each; injected actual compiler/import failures blocked the startup closure and cleaned private scratch. Unsupported/ambiguous APIs, decoys and wrong-behavior mutants remain rejected. The initial broader Agent run reproduced missing output files in two unchanged runtime fixtures; focused rechecks and the final broader run passed without changes, with cause unestablished. Five-file formatting/guard/strict lint passed. No Pi/live/native-XPC scenario, paid calls, auth/global changes, production edits or retained-fixture deletion occurred. This is offline setup recovery only; earlier live failures remain failures and live workflow recovery is unverified. Report /private/tmp/mac-apper-sdk-fix-report/report.md.
+  - area: Isolated counter nested Preview image delivery
+    failure: One newly authorized counter-only run after the SDK repair failed CreateCounterPreviewEvidence.swift:73 because the first successful nested Preview's corresponding codemode parent delivered only text, without matching forwarded PNG bytes. A later image read/direct Preview occurred in the same normal workflow but cannot retroactively satisfy that earlier call. Exit 1 after 417 seconds; hosted 393.758 seconds. No assertion/prompt/source repair or external paid retry occurred.
+    current_state: Built-in explicit-SDK compile/transitive-import startup preflight passed in 10.021888 seconds with SDKROOT unset and selected CLT macOS 26.2. Private selective credential/lifetime/home gates, exact-directory runtime audit and authored passing Test evidence passed. Journal contains successful Test/Preview/Build/Run results, but the complete Preview audit and later independent AppModel import/count/action, explicit development storage/liveness, production-output and Gemini checks were not reached. Pi/Agent/DevTools identities are independently ESRCH; inner Pi/development confirmation gated outer service reaping, failed fixtures retained and staged credentials scrubbed, with no kernel-path survivors under the new home/host. Development PID/start logging was not reached. Report /private/tmp/mac-apper-counter-sdk-live.7fULB6/report.md; private archive /private/tmp/mac-apper-create-evidence-CD7C0C71-3508-4707-94D2-A0993A1E4E7B. This is live SDK startup-gate evidence only, not full independent SDK or workflow recovery; earlier failures/evidence remain historical.
+    contract_follow_up: A subsequent user-authorized contract change intentionally makes direct and nested Preview text-only PNG path/dimension/metadata responses. The generic generator image capability is retained; DevTools alone omits imageArtifact. Optional inspection belongs to the existing production read tool, preferably using absolute archived reviewPath. The obsolete automatic-image-forwarding audit is removed, while independent PNG/archive identity and other workflow audits remain. This does not retroactively pass the failed live attempt or prove model inspection; no Agent scenario/live retry is authorized in this change. Offline verification and remaining limits are recorded in /private/tmp/mac-apper-preview-path.CD9vlV/report.md.
+  - area: DevTools Preview host cleanup path spelling
+    failure: The first path-only Preview verification's path-content/render/size checks passed, but the new teardown compared Foundation resolvingSymlinksInPath's /var host spelling to kernel /private/var executable paths and silently matched no service. Three new test-owned services remained after host removal; proc_pidpath then returned ENOENT. The selector driver was paused/stopped before further cases; no historical services or retained fixtures were touched.
+    recovery: Only those three newly observed PID/exact ps executable paths were recovered, with immutable kernel microsecond start identities checked against their recorded starts and exact ps comm revalidated before TERM/KILL; all reached ESRCH. Pre-removal kernel-path identity was not captured in those initial attempts, so they are not evidence of successful automatic cleanup. Preview-only teardown now uses Darwin realpath for its expected still-existing host executable, captures/revalidates Scenario.OwnedProcessIdentity and fails closed on a missing service instead of deleting the host. All five final explicitly selected DevTools Preview cases passed, with exact kernel-path/PID/start reaping logged, independent ESRCH checks and removed host/project roots; archives remain retained. Path-content additionally proved installed production read of both returned PNG paths and the archive after project deletion without a Pi session. Evidence /private/tmp/mac-apper-preview-path.CD9vlV/report.md. No generic hosting or production cleanup behavior changed; these offline cases do not establish Agent live recovery or model inspection.
+  - area: Migrated Chat capabilities first live attempt
+    failure: The single authorized chat-capabilities attempt failed ChatModelCases.swift:187:3 because successfulTools lacked mcp__parallel__web_fetch. Actual correlated evidence contains two successful codemode calls and one successful nested web_search, with no fetch call. The assistant stopped normally after search; no provider/tool error, auth blocker or cleanup failure was recorded. This is missing required tool execution, not an observed fetch endpoint failure.
+    current_state: All other seven selected Chat cases passed once, including strict Japan news, same-story follow-up, ordered disconnect/replay with shared parent/child evidence, resume, concurrent isolation and abort/reuse. Profiles independently match openai-codex/gpt-6.1-sol/medium. All ten Pi/eight Agent services were reaped; seven passing hosts removed, failed capabilities host and nine private history archives retained. At the original live-report checkpoint no tests/prompts were changed after this failed attempt and no paid rerun occurred. Fresh spawned production-model/native-XPC/MCP access is verified by actual search/fetch calls in other cases; full raw endpoint inventory/auth mechanism, service-restart replay, GUI and Create/Gemini are not covered. Report /private/tmp/mac-apper-chat-live-preflight.cu2Lc6/report.md; exact commands/status/duration/IDs in its private results.json and per-case logs.
+    follow_up: A later explicitly authorized scenario-only prompt clarification replaced ambiguous "extract its URL" with ordered Parallel MCP web_search/web_fetch through codemode, reading the selected fetched page and deriving the summary from its content rather than search snippets/memory. The new prompt-contract regression failed on the old prompt and passed after clarification; twelve selected no-model prompt/cleanup/evidence/host tests and two-file format/guard/strict lint passed. This verifies authored instructions only, not model compliance or a live recovery. Existing successfulTools, launch/restriction/no-scaffold and cleanup checks are unchanged. No renewed paid authorization, live retry or endpoint probe occurred; the original failed attempt/evidence remain. Report /private/tmp/mac-apper-chat-prompt-fix.FzNxkb/report.md.
+  - area: Scenario typed Test evidence JSON coercion
+    failure: The new offline evidence fixture with status passed and exitCode false incorrectly qualified because JSONSerialization bridges Boolean false to Int zero. The focused toolEvidenceRejectsBooleanExitCodesOffline test failed.
+    recovery: Reject CFBoolean values when reading integer evidence and journal sequences. The focused regression and final twelve selected offline audit/host/cleanup tests passed; negative fixture audits intentionally capture eight expected rejections. Logs /private/tmp/mac-apper-mcp-typed-exit-red.log and /private/tmp/mac-apper-mcp-final-offline.log. This is a test-evidence adapter fix, not a DevTools runtime change.
+  - area: Installed Pi 1.1.0 offline MCP and codemode prerequisite proof
+    failure: >-
+      Task-2 isolated no-model probes established that createMcpExtension(loadConfig) still connects
+      additional extension-registered servers, including dynamic registrations, despite exact tool filters.
+      A fake 401 endpoint left RPC startup without a notification and allowed unrelated prompt acceptance;
+      a throwing session_start hook emitted extension_error but did not reject prompts. Missing explicit
+      extension paths/imports instead exited 1 before acceptance. The HTTP transport delivered a 17 MB JSON
+      result and followed a cross-origin loopback redirect; the resulting child event exceeded the actual
+      Agent parser's 4 MiB record bound. SSE rejected an event exceeding 16777216 bytes.
+    current_state: >-
+      At that prerequisite checkpoint no production integration or transport fix was made. Generated DevTools compatibility probes used
+      synthetic terminal-result replay and a historical real PNG, not fresh XPC rendering or passing Swift
+      tests. Nested generated Preview returned JSON text to scripts and omitted its image from the parent,
+      while the child event retained the image; direct Preview and explicit image(read(PNG)) preserved it.
+      Pi nestedCalls retained pre-hook arguments and statuses, not child result data, while fake MCP wire
+      metadata was normalized by a tool_call hook. A schema-invalid metadata control still reached the
+      fixture server without that hook; advertised schemas are not proof of local input validation.
+    recovery: >-
+      A directional sandbox-exec profile proved loopback HTTP success and non-loopback socket EPERM;
+      the initial broader local-address network exception had allowed a documentation-address connect
+      attempt to time out and was replaced. Fresh proof reruns passed 27 focused Node tests plus standalone
+      Swift 6.4 compilation/execution of the unchanged production PiRPCParser. SDK reload required a retained
+      extension binding (the probe's onError listener) to re-emit session_start; reload/resume then retained
+      Chat restrictions. Report: /private/tmp/mac-apper-parallel-mcp-task2-verification.md.
+  - area: V8 headless counter independent-test API and cleanup limits
+    failure: >-
+      The single authorized task-7 counter run passed agent-authored Swift Testing evidence and typed
+      Test/Preview/Build/Run, then failed compiling unchanged independent assertions. Generated count
+      is exposed at model.state.count, while assertions require model.count; the bounded retained tail
+      omits the primary compiler diagnostic. No independent behavior pass or Gemini review was reached.
+      The minimal host and UUID project were removed, but two recorded test-owned XPC services remained
+      alive with unchanged ps PID/start/path identities and unavailable kernel paths after host deletion.
+      The UUID Core Data store and two preview archives also remained.
+    current_state: >-
+      At task 7 no runtime/scaffold/test fix or paid retry was attempted. This is an observed source/API mismatch,
+      not a persistence-engine failure or established cause of the separate earlier Client failed Build result
+      (the agent subsequently built successfully). Report: /private/tmp/mac-apper-coredata-task7-counter-verification.md.
+      Original-product GUI isolation is separately unverified and was explicitly outside this headless scope;
+      persisted generated-counter state across relaunch was not independently asserted.
+    recovery: >-
+      Freshly authorized scenario-only fix compiler-probes exactly one built signed-integer model.count/model.state.count
+      API and keeps all independent action/value assertions. Offline red reproduced missing count compiler errors;
+      green compiled/executed both layouts and retained Core Data source in an owned copy. Wrong increments,
+      clamped negatives and broken reset compile but fail assertions; ambiguous/unsupported APIs and decoys are rejected.
+      Three selected formatted offline cases passed, including real exact-path service reaping with an unrelated
+      same-name process preserved. Counter outer teardown now reuses scaffold TERM/KILL/reaping before host removal.
+      Prior services 68462/68493 matched recorded ps PID/start/comm and original kernel paths despite removed files;
+      kernel start seconds matched recorded dates and microsecond start identities were revalidated before signals.
+      Both required bounded TERM/KILL and were reaped; original stores/previews/evidence were preserved.
+      Exactly one new authorized counter-only live execution then passed (495 seconds outer, 480 hosted), including
+      model.state.count independent behavior, authored passing tests, PNG/Pi/archive identity, development liveness and
+      one integrated Gemini review passing all three criteria. New Agent/DevTools services required identity-revalidated
+      TERM/KILL and were reaped before host removal; Pi/development exited and project was removed. No paid retry or plan
+      variant ran. Generated-counter relaunch persistence remains independently unverified. Report:
+      /private/tmp/mac-apper-coredata-counter-fix-verification.md; logs /private/tmp/mac-apper-counter-fix.Pezunh/.
+  - area: Standalone Swift 6.4 selection with Command Line Tools
+    failure: After installing the official signed Swift 6.4.0 toolchain in ~/Library/Developer/Toolchains, xcrun still resolved CLT Swift 6.2.3 with TOOLCHAINS set to its exact bundle identifier, --toolchain swift, and --toolchain set to the installed path.
+    recovery: >-
+      Direct invocation of the installed usr/bin/swift and swiftc selects Swift 6.4. A Swift 6
+      warnings-as-errors framework probe imported Core Data, SwiftUI, AppKit, and Observation
+      and ran successfully against the existing macOS 26.2 SDK. PATH or TOOLCHAINS alone is not
+      sufficient evidence. Production and preparation now select standalone executables explicitly;
+      latest Scenario 24-test and DevTools 52-test suites passed after environment/preflight fixes.
+      Logs: /private/tmp/mac-apper-task2-scenario-suite.log and /private/tmp/mac-apper-task2-devtools-suite.log.
+      Earlier packaged scenarios do not verify those later fixes. The later task-5 signed rebuild/static inspection passed. Task 6 reproduced/fixed service-local resource placement and passed rebuilt artifact, scoped no-model native XPC resource and GUI startup checks (docs/verification-archive.md Swift 6.4 upgrade status); paid workflows remain unverified.
+  - area: Swift Build Agent XPC resource placement
+    failure: No-model prepareCreateProject through the native client/model crashed the deployed release Agent in resource_bundle_accessor.swift initializing Bundle.module. Its bundle existed only in host Contents/Resources; the service-local generated accessor could not find it. Task-5 static resource/signature checks had passed without exercising this lookup.
+    recovery: Retain the host copy and additionally stage Agent_AgentApplication.bundle under AgentXPCService.xpc/Contents/Resources, including minimal Agent test-host inputs. A focused packaging assertion failed before the fix; no-model debug and rebuilt release-service scenarios then passed library reads, project preparation and byte comparisons of all three scaffold resources. Rebuilt signatures/artifacts and original-product GUI startup also passed. Evidence is /private/tmp/mac-apper-task6-verification.md and /private/tmp/mac-apper-task6-resource-crash.ips; no runtime API or persistence change was needed.
+  - area: Swift 6.4 default Swift Build plugin planning
+    failure: DevTools tests with standalone Swift 6.4.0 failed during build planning because out/Products/Debug/OpenXPCGenerator did not exist. The failure reproduced in a new private scratch directory, so retained build state alone does not explain it.
+    recovery: An explicit --build-system native run compiled pinned swift-testing 6.2.3 and passed all 47 DevTools unit/contract tests. Native is deprecated in Swift 6.4; this is a diagnostic workaround, not verified adoption of the default Swift Build engine. DevTools production build/test/preview subprocesses still used xcrun and the old CLT toolchain during that suite. Logs are /private/tmp/mac-apper-swift640-devtools-tests.log, /private/tmp/mac-apper-swift640-devtools-clean.log, and /private/tmp/mac-apper-swift640-devtools-native.log.
+    current_state: The plugin no longer executes the generator during planning; it declares Swift and TypeScript outputs and writes empty TypeScript for non-agent targets. Default Swift Build now passes the generator's 26 tests and consuming package suites, plus earlier packaged DevTools Test/Preview/Build-Run/Plan scenarios. See docs/verification-archive.md for logs and the distinction from later preflight fixes; native is not the current workaround.
+  - area: Swift 6.4 preparation environment and executable preflight
+    failure: Focused tests showed non-Swift preparation resolved Swift or overwrote inherited environment, swiftc preparation was not redirected, and partial DevTools toolchain fixtures accepted missing swift/swiftc or gave generic launch diagnostics.
+    recovery: Redirect only xcrun swift/swiftc preparation and preflight both production tools with required-version/path errors and no CLT fallback. Three preparation and two preflight/result tests failed before fixes and passed afterward; Scenario 24 and DevTools 52 tests passed. Exact commands and red/green logs are in /private/tmp/mac-apper-task2-verification.md.
+  - area: VisionCLI PNG completeness
+    failure: A PNG fixture with its final 20 bytes removed still produced an ImageIO image and complete source/index statuses, so the first truncation rejection test failed.
+    recovery: Validate bounded PNG chunk framing through a terminal IEND in addition to ImageIO decoding/status; require JPEG start/end markers as well. The focused truncation case and the five-test VisionCLI suite passed without live API calls.
+  - area: Nonlinked macOS temporary file fixtures
+    failure: VisionCLI's credential fixture used Foundation's temporaryDirectory and resolvingSymlinksInPath, which still returned the linked /var prefix; the descriptor-relative no-follow reader correctly rejected it. A probe also shortened /private/tmp to /tmp.
+    recovery: Construct owned fixture paths directly under /private/tmp without Foundation symlink resolution. Credential precedence and private-permission tests then passed while retaining link rejection.
+  - area: Physical temporary fixture directory URLs
+    failure: Repository .tmp migration exposed invalidScope and missing-history expectations in Agent fixtures. An independent Foundation probe showed a URL constructed before directory creation kept hasDirectoryPath=false, while reconstruction from its existing path produced true; resolvingSymlinksInPath preserved the difference on this physical path.
+    recovery: >-
+      Mark fixture directories explicitly and round-trip prepared project path strings in the local test adapter as the production wire adapter does.
+      All 28 selected integration/session checks passed without changing production validators or durable storage.
+      Evidence: .tmp/tmp-migration-url-probe.log and .tmp/tmp-migration-directory-urls-{red,final-green}.log.
+      This does not establish a general Foundation URL canonicalization contract.
+  - area: Naming compile bound during temporary migration verification
+    failure: The authorized serial Agent suite hit the existing 30-second/1-MiB SDK compiler bound in scaffoldNamingExecutesPackagedBundleResolution. The test failed after 30.166 seconds; the cause is not established.
+    current_state: >-
+      No timeout, naming behavior or compiler safety bound was changed, and no retry of this unrelated test occurred.
+      Full Agent acceptance remains blocked.
+      Original evidence: .tmp/tmp-migration-final-34c53369286f4785b75d7d79414f3481/agent.log.
+      Passing selected migration regressions do not convert this suite into a pass.
+  - area: DevTools plan
+    failure: update_tasks reported success without storing a plan or crossing XPC.
+    recovery: Route plan through DevTools XPC; validate mutations and return the complete plan.
+  - area: Agent plan display
+    failure: Publishing task state from tool-start arguments could show changes that XPC rejected.
+    recovery: Update client tasks from the successful tool-result snapshot instead.
+  - area: XPC handshake
+    failure: Adding plan to service capabilities broke the client handshake allowlist.
+    recovery: Update capability validation alongside the service contract.
+  - area: Provider scenarios
+    failure: Testing DevTools inside Mac Apper unnecessarily rebuilt the whole product.
+    recovery: Package each provider app and its XPC service independently in the Scenario plugin.
+    current_state: The old staging plugin was retired; each project-owned provider collection builds its own package, assembles/signs a disposable XPC host in setup, and removes that owned host in teardown. Provider endpoint tests no longer build Mac Apper.app.
+  - area: SwiftPM command plugins
+    failure: Nested swift build failed with sandbox_apply errors.
+    recovery: Invoke the plugin with --disable-sandbox; pass --allow-writing-to-package-directory for dist/scenarios staging.
+    current_state: The scenario command plugin and standalone runner are retired. Package-local Swift tests supply dependencies to Scenario's disposable signed hosts; ordinary filtered swift test commands run them without command-plugin sandbox or package-write flags.
+  - area: Packaged scenario sandboxing
+    failure: A provider scenario run without --disable-sandbox reported a Web XPC handshake failure.
+    recovery: Rerun packaged XPC scenarios with swift package --disable-sandbox scenario run; the provider collection then passed.
+    current_state: This recovery describes the retired plugin. Current package-local scenario tests stage their own signed hosts; see Agent/README.md and apps/built-in/dev-tools/README.md for supported filtered swift test commands.
+  - area: Scenario XPC identity
+    failure: A reused service identifier could connect a scenario to an older bundled service; subscribe was rejected as unknown.
+    recovery: Give each disposable Agent scenario host a unique bundle and service identifier.
+  - area: Clean-scratch tests
+    failure: AgentBuildTool tests assumed Agent/.build even when SwiftPM used --scratch-path.
+    recovery: Locate AgentBuildTool beside Bundle.module.bundleURL in the active build products.
+  - area: Pi session file discovery
+    failure: Looking for a session file as <session-id>.jsonl failed because Pi prefixes the filename with a timestamp.
+    recovery: Locate the matching session file by ID or use PI_SESSION_FILE when available; do not assume the ID is the whole filename.
+  - area: Session replay
+    failure: A bounded in-memory event buffer could not replay all events after a long disconnect.
+    recovery: Persist sequenced Agent events and page history; subscribe before replaying to the returned cursor.
+  - area: Journal recovery
+    failure: An incomplete trailing JSONL record or whole-file reads could break replay or exhaust memory.
+    recovery: Scan bounded chunks, validate sequences, and truncate only an incomplete final record on recovery.
+  - area: Client lifecycle
+    failure: Client shutdown and navigation stopped Pi when the intent was only to disconnect.
+    recovery: Detach the XPC subscription; reserve abort and stop for explicit cancellation.
+  - area: Conversation replay
+    failure: Replaying old text deltas duplicated messages already loaded from Pi JSONL.
+    recovery: Skip old text replay when the workspace has loaded that conversation; attach to live push on open.
+  - area: Web scenario error envelopes
+    failure: The boundary check rejected a valid failure response because JSONEncoder omitted the nil optional payload field rather than encoding null.
+    recovery: Accept an absent or null payload only for an identified failure envelope; require its error code and matching request and project IDs.
+  - area: DevTools package-local plan scenario
+    failure: Lowercasing the XPC envelope's project UUID made valid plan responses fail identity checks even though the service returned operationFailed only for invalid requests.
+    recovery: Keep UUID.uuidString in the wire envelope and response comparison; use lowercase separately for the project directory and service-owned plan key.
+  - area: Declarative Web scenario
+    failure: Extracting a fixed URL did not verify search-to-extract chaining.
+    recovery: Capture results.0.url from search JSON and substitute it into extract.
+    current_state: This describes the retired standalone Web collection. Its active source/package/scenarios were removed during the MCP migration; historical build artifacts and evidence are preserved. Current Agent Chat scenarios require matched actual MCP search/fetch evidence.
+  - area: Disk usage
+    failure: Repeated clean SwiftPM builds consumed several GiB of temporary space.
+    recovery: Remove only scratch directories created by the current run; retain dist and unrelated artifacts.
+  - area: Guard formatter traversal
+    failure: Recursive Swift source enumeration included nested .build directories and reported over a thousand generated files as needing formatting.
+    recovery: Skip build, generated, and linked directories before descending; format only authored Swift files and preserve comments and complex condition interiors.
+  - area: SwiftPM local package source discovery
+    failure: Web's dependency build initially omitted a newly added OpenXPCGenerator source file and reported its type missing, despite the generator package testing successfully.
+    recovery: Rebuild the consuming Web target with swift build --package-path apps/built-in/web --target WebApplication -v to refresh SwiftPM's dependency source list; the Web suite then passed.
+  - area: SwiftPM formatter tests
+    failure: Reusing the root .build after adding a direct SwiftSyntax dependency caused a linker error in TestingMacros.
+    recovery: Use ordinary swift test for normal runs; if cached artifacts cause linker errors, rerun the affected package through clean-test with an isolated scratch directory.
+  - area: Client-owned model split
+    failure: Moving client presentation types out of AgentXPC exposed ambiguous same-named server and client values in native-client and integration-test imports, and the service store no longer conformed to the client store interface.
+    recovery: Qualify client-owned values at mixed-module boundaries and convert service-store results in a test-only adapter; keep the generated typed XPC client in AgentMacosClientModel and legacy domain translation in AgentMacosClient until the service migrates.
+  - area: Native client target consolidation
+    failure: Moving an @main SwiftUI entry point into the executable target while retaining the filename main.swift made Swift treat it as top-level code and reject @main.
+    recovery: Use a non-main.swift filename for an @main type, or use a top-level bootstrap instead when the file must be named main.swift.
+  - area: File discovery and edits
+    failure: Reading guessed file paths or using non-unique or stale edit text produced missing-file and edit-match errors.
+    recovery: Check paths with rg --files or ls, read the target immediately before editing, and make oldText unique; reread after a mismatch.
+  - area: Shell diagnostics
+    failure: An empty rg search or a failed step in a compound command was mistaken for a broader failure or success.
+    recovery: Distinguish rg exit 1 for no matches from command errors; inspect which pipeline step failed and retain its diagnostic.
+  - area: Test verification
+    failure: Treating a source change or a successful intermediate command as proof of recovery left failures unverified.
+    recovery: Rerun the focused test and affected package suite with swift test --package-path; use isolated clean scratch builds when cached artifacts cause linker errors, and report unverified outcomes honestly.
+  - area: SwiftPM plugin integration
+    failure: Missing plugin files, overlapping source paths, unavailable binary tools, and denied package-write permission interrupted plugin builds.
+    recovery: Add source paths and target declarations together, verify declared tool access, avoid overlapping sources, and grant --allow-writing-to-package-directory when required.
+  - area: Formatting and linting
+    failure: Formatting changes could pass an individual command while guard-format tests, format --check, or strict lint still failed.
+    recovery: Run the focused formatter tests, format --check, and strict lint after related changes; fix and rerun each failing check.
+  - area: Packaged scenario verification
+    failure: Running a scenario without its bound request file or trusting a source-tree check did not establish that the packaged XPC path worked.
+    recovery: Bind the scenario file explicitly, rebuild the final app, exercise packaged provider and Agent XPC paths, and verify packaged extensions, signing, and Info.plist.
+    current_state: The .xpc request files, ScenarioRunner, and scenario command plugin are retired. Package-local tests exercise real services in minimal scenario-specific signed hosts. Agent's eight cases drive the MacOS client model without a dedicated client or full product app prerequisite; release app verification is separate.
+  - area: Reusable scenario runner
+    failure: A prebuilt ScenarioRunner can be absent or stale after changes to project-specific Swift cases or dependencies.
+    recovery: Run swift build --product ScenarioRunner before invoking swift package --disable-sandbox scenario run collection|case NAME; the command plugin intentionally never builds the runner and only checks that the executable exists.
+    current_state: Both runner and plugin are retired; this historical recovery is not a current command. Package-local filtered Swift tests build their test dependencies and own scenario setup.
+  - area: Scenario command discovery
+    failure: Package.swift exposed only the scenario verb; --help failed and available collection/case names were buried in project Swift files.
+    recovery: Provide swift package scenario --help without a built runner, and list collections|cases through a built runner without executing collection setup.
+    current_state: The command plugin is retired. ScenarioRegistry exposes collectionNames, caseNames, runCollection, and runCase; package-local tests provide the supported entry points.
+  - area: Nested SwiftPM help tests
+    failure: A root swift test suite invoking swift package bundle --help as a subprocess did not finish within 10 minutes.
+    recovery: Test command-plugin help branches without nested SwiftPM; exercise the actual help commands outside the root test process.
+  - area: Bundle cleanup safety
+    failure: unbundle app removed an owned bundle while one of its executables was running.
+    recovery: Check for running executables under the owned bundle before removal and reject in-use bundles with bundleInUse.
+  - area: DevTools process cancellation test
+    failure: During a concurrent package-suite run, cancellingBuildCleansResistantDescendantAfterLeaderExit received cleanupFailed instead of the expected CancellationError.
+    recovery: The focused test and the complete DevTools suite both passed when rerun separately; the cause of the initial mismatch was not established.
+    current_state: The same cleanupFailed mismatch recurred during country-news scenario verification in an isolated DevTools suite; the focused retry and a complete suite rerun again passed without DevTools source changes. It recurred during the Swift 6.4 upgrade (/private/tmp/mac-apper-swift64-devtools-suite.log); task-1 focused/full retries passed, and the latest 52-test task-2 suite passed cancellation cleanup. Cause remains unknown; retries do not establish a fix.
+  - area: Agent deployed-model argv fixture
+    failure: The first task-6 Agent suite failed deployedAgentPinsRequestedModelAndThinking because its test-owned arguments.txt was missing; the remaining package targets passed.
+    recovery: The focused test and full Agent suite passed on retry without related source changes. Cause was not established. Logs are /private/tmp/mac-apper-task6-agent-suite.log, /private/tmp/mac-apper-task6-agent-focused-retry.log and /private/tmp/mac-apper-task6-agent-suite-retry.log.
+  - area: Agent provider-client environment test
+    failure: During the AgentApplication controller migration, the full Agent suite first failed in createAppRuntimePassesProviderTerminalClientsAndBoundIDsToItsAgent because its temporary xpc-client-environment.txt was absent.
+    recovery: The focused test and a second complete Agent suite both passed without source changes; the cause of the first failure was not established.
+    current_state: During Core Data task 3, two default-parallel Agent suites reproduced the missing file. The focused retry passed, and the full --no-parallel suite passed all 158 enabled tests without related source changes. This is verification recovery, not a fixture fix or established cause; logs are /private/tmp/mac-apper-coredata-task3-agent-suite{,-final,-serial}.log.
+  - area: SwiftPM removed OpenXPC schema resources
+    failure: After replacing five versioned OpenXPC schema resources with one unversioned schema, Agent's retained SwiftPM build plan still tried to copy the removed openxpc-v1.schema.json.
+    recovery: The isolated clean-test Agent suite passed; rebuilding AgentApplication with swift build --package-path Agent --target AgentApplication -v refreshed its retained build plan, and the ordinary Agent suite then passed. The root scratch still referenced removed v5 resources even with -v; both root scenario client targets built using one verified private /private/tmp scratch directory, which was removed afterward.
+  - area: SwiftPM removed DevTools plugin cache
+    failure: Root swift test reused a cached build plan referencing the deleted DevToolsBuildPlugin source after that plugin was retired.
+    recovery: The root clean-test plugin rebuilt in a private scratch directory and passed all root unit tests; the existing root .build cache remains stale.
+  - area: Removed Scenario command plugin cache
+    failure: After deleting ScenarioPlugin, the retained DevTools swift test build plan still tried to compile Scenario/Plugins/ScenarioPlugin/plugin.swift.
+    recovery: Run the affected suites in verified private scratch directories and set DEV_TOOLS_SCENARIO_PRODUCTS or WEB_SCENARIO_PRODUCTS to the scratch debug directory. Both complete provider suites, including signed XPC scenarios, passed; the retained provider caches were not cleaned.
+  - area: Deployed Chat lifecycle scenario evidence
+    failure: The first seven-case run passed news, follow-up, resume, and abort/reuse but failed replay process identification, isolation rejection handling, and a model-reported capability list.
+    recovery: Preserve multiline process arguments with unlimited-width ps output, compare the captured Pi PID/start time on reattachment instead of requiring later argv attribution, expect the generated client's remoteFailure for cross-session service rejection, and assert actual Web-only launch arguments plus successful tool events instead of model self-report. Focused retries of the three cases passed. The final complete seven-case live collection also passed, with every owned session auditing openai-codex/gpt-6.1-sol/medium.
+  - area: Swift task-group actor closure checking
+    failure: The scenario client's execution-deadline task group failed to compile when its addTask closure was explicitly annotated @MainActor, reporting a region-based isolation checker pattern it could not check.
+    recovery: Leave the task-group closure unannotated and await the existing MainActor-isolated case runner. The complete live collection and Agent suite compiled and passed with cleanup outside the canceled task group.
+  - area: SwiftPM test-bundle hosting
+    failure: The macOS AgentPackageTests artifact is a Mach-O bundle, not an executable; executing it directly failed, and passing its .xctest directory to the loader failed dlopen.
+    recovery: Stage the Mach-O file with the existing toolchain swiftpm-testing-helper, pass --test-bundle-path to that file and --testing-library swift-testing, and filter the scenario test. The hosted test can directly drive the native client model without a new Agent client target.
+  - area: Minimal test-host signing
+    failure: The first minimal Agent/Web test host failed signing or verification with the SwiftPM resource bundle placed at the service bundle root.
+    recovery: Stage shared resources under the host's Contents/Resources and use normal bundle-derived signing identifiers. Focused host tests and real model-driven scenarios then passed; the first failure did not retain a specific codesign diagnostic.
+  - area: Model-driven lifecycle process evidence
+    failure: The first eight-case model-driven collection passed five cases but replay, resume, and abort/reuse failed with wrongScope when trying to discover Pi after prompt/tool activity.
+    recovery: Capture launch argv and PID/start time while WorkspaceSession is still starting, then validate later identity through cached PID/start time. All three focused lifecycle retries and the final complete eight-case collection passed without production-code changes.
+  - area: Create counter scenario lifecycle
+    failure: The first counter case treated a recoverable plan validation error as terminal; the retry then timed out waiting for WorkspaceSession.submit to finish after the agent had already settled and launched the app.
+    recovery: Wait for the settled presentation state while allowing tool errors during active work; await the submission task only after stopping the runtime and detaching. The final live counter scenario passed with generated tests and independent behavioral assertions.
+  - area: Create counter with simplified user prompt
+    failure: The live counter rerun using the feature-only prompt built and launched the development app, but both Preview attempts returned preview_in_production. The agent reported the blockage and finished without an image; the ordered Preview/Build/Run assertion failed before independent model tests ran.
+    current_state: No preview PNG was generated. Teardown removed the owned project and stopped its runtime/app. The exact cause of the preview rejection was not established; the earlier passing counter run supplied explicit preview-factory mechanics in the user prompt.
+  - area: Create counter tool-order assertion
+    failure: The live feature-only counter run with improved Preview descriptions successfully built, rendered an 800x600 negative-state PNG, and launched, but the scenario rejected Build → Preview → Run because its assertion required Preview → Build → Run. Independent model checks were not reached.
+    current_state: PNG bytes matched the saved Pi image result, OCR recognized -3 and all three controls, and the archived PNG/project were retained. Building before Preview is not prohibited by the user prompt; the scenario now requires successful tool usage independently without cross-tool ordering constraints. The subsequent app-only live run exercised the order-independent assertions and failed instead on isolated-digit OCR. Successful first-attempt rendering does not establish recovery from the earlier Preview failure.
+  - area: Counter snapshot OCR false negative
+    failure: The app-only live counter run successfully used Build, Preview, and Run and returned a matching retained 460x420 PNG, but Vision OCR omitted the large standalone zero. The scenario rejected the snapshot's integer-count check even though direct image inspection showed zero and all three controls.
+    current_state: Preview usage came from system/tool instructions without a user Preview request. Tool success and matching image bytes were verified; independent model tests and the post-completion process check were not reached. The retained project and PNG remain available. OCR recognition of an isolated digit is not a reliable gate for visible counter state in this fixture. Vision/OCR was removed from the scenario; ImageIO PNG decoding, dimensions, image-byte matching, and archive checks remain. A subsequent standalone VisionCLI/Gemini review recognized the zero and passed three visual criteria on this retained PNG. The subsequent full integrated VisionCLI-enhanced live counter case passed in 318 seconds, including all three Gemini criteria, generated and independent model tests, process checks, and runtime/app cleanup. The new 460x390 PNG and project 80f884a5-8bb4-4907-8789-619ae5ae26b0 were retained; /private/tmp/mac-apper-create-vision-live.log records the run. This establishes recovery from the OCR gate for a positive fixture, not calibrated vision accuracy.
+  - area: Create investigation provider failure
+    failure: The retention-enabled counter retry ended during scaffold inspection with assistant stopReason error and Codex error "Our servers are currently overloaded. Please try again later." The client nevertheless reported Completed, then failed the missing Preview/Build/Run assertion.
+    current_state: PiRPCProtocol ignores message_end provider errors and maps agent_end/agent_settled to settled; AppModel marks settled as Completed unless a separate failure event was received. No counter implementation or Preview call occurred in this retry, so it did not reproduce the earlier preview_in_production failure. The owned project was retained for diagnosis while its runtime was stopped.
+  - area: Create plan arguments
+    failure: The counter agent initially sent tasks with add_plan, which the plan tool schema rejects.
+    recovery: On the completed counter run the agent recovered by calling add_plan without tasks, then add_tasks, and completed build and run successfully.
+  - area: Authored SwiftUI preview rendering
+    failure: A toolchain SwiftParser interpreter approach could not import SwiftParser despite installed dylibs. Compiler AST discovery then reported duplicate preview declarations when the primary file was repeated through /var versus /private/var aliases. Setting accessibilityReduceMotion through environment also failed because that key is read-only.
+    recovery: Use bounded compiler JSON AST calls without a new dependency, canonicalize the primary-file comparison, and disable animations through a transaction. Focused real-rendering tests and the 36-test DevTools unit suite passed, including injected-state pixels and factory rejection.
+  - area: Multiline Preview tool instructions
+    failure: Adding a fenced Swift example to Preview's schema-owned description failed generation with invalid tool metadata because descriptions were limited to 1024 characters and rejected every control character, including line breaks.
+    recovery: Allow bounded 1–4096-character descriptions with LF line breaks while rejecting other control characters; retain escaped generated TypeScript strings. The 26-test generator suite, 40-test DevTools unit/contract suite, and packaged factory/error-image cases passed.
+  - area: Preview image RPC framing
+    failure: A focused parser test carrying a 2 MiB base64 image failed with recordTooLarge under the old 1 MiB default frame bound.
+    recovery: Raise the bounded record allowance to 4 MiB, retain oversize rejection, and publish only tool text to presentation events. The focused image-framing test and the complete 152-test Agent suite passed.
+  - area: Swift Testing scenario selectors
+    failure: An end-anchored Create plan filter matched zero tests in SwiftPM; adding literal parentheses matched SwiftPM's listed name but still selected zero tests in the packaged Swift test loader. The hosted-start assertion correctly rejected that empty run.
+    recovery: Use the scenario name without an end anchor for SwiftPM and the established module/name prefix in the packaged loader, retaining the explicit started-test assertion. The selected full Create plan case then ran and passed in 320 seconds.
+  - area: SwiftData scaffold verification with Command Line Tools
+    failure: A fresh generated-package test using a real SwiftData @Model entity failed compilation with SwiftDataMacros plugin not found. The installed Apple Swift 6.2.3 Command Line Tools has SwiftData frameworks but only Observation/Swift/Testing macro plugins, and no Xcode toolchain is installed.
+    recovery: At the historical v7 checkpoint, keep SwiftData composition and explicit model-owned saving; do not substitute another storage engine or hand-write macro expansions. Always-run generated-package checks verify empty-schema memory/disk setup, errors/retry, and presentation. Real entity isolation/reload/deletion/rollback tests remain opt-in and unverified until a compatible toolchain is selected. The first authorized scaffold-v7 live counter rerun confirmed this affects Create too; the agent added a persistent @Model counter, both Test calls failed, Preview failed compilation, and the passing-Test guard rejected the run. Run separately returned Client failed, without establishing its cause. The owned project was removed; the plan variant was held. Log is /private/tmp/mac-apper-counter-v7-live.log. No compatible standalone SwiftData entity path was verified at that checkpoint; this is historical v7 evidence, not the current no-Xcode verification gate.
+    current_state: Authorized task-3 scaffold v8 replaces only new-project persistence with programmatic Core Data. Always-run fresh-scaffold typed-entity checks pass under standalone Swift 6.4 strict concurrency/warnings-as-errors and CLT 26.2, including fresh-process SQLite reopen/deletion. The prior recovery described v7, not active new-project guidance. Task-4 active guidance/fixture alignment is recorded in /private/tmp/mac-apper-coredata-task4-verification.md; task-5 fresh no-model packaged Test/Preview/Build/Run and fixture-home persistence passed (/private/tmp/mac-apper-coredata-task5-verification.md); task-6 signed artifact/resources, deployed v8 preparation and protected-production default-home relaunch passed (/private/tmp/mac-apper-coredata-task6-verification.md). Original-product GUI isolation/smoke remains blocked. Task-3 behavior evidence is /private/tmp/mac-apper-coredata-task3-verification.md.
+  - area: Isolated-home scaffold integration harness
+    failure: >-
+      Task-5 scenario-only trials first miskeyed source snapshots across /tmp versus /private/tmp aliases,
+      then production DevTools correctly rejected the isolated home's absent standalone compiler. A later
+      helper invocation misused the JSONL-only XPCClientAdapter for ordinary compiler commands. Finally
+      the process assertion ran before the service monitor reaped a terminated development child.
+    recovery: >-
+      Canonicalize snapshot/path identity, link only the installed compiler into the private owned home,
+      use a bounded foreground Process helper for non-XPC commands, and wait on kill(pid, 0) until ESRCH
+      instead of stopping when proc_pidinfo disappears. Production routing, payload bounds and cleanup
+      assertions are unchanged. The formatted selected scenario passed Test/Preview/Build/Run and four
+      fresh persistence helpers; logs /private/tmp/mac-apper-coredata-task5-{first,second,third,fourth,green}.log.
+      Cleanup preflight then found launchd-owned XPC services still alive after host removal; TERM-only
+      cleanup failed. The scenario now completes requests/owned development-child teardown, revalidates exact
+      service kernel PID/path/start identity before bounded TERM/KILL escalation, waits for ESRCH, and only then
+      removes hosts. Final selected verification including both service cleanups passed in 198 seconds, log
+      /private/tmp/mac-apper-coredata-task5-final-green.log. Earlier unlinked service paths had no proc_pidpath;
+      scoped diagnostic cleanup used exact recorded ps comm plus rechecked start time and preserved all logs.
+      These are test-harness recoveries, not an unrelated fixture-flake fix or production relaunch evidence.
+  - area: SwiftData consolidated-plugin workaround
+    failure: >-
+      Parallel research found an Apple forum workaround for an Xcode 15 beta which loaded
+      libSwiftMacros.dylib instead of libSwiftDataMacros.dylib. Explicitly loading the installed
+      CLT 26.2 library still failed a minimal Swift 6 @Model typecheck with SwiftDataMacros not found.
+      The installed CLT executable and SDK package receipts list no SwiftDataMacros entry.
+    recovery: >-
+      Treat the old beta workaround as inapplicable to this tested installation, not proof that
+      every standalone distribution lacks SwiftData support. No alternate standalone plugin
+      distribution was verified and no storage switch was made. Probe log is
+      /private/tmp/mac-apper-swiftdata-libswiftmacros-probe.log; research JSON is under
+      /private/tmp/mac-apper-swiftdata-no-xcode-*.json.
+  - area: DevTools package-test scenario fixture
+    failure: The first real packaged Test-tool fixture failed because Command Line Tools cannot import XCTest. Switching to pinned Swift Testing then exposed the fixture's missing macOS deployment target, defaulting below Testing's minimum.
+    recovery: Use Swift Testing 6.2.3 and an explicit macOS 14 target, matching the production scaffold. The two-target packaged case then passed its real pass/assertion-failure/compilation-failure/recovery/scope/cleanup checks. Both fixture failures were correctly returned as failed SwiftPM results rather than false passes.
+known_limits:
+  - Authorized four-Create-case preflight (2026-10-10) held counter and plan before startup: AgentChatScenarioInputs uses original Agent/DevTools service plists with no scoped HOME/CFFIXED_USER_HOME; PackagedTestHost changes identifiers only. Create cleanup lacks independently captured exact Pi kernel-path/PID/start and ESRCH confirmation before project deletion, and outer host removal is unconditional on successful inner cleanup. This is a source-inspected isolation/cleanup gate, not an observed new leak or paid failure. Resource and fresh scaffold/DevTools cases passed once with their explicit private service homes and exact-owned reaping; all three signed hosts/both homes were removed. No fixes, paid calls or retries occurred. Report /private/tmp/mac-apper-create-four.Aowzht/report.md; historical live passes do not establish this stricter prerequisite. A subsequently authorized repair and two failed live attempts exercised private homes and confirmed owned cleanup; see Isolated Create literal runtime scope audit above. The initial blocked report remains historical evidence.
+  - Migrated Chat live preflight found CountryNewsScenarioTests unconditionally runs service reaping/host removal in its outer defer even when hosted case teardown fails. ChatModelSessions collapses cleanup errors to cleanupFailed; ChatModelSession removes session/journal files after runtime.stop without independent exact Pi kernel-path/PID/start identity and ESRCH reaping checks. PiRPCProcess.stop uses its owned Process and bounded TERM/KILL, but has no post-KILL reaping poll. All eight newly authorized Chat cases were held before Pi startup rather than risking host removal with a surviving owned child; no runtime leak, auth failure or endpoint result was observed. Only the stale replay completion labels were corrected and selected offline evidence tests passed. Report /private/tmp/mac-apper-chat-live-preflight.cu2Lc6/report.md. Subsequent explicit authorization permitted a scenario-only repair: captured kernel identities are revalidated before signals, bounded TERM/KILL reaping precedes deletion, owned histories are privately archived, and failed hosts are retained with outer service reaping allowed only after inner cleanup confirmation. Three new cleanup tests first failed compilation for absent helpers; eleven selected offline cleanup/evidence/host tests passed after implementation, including unrelated same-binary child preservation and propagated ordering/retention failures. Changed-file format/guard/strict lint passed. This resolves the source-inspected gate without changing production runtime/transport/retries; live outcomes are recorded separately.
+  - Web live collection preflight found its teardown delegates directly to PackagedXPCHost.remove(), which removes the signed host directory without identifying/reaping the owned XPC service first. The standalone Swift 6.4 verification requiring cleanup before path removal was held without executing any of web-search-extract, web-boundary or web-search-options. CLI 0.9.3 and local credential presence do not establish recovery from earlier reported exhausted Parallel credits; no quota/auth network probe or paid request was made. This is a source-inspected cleanup limit, not a newly observed runtime leak or live API failure. Report /private/tmp/mac-apper-web-swift64-scenarios-verification.md.
+  - Current original-product GUI automatically refreshes workspace data through its Agent XPC service. The inspected signed service plist has no scoped HOME/CFFIXED_USER_HOME; GUI-only environment overrides do not establish launchd service isolation. Core Data task 6 therefore did not launch the original GUI or claim historical startup evidence proves service-home isolation. Deployed v8 preparation used an isolated re-signed minimal host; generated production-path persistence used fixture-only default-home refusal checks before writes. Report /private/tmp/mac-apper-coredata-task6-verification.md.
+  - Swift compiler JSON AST dumping is not a stable public format. The preview discovery JSON AST adapter has been exercised with CLT Apple Swift 6.2.3 and standalone Swift 6.4.0 real rendering/packaged Preview cases (before the latest preflight fixes); incompatible output fails discovery rather than guessing a factory. Counter textual parse evidence additionally has an offline Swift 6.4 smoke fixture; the later task-7 live counter passed the authored-test parse audit before failing independent compilation.
+  - The full VisionCLI-enhanced Create counter case passed for one positive screenshot, not calibrated accuracy or negative/uncertain live coverage. Button-click interactions, the agent's visual judgment, and production packaging remain outside coverage. The passing integrated run did not create a production output directory.
+  - UI opening an active session reads Pi history before subscribing; reconcile that snapshot with the journal to cover intervening deltas.
+  - Older Pi sessions have no retroactive Agent tool-event journal until new activity is recorded.
+  - The current Pi conversation loader rejects files over 16 MiB or combined message text over 4 MiB; paged UI loading remains to be implemented.

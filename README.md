@@ -9,9 +9,62 @@ Mac Apper ships with two agents: **Chat** and **Create**. Chat is a general-purp
 - macOS 14+, Apple Command Line Tools with an installed macOS SDK and Git, and standalone **Swift 6.4.0**.
   - Xcode itself is not required.
   - Invoke the standalone driver explicitly: `xcrun swift` or an inherited PATH can still select CLT Swift 6.2.3. Use default Swift Build, not `--build-system native`; swift-testing remains pinned to 6.2.3.
+- **Node.js 22 or newer** with npm for Pi. Pi requires at least **22.19.0** within the Node.js 22 release line.
 - A local authenticated Pi CLI for Chat/Create; the deployed Agent selects `openai-codex/gpt-6.1-sol` with medium thinking. Parallel access is needed for web tools.
   - Pi discovery checks PATH, `~/.local/bin`, Homebrew and installed NVM Node versions. Finder does not inherit the full shell environment.
-- Zed for **Open in Zed**. Optional screenshot review uses the separate [VisionCLI](VisionCLI/README.md), not a product dependency.
+- No external editor is required. Optional screenshot review uses the separate [VisionCLI](VisionCLI/README.md), not a product dependency.
+
+## New Mac setup
+
+Steps 1–2 are build prerequisites. Steps 3–4 set up Node.js and Pi for Chat/Create use. Xcode and an external editor are not required.
+
+1. Install [Apple Command Line Tools](https://developer.apple.com/documentation/xcode/installing-the-command-line-tools). Complete the system installer before continuing:
+
+   ```sh
+   xcode-select --install
+   # After installation:
+   xcode-select --print-path
+   xcrun --sdk macosx --show-sdk-path
+   git --version
+   ```
+
+   Use a CLT release supported by your macOS version. The recorded project SDK is macOS 26.2; the app's macOS 14+ deployment floor does not guarantee every newer developer package supports that OS.
+
+2. Download the **Swift 6.4.0** package from [Swift's macOS installation page](https://www.swift.org/install/macos/), under Package Installer. Follow the [standalone installer instructions](https://www.swift.org/install/macos/package_installer/) to install into your user toolchain directory:
+
+   ```sh
+   # For the official 6.4.0 package saved in Downloads:
+   installer -target CurrentUserHomeDirectory -pkg "$HOME/Downloads/swift-6.4.0-RELEASE-osx.pkg"
+   toolchain="$HOME/Library/Developer/Toolchains/swift-6.4.0-RELEASE.xctoolchain/usr/bin"
+   test -x "$toolchain/swift" && test -x "$toolchain/swiftc" || exit 1
+   "$toolchain/swift" --version
+   "$toolchain/swiftc" --version
+   swift64="$toolchain/swift"
+   ```
+
+   Both version outputs must identify **6.4.0**. Stop if the official package is unavailable, installation is rejected, or either check fails. Do not substitute CLT Swift, a snapshot or another release, or bypass macOS security checks. Use these explicit executables, not `xcrun swift` or `TOOLCHAINS` alone. Swift documents possible SwiftPM limitations without Xcode; this project uses the standalone toolchain with CLT, not Xcode.
+
+3. Install **Node.js 22 or newer** from the [official Node.js download page](https://nodejs.org/en/download). Choose a supported LTS release and its macOS installer for your Mac's architecture. The installer includes npm. Open a new terminal after installation and verify:
+
+   ```sh
+   node --version
+   npm --version
+   ```
+
+   Node.js 22 must be **22.19.0 or newer** to satisfy Pi's minimum version. An existing supported newer Node.js release does not need to be downgraded.
+
+4. Install Pi using the [official quickstart](https://pi.dev/docs/latest/quickstart). Follow [Agent's Pi setup](Agent/docs/runtime.md#pi-installation-and-authentication) for local discovery, model sign-in and the product's Parallel configuration. Building the app does not require model credentials or a Parallel account.
+
+Before developer commands, initialize repository-local temporary storage as described [below](#temporary-work). Installation and sign-in commands are onboarding instructions, not actions performed by documentation verification.
+
+## Version control
+
+- Track authored source, tests, documentation, package manifests and `Package.resolved` lockfiles.
+- Track reusable `.pi/` guidance, learnings, skills, extensions, resources and tests.
+- Keep local Pi settings, authentication, model configuration, sessions, caches and raw failure archives untracked.
+- Build output, packaged apps, generated projects, logs, databases, local evidence and `.tmp/` stay ignored.
+- Keep test assets tracked even when a fixture-generation script can recreate them.
+- Before publishing, review `git diff --cached` for private data. Ignore rules do not remove files from existing commits.
 
 ## Temporary work
 
@@ -55,9 +108,9 @@ swift64="$HOME/Library/Developer/Toolchains/swift-6.4.0-RELEASE.xctoolchain/usr/
 ## Usage and storage
 
 - **Create:** select New App, describe it and submit with Command-Return. Projects/sessions are created after the first message. Further messages steer work; Plan expands task progress and Activity shows tool details/diagnostics.
-- **Chat:** use the separate chat-only workspace; it creates no app scaffold and disables Launch App/Open in Zed.
+- **Chat:** use the separate chat-only workspace; it creates no app scaffold and disables app launching and external-editor opening.
 - **Navigate:** the sidebar opens apps and saved conversations, attaching to active sessions without restarting Pi. Navigation/closing detaches; use Stop when work should end. The pencil beside a built app renames/repackages it; the pencil-in-square starts another conversation in the selected workspace.
-- **Host actions:** Open in Zed opens the project directory; Launch App opens a valid production bundle. Development Build/Run does not itself create a production bundle. Preview images are not displayed in the workspace.
+- **Host actions:** Optional editor integration opens the project directory when its supported editor is installed. Launch App opens a valid production bundle. Development Build/Run does not itself create a production bundle. Preview images are not displayed in the workspace.
 - **Local storage:**
   - Projects: `~/.mac-apper/<project-uuid>/`; Pi conversations: project `.pi/sessions/`; separate Agent events: `.pi/agent-events/<session-id>.jsonl`.
   - Chat: `~/.mac-apper/.chat/`, with the same conversation/event subdirectories.

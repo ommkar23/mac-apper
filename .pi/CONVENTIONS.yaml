@@ -1,0 +1,33 @@
+purpose: Project-specific conventions for source layout, dependencies, formatting, and generated output.
+dependencies:
+  preference: Prefer Apple frameworks and existing package targets.
+  additions: Ask before adding optional or large dependencies; keep test-only dependencies out of runtime targets.
+  test_version: swift-testing 6.2.3 remains pinned; it compiles/runs with standalone Swift 6.4.0 and default Swift Build. Do not upgrade Testing to match the compiler number. Recorded package totals and dated scope are in docs/verification-archive.md, not new verification.
+  open_xpc_plugin: Packages attaching OpenXPCBuildPlugin require swift-tools-version 6.1 or newer for Target.directoryURL. Declare Swift and TypeScript outputs without executing the generator during planning; non-agent targets receive inert empty TypeScript resources.
+  compiler: Use standalone Swift 6.4.0 at ~/Library/Developer/Toolchains/swift-6.4.0-RELEASE.xctoolchain/usr/bin explicitly with default Swift Build; no --build-system native. CLT SDK remains macOS 26.2; xcrun compiler selection remains Swift 6.2.3. See apps/built-in/dev-tools/README.md and Scenario/README.md for production/preparation routing.
+source_and_artifacts:
+  agent_documents: Keep guidance, conventions, and evidence-based learnings in .pi/GUIDANCE.yaml, .pi/CONVENTIONS.yaml, and .pi/LEARNINGS.yaml; keep README.md and AGENTS.md at the project root as entry points. Module README.md files own local specifications/runbooks, including Agent/README.md; docs/verification-archive.md preserves historical checkpoints, unresolved safety failures and evidence indexes without competing active policy. Do not retain duplicate authoritative YAML READMEs.
+  project_user_instructions: >-
+    Define project Pi user instructions as plain text, one instruction per nonempty line, in
+    .pi/resources/user-instructions.txt. The .pi/extensions/user-instructions.ts extension loads them
+    at session_start and applies a dedicated prompt section for requests from the project root.
+    Restart Pi or use /reload after edits. Offline checks: node --experimental-strip-types
+    --test .pi/tests/user-instructions.test.mjs. These are developer-session resources, not app resources.
+  failure_archive: Keep reviewed failure traces and their SQLite index under .pi/learnings/failures/.
+  authored_files: Edit source, tests, scripts, and documentation in place.
+  generated_files: Do not hand-edit .build/, generated projects, HostBuilds/, or built .app contents.
+  terminal_clients: Keep generated implementations in SwiftPM plugin output, not Sources/. Locate generated extensions through Bundle resource APIs, not assumed flat resource paths.
+  service_resources: Stage SwiftPM runtime resource bundles in the owning XPC service's Contents/Resources for generated Bundle.module lookup. Agent retains its host-level copy for host/test consumers; that copy alone does not serve the XPC executable.
+  parallel_mcp: Keep the fixed authored Parallel search/fetch configuration in Agent/Extensions/parallel-codemode.ts; no standalone Web provider or parallel-cli dependency. Swift PiRPCProcess remains the CLI RPC owner, with existing bounds, lifecycle and inherited Pi behavior.
+  pi_extensions_and_catalog: Keep release-generated copies in the owning dist/<bundle-id>/build/generated/ directory, not a root Generated/ directory. Scenario-only catalogs/resources may be staged in private temporary directories owned and removed by Scenario hosting.
+  deliverables: Keep reusable bundles and their owned build scratch under dist/<bundle-id>/; use the gitignored repository-root .tmp/ for disposable test diagnostics and verification. Never use .tmp/ for durable data or authored source; see README.md#temporary-work.
+  evidence: Do not create or append to dist/evidence/.
+  retention: Do not delete historical evidence, logs, generated projects, session journals, or unrelated artifacts unless explicitly requested.
+documentation:
+  markdown: Use lists and nested lists instead of tables.
+formatting:
+  tools: swift-format and the SwiftSyntax guard pass; SwiftLint runs with --strict so warnings fail.
+  guard_layout: Start each guard condition on its own line, and put else on the next line.
+  preserve: Keep comments and internal lines in complex conditions.
+  else_layout: A short single-statement else may be inline; use a multiline body for multiple or long statements.
+  scope: Formatting skips build and generated output. Apply only to changed authored files; repository format --check covers its configured roots. Separately check changed scenario files and plugin/script/generator/test files outside that scope; commands and exact scope are in Plugins/README.md.

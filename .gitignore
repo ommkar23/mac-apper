@@ -1,5 +1,12 @@
-# Local Pi configuration, skills, sessions and evidence
-.pi/
+# Track authored .pi guidance, skills, extensions, resources and tests.
+# Keep local Pi state, credentials, caches and raw failure archives private.
+.pi/settings.json
+.pi/auth.json
+.pi/models.json
+.pi/sessions/
+.pi/agent-events/
+.pi/cache/
+.pi/learnings/failures/
 
 # Disposable repository-local temporary work
 /.tmp/
@@ -44,6 +51,8 @@ evidence.md
 *.profdata
 *.sqlite
 *.sqlite-*
+*.sqlite3
+*.sqlite3-*
 *.db
 *.db-*
 

@@ -6,6 +6,7 @@ Commands below are entry points for separately authorized verification, not chec
 
 ## Compiler setup
 
+- Complete [New Mac setup](../../README.md#new-mac-setup) first. Check that both explicit standalone `swift` and `swiftc` paths are executable and report 6.4.0 as shown there.
 - Use the explicit standalone Swift 6.4.0 driver and default Swift Build, not --build-system native. Testing remains pinned to 6.2.3; do not match its version to the compiler.
 - Recorded CLT SDK is macOS 26.2; xcrun compiler selection remains 6.2.3. Scenario SDK probes discover the installed selected SDK explicitly rather than hardcoding its version or trusting SDKROOT.
 - Production/preparation preflight requires executable swift and swiftc with no CLT fallback. Scenario uses the matching swiftpm-testing-helper; non-Swift preparation preserves inherited environments.
