@@ -2,12 +2,13 @@
 // Tests project resolution, SwiftPM package presence, and scoped path rejection.
 // @frontmatter:end
 import Foundation
+import Scenario
 import Testing
 
 @testable import DevToolsApplication
 
 @Test func scopedProjectRequestsRequireAnExistingNonlinkedSwiftPackage() async throws {
-	let base = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+	let base = try ProjectTemporaryDirectory.root().appendingPathComponent(UUID().uuidString)
 	try FileManager.default.createDirectory(at: base, withIntermediateDirectories: true)
 	defer { try? FileManager.default.removeItem(at: base) }
 	let projectID = UUID().uuidString.lowercased()

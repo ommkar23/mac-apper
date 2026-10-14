@@ -9,7 +9,9 @@ struct DevelopmentRunResult: Sendable {
 	let instanceID: String
 }
 
-enum DevelopmentLaunchError: Error, Sendable, Equatable { case executableMissing }
+enum DevelopmentLaunchError: Error, Sendable, Equatable {
+	case executableMissing, invalidBranding
+}
 
 actor RunController: OpenXPCRunController {
 	private let projects: ProjectResolver
@@ -99,9 +101,10 @@ actor RunController: OpenXPCRunController {
 		for id in Array(processes.keys) { try await stop(instanceID: id) }
 	}
 
-	private func stage(build: SourceBuildResult, project: ResolvedProject, requestID: String) throws
+	func stage(build: SourceBuildResult, project: ResolvedProject, requestID: String) throws
 		-> URL
 	{
+		let branding = try DevelopmentBranding.load(scope: project.scope, fallback: build.target)
 		let relative = ".mac-apper/DevBuild/\(requestID)/\(build.target).app"
 		let bundle = try project.scope.resolve(relative)
 		guard
@@ -138,7 +141,8 @@ actor RunController: OpenXPCRunController {
 		let plist: [String: Any] = [
 			"CFBundleExecutable": build.target,
 			"CFBundleIdentifier": "com.macapper.dev." + project.manifest.appID,
-			"CFBundleName": build.target, "CFBundlePackageType": "APPL", "CFBundleVersion": requestID,
+			"CFBundleName": branding.name, "CFBundleDisplayName": branding.name,
+			"CFBundlePackageType": "APPL", "CFBundleVersion": requestID,
 			"CFBundleShortVersionString": "0", "LSMinimumSystemVersion": "14.0",
 			"NSHighResolutionCapable": true,
 		]

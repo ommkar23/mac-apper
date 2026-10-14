@@ -2,6 +2,7 @@
 // Tests workspace navigation and runtime attachment using service-backed chat histories.
 // @frontmatter:end
 import Foundation
+import Scenario
 import Testing
 
 @testable import AgentApplication
@@ -99,9 +100,11 @@ func writeSession(
 }
 
 @MainActor @Test func openingRunningSessionAttachesToPushWithoutStoppingAgent() async throws {
-	let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+	let root = try ProjectTemporaryDirectory.root().appendingPathComponent(
+		UUID().uuidString, isDirectory: true)
 	defer { try? FileManager.default.removeItem(at: root) }
-	let project = try ProjectScaffold.create(under: root)
+	let project = URL(
+		fileURLWithPath: try ProjectScaffold.create(under: root).path, isDirectory: true)
 	let file = try writeSession(
 		in: project, filename: "active.jsonl", prompt: "First",
 		answer: "First answer")
@@ -122,9 +125,11 @@ func writeSession(
 }
 
 @MainActor @Test func navigatingAwayFromAttachedSessionDetachesWithoutAbortingPi() async throws {
-	let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+	let root = try ProjectTemporaryDirectory.root().appendingPathComponent(
+		UUID().uuidString, isDirectory: true)
 	defer { try? FileManager.default.removeItem(at: root) }
-	let project = try ProjectScaffold.create(under: root)
+	let project = URL(
+		fileURLWithPath: try ProjectScaffold.create(under: root).path, isDirectory: true)
 	let file = try writeSession(
 		in: project, filename: "active.jsonl", prompt: "First",
 		answer: "First answer")
@@ -139,7 +144,8 @@ func writeSession(
 }
 
 @MainActor @Test func workspaceUsesTheInjectedRuntimeSessionDirectory() async throws {
-	let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+	let root = try ProjectTemporaryDirectory.root().appendingPathComponent(
+		UUID().uuidString, isDirectory: true)
 	defer { try? FileManager.default.removeItem(at: root) }
 	let sessions = root.appendingPathComponent("custom-sessions", isDirectory: true)
 	let runtime = NavigationRuntime(customSessionDirectory: sessions)
@@ -159,7 +165,8 @@ func writeSession(
 }
 
 @MainActor @Test func projectChatNavigationDefersCreationAndResumesExactFile() async throws {
-	let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+	let root = try ProjectTemporaryDirectory.root().appendingPathComponent(
+		UUID().uuidString, isDirectory: true)
 	defer { try? FileManager.default.removeItem(at: root) }
 	let runtime = NavigationRuntime()
 	let model = WorkspaceSession(
@@ -213,10 +220,11 @@ func writeSession(
 }
 
 @MainActor @Test func sidebarIncludesUnbuiltProjectsAndExactNestedSessions() async throws {
-	let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+	let root = try ProjectTemporaryDirectory.root().appendingPathComponent(
+		UUID().uuidString, isDirectory: true)
 	defer { try? FileManager.default.removeItem(at: root) }
-	let first = try ProjectScaffold.create(under: root)
-	let second = try ProjectScaffold.create(under: root)
+	let first = URL(fileURLWithPath: try ProjectScaffold.create(under: root).path, isDirectory: true)
+	let second = URL(fileURLWithPath: try ProjectScaffold.create(under: root).path, isDirectory: true)
 	let settings = second.appendingPathComponent("Info.plist")
 	let info = try #require(NSMutableDictionary(contentsOf: settings))
 	info["CFBundleDisplayName"] = "Timer"
@@ -255,7 +263,8 @@ func writeSession(
 }
 
 @MainActor @Test func builtInChatDefersStorageAndNeverCreatesAnApp() async throws {
-	let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+	let root = try ProjectTemporaryDirectory.root().appendingPathComponent(
+		UUID().uuidString, isDirectory: true)
 	defer { try? FileManager.default.removeItem(at: root) }
 	let runtime = NavigationRuntime()
 	let model = WorkspaceSession(

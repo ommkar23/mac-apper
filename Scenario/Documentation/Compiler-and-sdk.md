@@ -37,7 +37,7 @@
 - `arguments(_:scratch:)` invokes one frontend with `-enable-objc-interop`, the explicit SDK and a module cache within caller-owned scratch. These compile/import probes need no driver/link jobs or external macro expansion.
 - `run(_:scratch:environment:)` limits compiler commands to 30 seconds and 1 MiB output; cancellation/overflow/timeout throws. The command helper kills an active owned child if needed, waits for exit and removes its UUID-private command scratch.
   - Callers own scratch passed to `run`/`requireImport`; the API does not remove an arbitrary supplied directory.
-  - `preflight` owns a separate 0700 UUID directory beneath `/private/tmp` and removes it on exit. `requireImport` writes/removes an import source within supplied scratch.
+  - `preflight` owns a separate 0700 UUID directory beneath repository-root `.tmp/` and removes it on exit. `requireImport` writes/removes an import source within supplied scratch.
 
 ## Gate startup on usable imports
 

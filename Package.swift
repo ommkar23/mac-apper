@@ -8,6 +8,7 @@ let package = Package(
 	name: "AgentIntegration",
 	platforms: [.macOS(.v14)],
 	dependencies: [
+		.package(path: "Scenario"),
 		.package(url: "https://github.com/swiftlang/swift-testing.git", exact: "6.2.3"),
 		.package(url: "https://github.com/swiftlang/swift-syntax.git", exact: "602.0.0"),
 		.package(url: "https://github.com/SimplyDanny/SwiftLintPlugins.git", exact: "0.65.1"),
@@ -15,7 +16,10 @@ let package = Package(
 	targets: [
 		.testTarget(
 			name: "IntegrationTests",
-			dependencies: [.product(name: "Testing", package: "swift-testing")]
+			dependencies: [
+				.product(name: "Scenario", package: "Scenario"),
+				.product(name: "Testing", package: "swift-testing"),
+			]
 		),
 		.plugin(
 			name: "FormatPlugin",
@@ -78,6 +82,7 @@ let package = Package(
 			name: "SwiftLinesPluginTests",
 			dependencies: [
 				"SwiftLinesChartTool", "GuardFormatCore",
+				.product(name: "Scenario", package: "Scenario"),
 				.product(name: "Testing", package: "swift-testing"),
 			],
 			path: "Plugins/SwiftLinesPluginTests"

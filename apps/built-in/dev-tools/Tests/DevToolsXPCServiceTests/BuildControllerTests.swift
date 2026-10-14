@@ -2,6 +2,7 @@
 // Tests BuildController SwiftPM product selection, cancellation, and build isolation.
 // @frontmatter:end
 import Foundation
+import Scenario
 import Testing
 
 @testable import DevToolsApplication
@@ -119,7 +120,7 @@ private struct BuildFixture {
 	let capture: URL
 
 	init() throws {
-		root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+		root = try ProjectTemporaryDirectory.root().appendingPathComponent(UUID().uuidString)
 		try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
 		projectID = UUID().uuidString.lowercased()
 		let projectRoot = root.appendingPathComponent(projectID)

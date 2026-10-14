@@ -1,4 +1,5 @@
 import Foundation
+import Scenario
 import OpenXPCSpecification
 import Testing
 
@@ -33,7 +34,7 @@ import Testing
 	let start = try #require(extensionSource.range(of: "import { constants }"))
 	let end = try #require(extensionSource.range(of: "async function call("))
 	let helper = String(extensionSource[start.lowerBound..<end.lowerBound])
-	let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+	let root = try ProjectTemporaryDirectory.root().appendingPathComponent(UUID().uuidString)
 	try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
 	defer { try? FileManager.default.removeItem(at: root) }
 	let script = root.appendingPathComponent("image-test.ts")

@@ -46,7 +46,7 @@ private final class ResourceTestBundleAnchor: NSObject {}
 		try #require(
 			String(
 				contentsOf: prepared.project.appendingPathComponent("Scaffold.version"), encoding: .utf8)
-				== "8")
+				== "9")
 		let persistence = try String(
 			contentsOf: prepared.project.appendingPathComponent("Sources/AppModel/Persistence.swift"),
 			encoding: .utf8)
@@ -80,8 +80,9 @@ private final class ResourceTestBundleAnchor: NSObject {}
 			let directory = URL(fileURLWithPath: path)
 			let values = try directory.resourceValues(forKeys: [.isDirectoryKey, .isSymbolicLinkKey])
 			try #require(
-				path.hasPrefix("/private/tmp/mac-apper-coredata-task6-") && values.isDirectory == true
-					&& values.isSymbolicLink != true)
+				directory.deletingLastPathComponent() == ProjectTemporaryDirectory.root()
+					&& directory.lastPathComponent.hasPrefix("mac-apper-coredata-task6-")
+					&& values.isDirectory == true && values.isSymbolicLink != true)
 			let exported = directory.appendingPathComponent(prepared.project.lastPathComponent)
 			try FileManager.default.createDirectory(at: exported, withIntermediateDirectories: false)
 			for name in [
@@ -95,7 +96,7 @@ private final class ResourceTestBundleAnchor: NSObject {}
 			print("RESOURCE_EXPORTED_SOURCE: \(exported.path)")
 		}
 	} else {
-		let home = URL(fileURLWithPath: "/private/tmp", isDirectory: true)
+		let home = try ProjectTemporaryDirectory.root()
 			.appendingPathComponent("mac-apper-resource-home-\(UUID().uuidString)")
 		try FileManager.default.createDirectory(
 			at: home, withIntermediateDirectories: false, attributes: [.posixPermissions: 0o700])

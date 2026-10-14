@@ -2,12 +2,13 @@
 // Tests factory-created build/plan routing and explicit preview failures for missing factories or invalid scope.
 // @frontmatter:end
 import Foundation
+import Scenario
 import Testing
 
 @testable import DevToolsApplication
 
 @Test func typedBuildAndPlanResolveProjectWithoutRegistration() async throws {
-	let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+	let root = try ProjectTemporaryDirectory.root().appendingPathComponent(UUID().uuidString)
 	try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
 	defer { try? FileManager.default.removeItem(at: root) }
 	let projectID = UUID().uuidString.lowercased()
@@ -61,7 +62,7 @@ import Testing
 }
 
 @Test func typedDevToolsPreviewRejectsMissingPreviewCodeAndInvalidScope() async throws {
-	let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+	let root = try ProjectTemporaryDirectory.root().appendingPathComponent(UUID().uuidString)
 	try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
 	defer { try? FileManager.default.removeItem(at: root) }
 	let projectID = UUID().uuidString.lowercased()

@@ -7,7 +7,7 @@
 - Package-local Swift tests are the supported path. Root Scenarios, standalone runner/clients and Scenario command plugin are retired; historical dist artifacts remain preserved.
 - [Scenario](../../Scenario/README.md) owns reusable packaging and temporary hosting; tests own prompts, assertions, process/session audits and fixture cleanup. There is no scenario-specific Agent client, transport bridge or full product bundle prerequisite.
 - Follow [scenario-run](../../.pi/skills/scenario-run/SKILL.md) for authorized selection/monitoring and [scenario-write](../../.pi/skills/scenario-write/SKILL.md) for authoring. Supplied Swift helpers launch selected commands only and do not take cleanup ownership.
-- Explicit live authorization is required before enabling these cases: Chat starts Pi/Parallel; both Create variants use paid Pi and Gemini. The offline app request rejects Parallel MCP calls. Do not inspect/refresh credentials or invoke check-config merely to read this document.
+- Explicit live authorization is required before enabling these cases. Chat starts Pi/Parallel. Create counter and plan use paid Pi and Gemini. HTView uses paid Pi without a Gemini review. Create app requests reject Parallel MCP calls. Credential operations need separate authorization.
 - Initialize swift64 as described in [verification](verification.md#compiler-setup), then run from the repository root only when authorized:
 
 ```sh
@@ -17,6 +17,8 @@ AGENT_SCENARIO_LIVE=1 AGENT_SCENARIO_CASE=chat-model-greeting \
 # Counter and plan are separately selectable/authorized.
 AGENT_SCENARIO_LIVE=1 "$swift64" test --package-path Agent --filter agentCreateCounterScenario
 AGENT_SCENARIO_LIVE=1 "$swift64" test --package-path Agent --filter agentCreatePlanScenario
+# HTView uses Pi and DevTools without VisionCLI/Gemini.
+AGENT_SCENARIO_LIVE=1 "$swift64" test --package-path Agent --filter agentCreateHTViewScenario
 ```
 
 - AGENT_SCENARIO_PRODUCTS and DEV_TOOLS_SCENARIO_PRODUCTS select existing debug product directories for custom scratch builds. AGENT_CREATE_KEEP_PROJECT=1 retains the owned Create project.
@@ -67,7 +69,7 @@ AGENT_SCENARIO_LIVE=1 "$swift64" test --package-path Agent --filter agentCreateP
   - The harness builds actual AppModel privately and compiler-typechecks signed-integer `model.count` and `model.state.count`, requiring exactly one supported API and rejecting ambiguous/unsupported layouts or comment/string decoys.
   - Actual injected Swift Testing assertions must compile/run/pass alongside generated tests for the unchanged 0 → 2 → 1 → 0 → -1 → 0 action sequence rather than adapting source to the harness.
   - Offline mutants cover wrong steps, clamped negatives and broken reset as behavioral failures rather than compilation evidence, with direct/state and retained Core Data source exercised.
-  - Bounded compiler commands retain private `/private/tmp` logs, and in-memory behavior plus process liveness does not independently prove generated-counter relaunch persistence.
+  - Bounded compiler commands retain private repository-root `.tmp/` logs, and in-memory behavior plus process liveness does not independently prove generated-counter relaunch persistence.
 - **Plan-specific evidence**
   - The plan variant adds an implementation-plan request to the same workflow and requires successful saved add_plan, task addition through initial tasks or add_tasks, and update_tasks.
   - A task must be in_progress during a successful Swift source write/edit and later completed by an update, with a final nonempty fully completed plan matching client tasks.
@@ -81,6 +83,57 @@ AGENT_SCENARIO_LIVE=1 "$swift64" test --package-path Agent --filter agentCreateP
 - **Project retention**
   - Teardown stops Pi/development and removes only the UUID fixture project unless AGENT_CREATE_KEEP_PROJECT=1 retains it, leaving existing projects untouched.
   - Successful previews remain separately archived after project removal with CREATE_PREVIEW_RETAINED reporting their path.
+
+## Create HTView
+
+- `agentCreateHTViewScenario` requests a native viewer for one self-contained UTF-8 HTML file.
+  - Inline CSS and JavaScript work offline.
+  - The prompt still requests user-visible app branding and a main window title of exactly `HTView`.
+  - Acceptance excludes rendered app-name and native-window-title checks.
+  - Internal `ProductionApp` targets and HTML document titles are distinct from the requested branding and native title.
+  - External assets, local servers, functional app-specific XPC and speculative features are outside the case.
+  - One attempt means one normal Create request with tool-level repair allowed. It does not guarantee success or permit external retries.
+- [HTView scenario folder](../Tests/AgentScenarioTests/HTView/README.md) owns the prompt, fixture, evidence audits, browser host and offline regressions.
+  - It documents selectors, the public document-action contract, resource bounds and limitations.
+  - All HTView-specific Swift files live in that folder without duplicate root test files.
+- The production WorkspaceSession/native adapter/generated XPC and signed minimal Agent/DevTools host remain unchanged.
+  - SDK preflight, selective credential-lifetime checks and existing deadlines precede submission.
+  - Authored Test evidence must match final scoped edits and successful passed/exitCode-zero results.
+  - Independent verification opens an owned missing file and valid fixture through the generated model and ApplicationRoot.
+  - Generated navigation delegates, content rules, preprocessing and load/error lifecycle remain active.
+  - Real SwiftPM resource processing and Bundle.module lookup are preserved.
+  - Independent source staging uses physical repository-root `.tmp/` paths and rejects ancestor and leaf links.
+  - Descriptor-derived module/file paths require component-anchored containment before declaration matching or copying.
+  - Root-file and directory `.process`/`.copy` staging controls belong to the HTView folder.
+  - Build/Run evidence, exact executable identity and post-verification development liveness remain separate requirements.
+  - Naming relies on correct project plist, packaged bundle metadata and SwiftUI API wiring.
+  - Run derives branding from the project plist. Scaffold v9 derives its default title from packaged bundle metadata.
+  - SwiftUI content may override that default through `navigationTitle`.
+  - Scene compiler probes, synthetic Bundle execution and CoreGraphics window observation are retired naming checks.
+  - Acceptance has no naming-observation permission requirement.
+  - Project-owned source-wiring, AppName and shared branding logic tests remain separate from rendered naming checks.
+  - The accepted report `/private/tmp/mac-apper-htview-live.ugFtAO/report.md` predates naming assertions and remains historical evidence.
+- `AGENT_CREATE_KEEP_PROJECT=1` retains review output after confirmed cleanup. Failed fixtures remain retained.
+  - VisionCLI is not staged.
+  - Development launch is not production delivery.
+  - The actual user picker remains unverified.
+
+Focused offline checks, with live gates unset:
+
+```sh
+"$swift64" test --package-path Agent --filter 'htViewHTMLFixture|htViewScenarioEvidence|htViewWebKitMalformedEvidenceOffline|htViewResource|htViewPromptAndObserver'
+"$swift64" test --package-path Agent --filter htViewEmbeddedWebKitOfflineRegression
+```
+
+The native regression requires local Aqua/WebKit.
+It runs private off-desktop, nonactivating hosts without Pi or remote calls.
+Negative controls require actual execution receipts and reject the unsupported WebKit regex `^(https?|wss?|ftp|file):`.
+The rewrite does not modify retained live-attempt artifacts or the app open for user review.
+The retained resource-staging attempts remain failed.
+They did not reach independent HTML/CSS/JavaScript verification.
+The scenario-local staging correction needs fresh authorized runtime verification before claiming live recovery.
+Retiring naming checks or correcting staging does not establish full Agent acceptance.
+See the [retirement archive note](../../docs/verification-archive.md#naming-verification-retirement--2026-10-14).
 
 ## Create isolation and cleanup
 

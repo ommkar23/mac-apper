@@ -12,6 +12,8 @@ included:
   - Plugins
   - Scripts
 excluded:
+  - .tmp
+  - "**/.tmp"
   - .build
   - "**/.build"
   - dist

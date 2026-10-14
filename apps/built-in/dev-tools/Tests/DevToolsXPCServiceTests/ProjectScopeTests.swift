@@ -2,12 +2,13 @@
 // Tests project-relative path validation and rejection of symlinked directories.
 // @frontmatter:end
 import Foundation
+import Scenario
 import Testing
 
 @testable import DevToolsApplication
 
 @Test func scopedPathsRejectTraversalAndSymlinks() throws {
-	let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+	let root = try ProjectTemporaryDirectory.root().appendingPathComponent(UUID().uuidString)
 	try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
 	defer { try? FileManager.default.removeItem(at: root) }
 	let scope = try ProjectScope(root: root)

@@ -59,8 +59,10 @@ import Foundation
 	private static func prepared(_ value: AgentApplication.WorkspacePreparedSession)
 		-> AgentMacosClientModel.WorkspacePreparedSession
 	{
+		// Match the production wire adapter: project path strings become directory URLs.
 		.init(
-			project: value.project, sessionFile: value.sessionFile, title: value.title,
+			project: URL(fileURLWithPath: value.project.path, isDirectory: true),
+			sessionFile: value.sessionFile, title: value.title,
 			isNew: value.isNew, creatingApp: value.creatingApp)
 	}
 	func validatePreview(relativePath: String, project: URL) async throws -> URL? {

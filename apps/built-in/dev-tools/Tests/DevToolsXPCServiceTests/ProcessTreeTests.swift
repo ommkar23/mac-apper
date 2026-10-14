@@ -3,6 +3,7 @@
 // @frontmatter:end
 import Darwin
 import Foundation
+import Scenario
 import Testing
 
 @testable import DevToolsApplication
@@ -10,7 +11,7 @@ import Testing
 @Test func cancellationDuringReapingDoesNotBecomeSuccess() async throws {
 	let process = try OwnedProcess(
 		executable: URL(fileURLWithPath: "/usr/bin/true"), arguments: [],
-		directory: FileManager.default.temporaryDirectory, environment: [:], outputLimit: 4096,
+		directory: try ProjectTemporaryDirectory.root(), environment: [:], outputLimit: 4096,
 		gracePeriod: .milliseconds(500))
 	while try process.isAlive() { try await Task.sleep(for: .milliseconds(5)) }
 	let task = Task { try await process.wait(timeout: .seconds(3)) }
@@ -35,7 +36,7 @@ import Testing
 			while True:
 			    time.sleep(1)
 			""",
-		], directory: FileManager.default.temporaryDirectory, environment: [:], outputLimit: 4096)
+		], directory: try ProjectTemporaryDirectory.root(), environment: [:], outputLimit: 4096)
 	let deadline = ContinuousClock.now.advanced(by: .seconds(5))
 	while !process.output.contains("\n"), ContinuousClock.now < deadline {
 		_ = try process.isAlive()

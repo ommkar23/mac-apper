@@ -3,6 +3,7 @@
 // @frontmatter:end
 import Darwin
 import Foundation
+import Scenario
 import ImageIO
 import Testing
 @testable import DevToolsApplication
@@ -13,7 +14,7 @@ struct PreviewFixture {
 	let id: UUID
 	let factory: ControllerFactory
 	init(source: String) throws {
-		root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+		root = try ProjectTemporaryDirectory.root().appendingPathComponent(UUID().uuidString)
 		id = UUID()
 		project = root.appendingPathComponent(id.uuidString.lowercased())
 		try FileManager.default.createDirectory(

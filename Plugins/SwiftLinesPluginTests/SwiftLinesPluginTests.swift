@@ -2,6 +2,7 @@
 // Tests format plugin wiring and Swift line chart generation and buckets.
 // @frontmatter:end
 import Foundation
+import Scenario
 import Testing
 
 @Test func formattingIsAvailableAsSwiftPMCommandPlugin() throws {
@@ -22,8 +23,11 @@ import Testing
 	#expect(lint.contains("swiftlint"))
 	#expect(plugin.contains("swift-format"))
 	#expect(plugin.contains(".swift-format"))
-	#expect(plugin.components(separatedBy: #"["Package.swift", "Agent", "Scenario", "VisionCLI", "apps"]"#).count == 3)
-	let lintConfiguration = try String(contentsOf: root.appendingPathComponent(".swiftlint.yml"), encoding: .utf8)
+	#expect(
+		plugin.components(separatedBy: #"["Package.swift", "Agent", "Scenario", "VisionCLI", "apps"]"#)
+			.count == 3)
+	let lintConfiguration = try String(
+		contentsOf: root.appendingPathComponent(".swiftlint.yml"), encoding: .utf8)
 	#expect(lintConfiguration.contains("  - VisionCLI\n"))
 }
 @testable import SwiftLinesChartTool
@@ -40,8 +44,8 @@ import Testing
 @Test func swiftLinesPublishesSourceDistributionAsPNG() throws {
 	let repository = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
 		.deletingLastPathComponent().deletingLastPathComponent()
-	let fixture = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
-	let scratch = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+	let fixture = try ProjectTemporaryDirectory.root().appendingPathComponent(UUID().uuidString)
+	let scratch = try ProjectTemporaryDirectory.root().appendingPathComponent(UUID().uuidString)
 	defer {
 		try? FileManager.default.removeItem(at: fixture)
 		try? FileManager.default.removeItem(at: scratch)

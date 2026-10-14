@@ -5,7 +5,7 @@ import Foundation
 
 /// Versioned, client-owned infrastructure. Extensions are intentionally ordinary Swift sources.
 public enum BaseAppTemplate {
-	public static let version = "8"
+	public static let version = "9"
 	public static let manifest = #"""
 		// swift-tools-version: 6.0
 		import PackageDescription

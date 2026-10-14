@@ -4,6 +4,7 @@
   - These instructions apply throughout `mac-apper`, with unrelated files and existing user work preserved.
   - Read the [root README](README.md) product overview and the owning module README specifications, architecture, runtime contracts, commands and verification paths before changing the project: [Agent](Agent/README.md), [Scenario](Scenario/README.md), [DevTools](apps/built-in/dev-tools/README.md), [Plugins](Plugins/README.md), [VisionCLI](VisionCLI/README.md) and [OpenXPCGenerator](OpenXPCGenerator/README.md).
   - Follow `.pi/CONVENTIONS.yaml` for dependencies, source/artifact ownership and formatting, and `.pi/GUIDANCE.yaml` for implementation, safety, verification and completion practices.
+  - Follow the root README [temporary-work contract](README.md#temporary-work) for disposable `.tmp/` paths and safe manual cleanup.
   - Consult `.pi/LEARNINGS.yaml` for observed failures, recoveries and established limits rather than treating historical workarounds as current instructions.
 - **Documentation changes**
   - Update the owning document without waiting for an explicit documentation request when user intent and verified project state imply changes to product behavior, architecture, conventions or guidance.

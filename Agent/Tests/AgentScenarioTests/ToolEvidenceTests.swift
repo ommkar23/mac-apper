@@ -2,6 +2,7 @@
 // Checks direct and nested tool evidence correlation against offline Pi session and Agent journal fixtures.
 // @frontmatter:end
 import Foundation
+import Scenario
 import Testing
 
 @Test func toolEvidenceMatchesDirectAndNestedResultsOffline() throws {
@@ -77,8 +78,10 @@ import Testing
 		let evidence = try ScenarioToolEvidence(session: fixture.session, journal: fixture.journal)
 		#expect(evidence.calls.first { $0.name == "test" }?.succeeded == true)
 		#expect(
-			try evidence.testedSourcePaths(project: URL(fileURLWithPath: "/private/tmp/owned-project"))
-				.isEmpty)
+			try evidence.testedSourcePaths(
+				project: try ProjectTemporaryDirectory.appending("owned-project")
+			)
+			.isEmpty)
 	}
 }
 
@@ -88,8 +91,10 @@ import Testing
 		results: [[:], ["status": "passed", "exitCode": false]])
 	let evidence = try ScenarioToolEvidence(session: fixture.session, journal: fixture.journal)
 	#expect(
-		try evidence.testedSourcePaths(project: URL(fileURLWithPath: "/private/tmp/owned-project"))
-			.isEmpty)
+		try evidence.testedSourcePaths(
+			project: try ProjectTemporaryDirectory.appending("owned-project")
+		)
+		.isEmpty)
 }
 
 @Test func toolEvidenceRequiresActualParentImageForwardingOffline() throws {
@@ -115,7 +120,7 @@ import Testing
 }
 
 @Test func toolEvidenceRequiresLatestAuthoredRevisionBeforePassingTestOffline() throws {
-	let project = URL(fileURLWithPath: "/private/tmp/owned-evidence-project")
+	let project = try ProjectTemporaryDirectory.appending("owned-evidence-project")
 	let path = "Tests/AppModelTests/Counter.swift"
 	for nested in [false, true] {
 		for names in [

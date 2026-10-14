@@ -1,12 +1,11 @@
 #!/bin/bash
 set -euo pipefail
-root=$(cd "$(dirname "$0")/.." && pwd)
+root=$(cd "$(dirname "$0")/.." && pwd -P)
 bin="$HOME/Library/Developer/Toolchains/swift-6.4.0-RELEASE.xctoolchain/usr/bin"
-sdk=$(xcrun --sdk macosx --show-sdk-path)
-run=$(mktemp -d "$root/evidence/minimal.XXXXXX")
+run=$(python3 "$root/scripts/temporary-directory.py" spike-minimal)
 test -n "$run" && test -d "$run"
-mkdir "$run/tmp"
-export TMPDIR="$run/tmp"
+export TMPDIR="$(dirname "$run")/"
+sdk=$(xcrun --sdk macosx --show-sdk-path)
 env -u SDKROOT "$bin/swiftc" -swift-version 6 -Onone -DDEBUG -parse-as-library -sdk "$sdk" "$root/minimal/CounterRepro.swift" -o "$run/counter-repro" > "$run/build.log" 2>&1
 python3 - "$run" <<'PY'
 import json, pathlib, subprocess, sys

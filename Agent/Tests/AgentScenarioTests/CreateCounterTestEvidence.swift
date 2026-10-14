@@ -80,7 +80,7 @@ private func boundedCounterEvidence(_ file: URL, maximum: Int) throws -> Data {
 }
 
 private func counterTestParse(_ source: URL) async throws -> String {
-	let directory = URL(fileURLWithPath: "/private/tmp").appendingPathComponent(
+	let directory = try ProjectTemporaryDirectory.root().appendingPathComponent(
 		"mac-apper-counter-parse-\(UUID().uuidString)")
 	try FileManager.default.createDirectory(
 		at: directory, withIntermediateDirectories: false, attributes: [.posixPermissions: 0o700])

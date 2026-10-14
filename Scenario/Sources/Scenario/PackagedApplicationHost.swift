@@ -34,7 +34,7 @@ import Foundation
 		try ScenarioProcess.run(
 			"/usr/bin/codesign", ["--verify", "--deep", "--strict", deployedApp.path])
 		let manager = FileManager.default
-		let temporary = manager.temporaryDirectory.appendingPathComponent(
+		let temporary = try ProjectTemporaryDirectory.root().appendingPathComponent(
 			"scenario-app-host-\(UUID().uuidString)")
 		let staged = temporary.appendingPathComponent("Scenario.app")
 		do {
@@ -80,6 +80,12 @@ import Foundation
 				var info = try Self.plist(plist)
 				let identifier = "com.macapper.scenario.\(UUID().uuidString.lowercased())"
 				info["CFBundleIdentifier"] = identifier
+				if bundle.pathExtension == "xpc" {
+					var xpc = info["XPCService"] as? [String: Any] ?? [:]
+					xpc["EnvironmentVariables"] = try ProjectTemporaryDirectory.environment(
+						xpc["EnvironmentVariables"] as? [String: String] ?? [:])
+					info["XPCService"] = xpc
+				}
 				try Self.save(info, to: plist)
 				try ScenarioProcess.run(
 					"/usr/bin/codesign",

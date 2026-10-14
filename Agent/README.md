@@ -28,7 +28,7 @@ Agent is Mac Apper's service-owned workspace/Pi runtime and native macOS client.
 ## Topic navigation
 
 - [Runtime and session delivery](docs/runtime.md): service/client boundary, Pi/MCP tools, preparation, replay, completion, storage and limits.
-- [Scaffold and persistence](docs/scaffold.md): version 8, editable/protected files, model-view ownership, Core Data and preview integration.
+- [Scaffold and persistence](docs/scaffold.md): version 9, editable/protected files, model-view ownership, Core Data and preview integration.
 - [Verification commands](docs/verification.md): standalone compiler setup, package test targets, no-model resource/scaffold entry points and authorization boundaries.
 - [Chat and Create scenarios](docs/scenarios.md): signed production-path hosting, selectors, evidence, isolation, cleanup and deadlines.
 - [Recorded evidence and unresolved limits](docs/evidence.md): dated checkpoints and historical failures, explicitly separate from rewrite checks.

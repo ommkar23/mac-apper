@@ -22,7 +22,9 @@ VisionCLI/.build/release/vision-cli models
 
 - Use the explicit standalone driver and default Swift Build, not `--build-system native`; an inherited `swift` or `xcrun swift` may select the older CLT compiler.
 - Invoke the built executable for JSON callers rather than mixing SwiftPM build diagnostics into stdout.
-- Tests use mocked HTTP and owned temporary image/credential fixtures, not the real local `.env` or Gemini. They cover request validation, image decoding/hash/link/truncation checks, request construction, conservative verdicts, invalid provider results and credential precedence/permissions.
+- Tests use mocked HTTP and owned image/synthetic-credential fixtures under private repository-root `.tmp/`. They do not read the real local `.env` or contact Gemini.
+- Follow the [temporary-work contract](../README.md#temporary-work). Durable images and credentials stay in their existing storage.
+- Tests cover request validation, image decoding/hash/link/truncation checks, request construction, conservative verdicts, invalid provider results and credential precedence/permissions.
 - “Offline” means no model/API call, not guaranteed air-gapped SwiftPM dependency resolution.
 
 ## Review interface

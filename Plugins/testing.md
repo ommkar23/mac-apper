@@ -16,7 +16,7 @@ Return to the [tooling introduction](README.md). Clean-test is an optional fresh
 
 - Replace `PACKAGE` with a listed package. The plugin accepts exactly one package argument or that argument followed by `--filter PATTERN`; it does not forward arbitrary SwiftPM flags.
 - [CleanTestPlugin](CleanTestPlugin/plugin.swift) invokes the installed standalone Swift 6.4.0 driver with `SWIFT_EXEC` pinned to its compiler, `test --package-path`, private `--scratch-path` and `-j 2`.
-- It creates a new UUID-named `/private/tmp/mac-apper-test.<UUID>` directory with mode 0700 and attempts to remove that exact scratch in a deferred cleanup on normal completion or thrown failure.
+- It creates a new UUID-named repository-root `.tmp/mac-apper-test.<UUID>` directory with mode 0700 and attempts to remove that exact scratch in a deferred cleanup on normal completion or thrown failure.
   - Forced termination can prevent deferred cleanup; removal errors are ignored by the implementation. Do not claim unconditional scratch deletion.
   - It neither clears retained package `.build` directories nor deletes historical evidence, projects, sessions or unrelated scratch.
   - Nonzero/abnormal test termination fails the plugin. A filter can still select zero tests; confirm actual selected-test execution rather than treating exit 0 alone as coverage.
@@ -48,16 +48,17 @@ Return to the [tooling introduction](README.md). Clean-test is an optional fresh
 - Validate a nonempty private path before giving it to SwiftPM. An empty scratch path can cause artifacts to land at the repository root.
 
 ```sh
-scratch=$(mktemp -d /private/tmp/mac-apper-test.XXXXXX)
+# Initialize private .tmp and TMPDIR using the root temporary-work contract.
+scratch=$(mktemp -d "$TMPDIR/mac-apper-test.XXXXXX")
 test -n "$scratch" && test -d "$scratch" || exit 1
 # Replace PACKAGE with the authorized package path.
 "$swift64" test --package-path PACKAGE --scratch-path "$scratch"
 # After owned work exits, remove only this exact validated directory,
-# or retain it for the task's diagnostics. Do not sweep unrelated /tmp or dist.
+# or retain it for the task's diagnostics. Do not sweep the shared .tmp root, historical system temp or dist.
 ```
 
 - Artifact retention and deletion authority remain owned by [conventions](../.pi/CONVENTIONS.yaml) and [guidance](../.pi/GUIDANCE.yaml), not implied by this example.
-- Keep test diagnostics external to reusable `dist/<bundle-id>/` output; do not append to `dist/evidence/`.
+- Follow the [temporary-work contract](../README.md#temporary-work). Keep disposable test diagnostics in `.tmp/`, outside reusable `dist/<bundle-id>/` output; do not append to `dist/evidence/`.
 
 ## Evidence limits
 

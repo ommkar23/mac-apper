@@ -2,12 +2,13 @@
 // Tests source inventory size, depth, entry, and file-read boundaries.
 // @frontmatter:end
 import Foundation
+import Scenario
 import Testing
 
 @testable import AgentApplication
 
 @Test func inventoryRejectsEmptyDirectoriesAndAggregateBytes() throws {
-	let parent = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+	let parent = try ProjectTemporaryDirectory.root().appendingPathComponent(UUID().uuidString)
 	defer { try? FileManager.default.removeItem(at: parent) }
 	let directories = try ProjectScaffold.create(under: parent)
 	for index in 0..<2000 {
@@ -25,7 +26,7 @@ import Testing
 }
 
 @Test @MainActor func inventoryExactBoundariesCountTrustedTemplateAndExcludeOutputs() throws {
-	let parent = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+	let parent = try ProjectTemporaryDirectory.root().appendingPathComponent(UUID().uuidString)
 	defer { try? FileManager.default.removeItem(at: parent) }
 	let root = try ProjectScaffold.create(under: parent)
 	let base = try ProjectScaffold.validate(root)
@@ -68,7 +69,7 @@ import Testing
 }
 
 @Test @MainActor func inventoryBoundedReadAndDepthRejectStaleSizes() throws {
-	let parent = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+	let parent = try ProjectTemporaryDirectory.root().appendingPathComponent(UUID().uuidString)
 	defer { try? FileManager.default.removeItem(at: parent) }
 	let root = try ProjectScaffold.create(under: parent)
 	let file = root.appendingPathComponent("Sources/AppModel/Growth.swift")
@@ -90,14 +91,14 @@ import Testing
 @Test func inventoryCancellationBeforeTraversal() async throws {
 	let task = Task {
 		while !Task.isCancelled { await Task.yield() }
-		return try SourceInventory.collect(FileManager.default.temporaryDirectory)
+		return try SourceInventory.collect(try ProjectTemporaryDirectory.root())
 	}
 	task.cancel()
 	await #expect(throws: CancellationError.self) { try await task.value }
 }
 
 @Test func inventoryRejectsEmptyFileFlood() throws {
-	let parent = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+	let parent = try ProjectTemporaryDirectory.root().appendingPathComponent(UUID().uuidString)
 	defer { try? FileManager.default.removeItem(at: parent) }
 	let root = try ProjectScaffold.create(under: parent)
 	for index in 0..<1000 {

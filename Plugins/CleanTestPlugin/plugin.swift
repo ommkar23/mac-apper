@@ -1,6 +1,7 @@
 // @frontmatter:start
 // Runs selected package tests in a disposable, private SwiftPM scratch directory.
 // @frontmatter:end
+import Darwin
 import Foundation
 import PackagePlugin
 
@@ -14,9 +15,20 @@ import PackagePlugin
 			arguments.count == 1 || (arguments.count == 3 && arguments[1] == "--filter")
 		else { throw Failure.invalidArguments }
 		let manager = FileManager.default
-		let scratch = URL(
-			fileURLWithPath: "/private/tmp/mac-apper-test.\(UUID().uuidString)",
-			isDirectory: true)
+		let temporary = context.package.directoryURL.appendingPathComponent(".tmp", isDirectory: true)
+		if !manager.fileExists(atPath: temporary.path) {
+			try manager.createDirectory(
+				at: temporary, withIntermediateDirectories: false, attributes: [.posixPermissions: 0o700])
+		}
+		let values = try temporary.resourceValues(forKeys: [.isDirectoryKey, .isSymbolicLinkKey])
+		let attributes = try manager.attributesOfItem(atPath: temporary.path)
+		guard
+			values.isDirectory == true,
+			values.isSymbolicLink != true,
+			(attributes[.posixPermissions] as? NSNumber)?.intValue == 0o700,
+			(attributes[.ownerAccountID] as? NSNumber)?.uint32Value == getuid()
+		else { throw Failure.unsafeTemporaryRoot }
+		let scratch = temporary.appendingPathComponent("mac-apper-test.\(UUID().uuidString)")
 		try manager.createDirectory(
 			at: scratch, withIntermediateDirectories: false,
 			attributes: [.posixPermissions: 0o700])
@@ -27,6 +39,7 @@ import PackagePlugin
 		process.executableURL = bin.appendingPathComponent("swift")
 		var environment = ProcessInfo.processInfo.environment
 		environment["SWIFT_EXEC"] = bin.appendingPathComponent("swiftc").path
+		environment["TMPDIR"] = temporary.path + "/"
 		process.environment = environment
 		process.arguments =
 			[
@@ -47,5 +60,6 @@ import PackagePlugin
 
 private enum Failure: Error {
 	case invalidArguments
+	case unsafeTemporaryRoot
 	case testFailed(Int32)
 }

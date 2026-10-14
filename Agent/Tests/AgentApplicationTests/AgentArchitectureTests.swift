@@ -7,7 +7,7 @@ import Testing
 private let packageRoot = URL(fileURLWithPath: #filePath)
 	.deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
 
-@Test func scaffoldV8GuidanceAndCompositionStayAligned() throws {
+@Test func scaffoldV9GuidanceAndCompositionStayAligned() throws {
 	let root = packageRoot.deletingLastPathComponent()
 	let base = try String(
 		contentsOf: packageRoot.appendingPathComponent("Sources/Application/BaseAppTemplate.swift"),
@@ -15,7 +15,7 @@ private let packageRoot = URL(fileURLWithPath: #filePath)
 	let protected = try String(
 		contentsOf: packageRoot.appendingPathComponent("Sources/Application/PreviewTemplate.swift"),
 		encoding: .utf8)
-	#expect(base.contains("public static let version = \"8\""))
+	#expect(base.contains("public static let version = \"9\""))
 	#expect(base.contains("files.merge(persistenceFiles)"))
 	#expect(protected.contains("ApplicationModel.production(appID:"))
 	#expect(protected.contains("private let model = ApplicationModel()"))
@@ -34,14 +34,14 @@ private let packageRoot = URL(fileURLWithPath: #filePath)
 			"Tests/AgentApplicationTests/ScaffoldPersistenceTests.swift"), encoding: .utf8)
 	#expect(fixture.contains("@NSManaged"))
 	#expect(!fixture.contains(".enabled(if:"))
-	for path in ["README.md", "Agent/README.yaml", ".pi/skills/scenario-write/SKILL.md"] {
+	for path in ["Agent/docs/scaffold.md", ".pi/skills/scenario-write/SKILL.md"] {
 		let document = try String(contentsOf: root.appendingPathComponent(path), encoding: .utf8)
 		#expect(document.contains("CoreData/data.sqlite"), "Missing UUID storage contract in \(path)")
 		#expect(document.contains("makeSchema"), "Missing schema extension point in \(path)")
 	}
 	let skill = try String(
 		contentsOf: root.appendingPathComponent(".pi/skills/scenario-write/SKILL.md"), encoding: .utf8)
-	#expect(skill.contains("New projects use scaffold version 8"))
+	#expect(skill.contains("New projects use scaffold version 9"))
 	#expect(!skill.contains("replacement remains unimplemented"))
 	#expect(!skill.contains("pass the opt-in generated entity smoke test"))
 }

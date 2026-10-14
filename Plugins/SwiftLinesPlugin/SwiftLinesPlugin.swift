@@ -6,7 +6,9 @@ import PackagePlugin
 
 @main struct SwiftLinesPlugin: CommandPlugin {
 	func performCommand(context: PluginContext, arguments: [String]) async throws {
-		guard arguments.isEmpty else { throw ReportError.unexpectedArguments }
+		guard
+			arguments.isEmpty
+		else { throw ReportError.unexpectedArguments }
 		try report(context: context, root: context.package.directoryURL.standardizedFileURL)
 	}
 
@@ -14,7 +16,7 @@ import PackagePlugin
 		let manager = FileManager.default
 		let keys: Set<URLResourceKey> = [.isDirectoryKey, .isRegularFileKey, .isSymbolicLinkKey]
 		let excluded: Set<String> = [
-			".build", ".git", ".swiftpm", "dist", "HostBuilds", "Generated",
+			".tmp", ".build", ".git", ".swiftpm", "dist", "HostBuilds", "Generated",
 			"Tests", "Fixtures", "Plugins", "Scripts",
 		]
 		var sourceDirectories: [URL] = []
@@ -33,7 +35,9 @@ import PackagePlugin
 				if values.isDirectory == true { directories.skipDescendants() }
 				continue
 			}
-			guard values.isDirectory == true else { continue }
+			guard
+				values.isDirectory == true
+			else { continue }
 			if url.lastPathComponent == "Sources" {
 				sourceDirectories.append(url)
 				directories.skipDescendants()
@@ -57,10 +61,14 @@ import PackagePlugin
 					if values.isDirectory == true { files.skipDescendants() }
 					continue
 				}
-				guard values.isRegularFile == true, url.pathExtension == "swift"
+				guard
+					values.isRegularFile == true,
+					url.pathExtension == "swift"
 				else { continue }
 				let path = url.standardizedFileURL.path
-				guard path.hasPrefix(rootPrefix) else { continue }
+				guard
+					path.hasPrefix(rootPrefix)
+				else { continue }
 				rows.append((String(path.dropFirst(rootPrefix.count)), try lineCount(at: url)))
 			}
 			if let enumerationError { throw enumerationError }
@@ -72,17 +80,17 @@ import PackagePlugin
 		for row in rows { print("\(row.path)\t\(row.lines)") }
 		let dist = root.appendingPathComponent("dist", isDirectory: true)
 		if let attributes = try? manager.attributesOfItem(atPath: dist.path) {
-			guard attributes[.type] as? FileAttributeType == .typeDirectory else {
-				throw ReportError.unsafeDestination
-			}
+			guard
+				attributes[.type] as? FileAttributeType == .typeDirectory
+			else { throw ReportError.unsafeDestination }
 		} else {
 			try manager.createDirectory(at: dist, withIntermediateDirectories: false)
 		}
 		let output = dist.appendingPathComponent("swift-lines-distribution.png")
 		if let attributes = try? manager.attributesOfItem(atPath: output.path) {
-			guard attributes[.type] as? FileAttributeType == .typeRegular else {
-				throw ReportError.unsafeDestination
-			}
+			guard
+				attributes[.type] as? FileAttributeType == .typeRegular
+			else { throw ReportError.unsafeDestination }
 		}
 		let input = context.pluginWorkDirectoryURL.appendingPathComponent("swift-lines.json")
 		try JSONEncoder().encode(rows.map(\.lines)).write(to: input, options: .atomic)
@@ -95,9 +103,9 @@ import PackagePlugin
 		let errorText = String(
 			decoding: diagnostics.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
 		process.waitUntilExit()
-		guard process.terminationStatus == 0 else {
-			throw ReportError.chartFailed(errorText)
-		}
+		guard
+			process.terminationStatus == 0
+		else { throw ReportError.chartFailed(errorText) }
 		print("Chart: \(output.path)")
 	}
 

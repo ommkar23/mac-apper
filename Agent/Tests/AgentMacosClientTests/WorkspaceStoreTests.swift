@@ -2,6 +2,7 @@
 // Tests client workspace state against injected store snapshots and prepared paths.
 // @frontmatter:end
 import Foundation
+import Scenario
 import Testing
 @testable import AgentMacosClient
 import AgentMacosClientModel
@@ -148,7 +149,7 @@ private typealias ChatSessionSummary = AgentMacosClientModel.ChatSessionSummary
 
 @MainActor @Test func workspaceUsesServicePreparedPathsWithoutCreatingClientFiles() async throws {
 	let store = WorkspaceStoreFixture()
-	let project = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+	let project = try ProjectTemporaryDirectory.root().appendingPathComponent(UUID().uuidString)
 	let session = project.appendingPathComponent(".pi/sessions/service.jsonl")
 	store.prepared = .init(
 		project: project, sessionFile: session, title: "Build it", isNew: true, creatingApp: true)

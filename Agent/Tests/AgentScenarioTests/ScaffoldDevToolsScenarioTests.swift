@@ -1,5 +1,5 @@
 // @frontmatter:start
-// Verifies fresh service-prepared v8 scaffolds through signed DevTools Test, Preview, Build, Run and isolated persistence probes without models.
+// Verifies fresh service-prepared v9 scaffolds through signed DevTools Test, Preview, Build, Run and isolated persistence probes without models.
 // @frontmatter:end
 import AgentMacosClient
 import AgentMacosClientModel
@@ -16,7 +16,8 @@ import Testing
 	if environment["AGENT_SCAFFOLD_DEVTOOLS_HOST"] == "1" {
 		try await runScaffoldDevToolsScenario()
 	} else {
-		let home = URL(fileURLWithPath: "/private/tmp/mac-apper-coredata-host-\(UUID().uuidString)")
+		let home = try ProjectTemporaryDirectory.appending(
+			"mac-apper-coredata-host-\(UUID().uuidString)")
 		try FileManager.default.createDirectory(
 			at: home.appendingPathComponent(".mac-apper"), withIntermediateDirectories: true,
 			attributes: [.posixPermissions: 0o700])
@@ -88,7 +89,7 @@ import Testing
 	try #require(model.project == root && !model.connected && model.sessions.isEmpty)
 	try #require(!FileManager.default.fileExists(atPath: prepared.sessionFile.path))
 	try #require(
-		String(contentsOf: root.appendingPathComponent("Scaffold.version"), encoding: .utf8) == "8")
+		String(contentsOf: root.appendingPathComponent("Scaffold.version"), encoding: .utf8) == "9")
 	let original = try scaffoldSourceSnapshot(root)
 	let persistence = try #require(original["Sources/AppModel/Persistence.swift"])
 	try #require(String(decoding: persistence, as: UTF8.self).contains("schema.entities = []"))
@@ -278,8 +279,8 @@ private func validateScaffoldPreview(
 				".mac-apper/previews/\(id.uuidString.lowercased())/\(session.uuidString.lowercased())"
 			).resolvingSymlinksInPath().path)
 	try #require(Data(contentsOf: review) == bytes)
-	let exported = URL(
-		fileURLWithPath: "/private/tmp/mac-apper-coredata-task5-\(id.uuidString.lowercased()).png")
+	let exported = try ProjectTemporaryDirectory.appending(
+		"mac-apper-coredata-task5-\(id.uuidString.lowercased()).png")
 	try bytes.write(to: exported, options: .withoutOverwriting)
 	print(
 		"CORE_DATA_PREVIEW: 320x240 injected red; sha256=\(SHA256.hash(data: bytes).map { String(format: "%02x", $0) }.joined()) export=\(exported.path)"

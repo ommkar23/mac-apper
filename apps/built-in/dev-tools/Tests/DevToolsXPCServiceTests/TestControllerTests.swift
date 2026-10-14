@@ -2,6 +2,7 @@
 // Tests scoped SwiftPM testing, result diagnostics, scratch cleanup, bounds, cancellation, and factory routing.
 // @frontmatter:end
 import Foundation
+import Scenario
 import Testing
 
 @testable import DevToolsApplication
@@ -227,7 +228,7 @@ private struct TestFixture {
 	var project: URL { root.appendingPathComponent(projectID) }
 
 	init() throws {
-		root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+		root = try ProjectTemporaryDirectory.root().appendingPathComponent(UUID().uuidString)
 		tool = root.appendingPathComponent("xcrun-fixture")
 		capture = root.appendingPathComponent("arguments")
 		try FileManager.default.createDirectory(at: project, withIntermediateDirectories: true)

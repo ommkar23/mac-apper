@@ -2,6 +2,7 @@
 // Tests app bundle command discovery and generated DevTools integration metadata.
 // @frontmatter:end
 import Foundation
+import Scenario
 import Testing
 
 private let root = URL(fileURLWithPath: #filePath)
@@ -17,7 +18,7 @@ private let root = URL(fileURLWithPath: #filePath)
 }
 
 @Test func devToolsIntegrationDoesNotRequireAnAppManifest() throws {
-	let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+	let directory = try ProjectTemporaryDirectory.root().appendingPathComponent(UUID().uuidString)
 	defer { try? FileManager.default.removeItem(at: directory) }
 	let process = Process()
 	let output = Pipe()

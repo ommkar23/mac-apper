@@ -2,6 +2,7 @@
 // Tests workspace submission, Pi session reuse, steering, and lifecycle state.
 // @frontmatter:end
 import Foundation
+import Scenario
 import Testing
 
 @testable import AgentApplication
@@ -50,7 +51,7 @@ private final class FixturePiRuntime: AgentMacosClientModel.AgentSessionRuntime,
 }
 
 @MainActor @Test func workspaceCreatesProjectThenStartsPiInThatDirectory() async throws {
-	let root = FileManager.default.temporaryDirectory.appendingPathComponent(
+	let root = try ProjectTemporaryDirectory.root().appendingPathComponent(
 		UUID().uuidString, isDirectory: true)
 	defer { try? FileManager.default.removeItem(at: root) }
 	let pi = FixturePiRuntime()
@@ -93,7 +94,7 @@ private final class FixturePiRuntime: AgentMacosClientModel.AgentSessionRuntime,
 }
 
 @MainActor @Test func persistentSessionSettlesAndAcceptsSteeringAndFollowUp() async throws {
-	let root = FileManager.default.temporaryDirectory.appendingPathComponent(
+	let root = try ProjectTemporaryDirectory.root().appendingPathComponent(
 		UUID().uuidString, isDirectory: true)
 	defer { try? FileManager.default.removeItem(at: root) }
 	let pi = PersistentPiRuntime()
@@ -125,7 +126,7 @@ private final class FixturePiRuntime: AgentMacosClientModel.AgentSessionRuntime,
 
 @MainActor @Test(arguments: ["ordinary", "recovered", "aborted", "exhausted"])
 func piRPCLifecycleKeepsClientBusyUntilSettled(_ outcome: String) async throws {
-	let root = FileManager.default.temporaryDirectory.appendingPathComponent(
+	let root = try ProjectTemporaryDirectory.root().appendingPathComponent(
 		UUID().uuidString, isDirectory: true)
 	defer { try? FileManager.default.removeItem(at: root) }
 	let pi = PersistentPiRuntime()
@@ -195,10 +196,11 @@ func piRPCLifecycleKeepsClientBusyUntilSettled(_ outcome: String) async throws {
 }
 
 @MainActor @Test func renameSanitizesThenRunsTheModelFreePackagingCommand() async throws {
-	let root = FileManager.default.temporaryDirectory.appendingPathComponent(
+	let root = try ProjectTemporaryDirectory.root().appendingPathComponent(
 		UUID().uuidString, isDirectory: true)
 	defer { try? FileManager.default.removeItem(at: root) }
-	let project = try ProjectScaffold.create(under: root)
+	let project = URL(
+		fileURLWithPath: try ProjectScaffold.create(under: root).path, isDirectory: true)
 	try FileManager.default.createDirectory(
 		at: project.appendingPathComponent(".pi/sessions", isDirectory: true),
 		withIntermediateDirectories: true)

@@ -2,6 +2,7 @@
 // Tests presentation launch and rename actions across navigation and failures.
 // @frontmatter:end
 import Foundation
+import Scenario
 import Testing
 @testable import AgentApplication
 @testable import AgentMacosClient
@@ -37,7 +38,7 @@ private typealias BuiltApp = AgentMacosClientModel.BuiltApp
 }
 
 @MainActor @Test func presentationLaunchFailureDoesNotLeakAcrossNavigation() async throws {
-	let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+	let root = try ProjectTemporaryDirectory.root().appendingPathComponent(UUID().uuidString)
 	defer { try? FileManager.default.removeItem(at: root) }
 	let project = try ProjectScaffold.create(under: root)
 	let contents = root.appendingPathComponent(
@@ -77,7 +78,7 @@ private typealias BuiltApp = AgentMacosClientModel.BuiltApp
 @MainActor @Test func presentationRenameFailureKeepsDestinationAndRejectsForeignProject()
 	async throws
 {
-	let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+	let root = try ProjectTemporaryDirectory.root().appendingPathComponent(UUID().uuidString)
 	defer { try? FileManager.default.removeItem(at: root) }
 	let project = try ProjectScaffold.create(under: root)
 	let runtime = ActionRuntime()

@@ -2,6 +2,7 @@
 // Tests integration catalog resolution and Pi extension and provider process configuration.
 // @frontmatter:end
 import Foundation
+import Scenario
 import Testing
 
 @testable import AgentApplication
@@ -117,7 +118,7 @@ private func makeFixtureIntegration(at root: URL) throws -> FixtureIntegration {
 @MainActor @Test func createAppRuntimePassesProviderTerminalClientsAndBoundIDsToItsAgent()
 	async throws
 {
-	let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+	let root = try ProjectTemporaryDirectory.root().appendingPathComponent(UUID().uuidString)
 	defer { try? FileManager.default.removeItem(at: root) }
 	let projectID = UUID().uuidString.lowercased()
 	let sessionID = UUID().uuidString.lowercased()
@@ -195,7 +196,7 @@ private func makeFixtureIntegration(at root: URL) throws -> FixtureIntegration {
 }
 
 @MainActor @Test func chatDoesNotStartBundledWebService() async throws {
-	let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+	let root = try ProjectTemporaryDirectory.root().appendingPathComponent(UUID().uuidString)
 	defer { try? FileManager.default.removeItem(at: root) }
 	try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
 	let executable = root.appendingPathComponent("fixture-pi")
@@ -220,7 +221,7 @@ private func makeFixtureIntegration(at root: URL) throws -> FixtureIntegration {
 
 @MainActor @Test(arguments: [true, false])
 func chatRuntimeSelectsCodemodeWithoutProviderOrBuiltinTools(firstRequest: Bool) async throws {
-	let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+	let root = try ProjectTemporaryDirectory.root().appendingPathComponent(UUID().uuidString)
 	defer { try? FileManager.default.removeItem(at: root) }
 	try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
 	let executable = root.appendingPathComponent("fixture-pi")
@@ -261,7 +262,7 @@ func chatRuntimeSelectsCodemodeWithoutProviderOrBuiltinTools(firstRequest: Bool)
 }
 
 @MainActor @Test func isolatedRuntimeHonorsConfiguredResourceBoundaries() async throws {
-	let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+	let root = try ProjectTemporaryDirectory.root().appendingPathComponent(UUID().uuidString)
 	defer { try? FileManager.default.removeItem(at: root) }
 	let project = root.appendingPathComponent("project")
 	let sessions = root.appendingPathComponent("sessions")
@@ -337,7 +338,7 @@ func chatRuntimeSelectsCodemodeWithoutProviderOrBuiltinTools(firstRequest: Bool)
 }
 
 @MainActor @Test func ephemeralRuntimeUsesNoSessionAndCreatesNoSessionStorage() async throws {
-	let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+	let root = try ProjectTemporaryDirectory.root().appendingPathComponent(UUID().uuidString)
 	defer { try? FileManager.default.removeItem(at: root) }
 	let project = root.appendingPathComponent("project")
 	let sessions = root.appendingPathComponent("sessions")
@@ -366,7 +367,7 @@ func chatRuntimeSelectsCodemodeWithoutProviderOrBuiltinTools(firstRequest: Bool)
 
 @Test(arguments: ["Agent/Extensions", "Resources/AgentExtensions"])
 func chatAuthoredExtensionResolvesWithoutWebOnFirstAndLaterRequests(directory: String) throws {
-	let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+	let root = try ProjectTemporaryDirectory.root().appendingPathComponent(UUID().uuidString)
 	defer { try? FileManager.default.removeItem(at: root) }
 	let extensions = root.appendingPathComponent(directory)
 	try FileManager.default.createDirectory(at: extensions, withIntermediateDirectories: true)
@@ -388,7 +389,7 @@ func chatAuthoredExtensionResolvesWithoutWebOnFirstAndLaterRequests(directory: S
 }
 
 @Test func createInstructionsLoadOnFirstAndLaterRequestsButNeverChat() throws {
-	let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+	let root = try ProjectTemporaryDirectory.root().appendingPathComponent(UUID().uuidString)
 	defer { try? FileManager.default.removeItem(at: root) }
 	let integration = try makeFixtureIntegration(at: root)
 	try Data().write(to: root.appendingPathComponent("Agent/Extensions/create-instructions.ts"))
@@ -410,7 +411,7 @@ func chatAuthoredExtensionResolvesWithoutWebOnFirstAndLaterRequests(directory: S
 	#expect(
 		FileManager.default.isReadableFile(
 			atPath: package.appendingPathComponent("Extensions/create-app.ts").path))
-	let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+	let root = try ProjectTemporaryDirectory.root().appendingPathComponent(UUID().uuidString)
 	defer { try? FileManager.default.removeItem(at: root) }
 	let catalog = try makeFixtureIntegration(at: root).catalog
 	let create = try catalog.configuration(agentID: "create", firstRequest: true, root: root)
@@ -420,7 +421,7 @@ func chatAuthoredExtensionResolvesWithoutWebOnFirstAndLaterRequests(directory: S
 }
 
 @Test func catalogUsesBundledProviderExtensionsAndNeverAGeneratedSourceFallback() throws {
-	let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+	let root = try ProjectTemporaryDirectory.root().appendingPathComponent(UUID().uuidString)
 	defer { try? FileManager.default.removeItem(at: root) }
 	let integration = try makeFixtureIntegration(at: root)
 	let chat = try integration.catalog.configuration(
@@ -444,7 +445,7 @@ func chatAuthoredExtensionResolvesWithoutWebOnFirstAndLaterRequests(directory: S
 }
 
 @Test func catalogComposesChatAndCreateWithoutCoreProviderLists() throws {
-	let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+	let root = try ProjectTemporaryDirectory.root().appendingPathComponent(UUID().uuidString)
 	defer { try? FileManager.default.removeItem(at: root) }
 	let catalog = try makeFixtureIntegration(at: root).catalog
 	let chat = try catalog.configuration(agentID: "chat", firstRequest: false, root: root)
@@ -496,7 +497,7 @@ func chatAuthoredExtensionResolvesWithoutWebOnFirstAndLaterRequests(directory: S
 }
 
 @Test func appCatalogAllowsProvidersWithoutAnXPCService() throws {
-	let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+	let root = try ProjectTemporaryDirectory.root().appendingPathComponent(UUID().uuidString)
 	defer { try? FileManager.default.removeItem(at: root) }
 	_ = try makeFixtureIntegration(at: root)
 	let extensions = root.appendingPathComponent("provider/PiExtension")

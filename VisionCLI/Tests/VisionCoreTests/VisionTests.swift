@@ -2,6 +2,7 @@
 // Tests bounded review requests, conservative verdict aggregation, provider JSON validation, and private credential loading without live API calls.
 // @frontmatter:end
 import Foundation
+import Scenario
 import ImageIO
 import Testing
 @testable import VisionCore
@@ -109,7 +110,7 @@ private actor Stub: HTTPTransport {
 }
 
 @Test func credentialsPreferEnvironmentAndRejectWorldReadableFiles() throws {
-	let root = URL(fileURLWithPath: "/private/tmp").appendingPathComponent(UUID().uuidString)
+	let root = try ProjectTemporaryDirectory.root().appendingPathComponent(UUID().uuidString)
 	try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
 	defer { try? FileManager.default.removeItem(at: root) }
 	let file = root.appendingPathComponent(".env")

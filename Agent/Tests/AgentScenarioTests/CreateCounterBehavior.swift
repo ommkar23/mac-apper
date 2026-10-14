@@ -82,7 +82,8 @@ func counterCountExpression(project: URL, scratch: URL, compiler: SDKCompiler? =
 
 func verifyIndependentCounter(project: URL, compiler: SDKCompiler) throws {
 	let manager = FileManager.default
-	let scratch = URL(fileURLWithPath: "/private/tmp/mac-apper-counter-build-\(UUID().uuidString)")
+	let scratch = try ProjectTemporaryDirectory.appending(
+		"mac-apper-counter-build-\(UUID().uuidString)")
 	try manager.createDirectory(
 		at: scratch, withIntermediateDirectories: false, attributes: [.posixPermissions: 0o700])
 	defer { try? manager.removeItem(at: scratch) }
@@ -119,7 +120,8 @@ struct CounterCommandResult {
 func counterCommand(_ executable: URL, _ arguments: [String], timeout: Int = 180) throws
 	-> CounterCommandResult
 {
-	let log = URL(fileURLWithPath: "/private/tmp/mac-apper-counter-command-\(UUID().uuidString).log")
+	let log = try ProjectTemporaryDirectory.appending(
+		"mac-apper-counter-command-\(UUID().uuidString).log")
 	try Data().write(to: log, options: .withoutOverwriting)
 	let handle = try FileHandle(forWritingTo: log)
 	defer { try? handle.close() }

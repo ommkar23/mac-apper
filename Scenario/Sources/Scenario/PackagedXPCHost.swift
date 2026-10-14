@@ -43,7 +43,7 @@ public struct XPCHostDefinition {
 			directory == nil
 		else { throw ScenarioFailure.message("XPC host already staged") }
 		let manager = FileManager.default
-		let temporary = manager.temporaryDirectory.appendingPathComponent(
+		let temporary = try ProjectTemporaryDirectory.root().appendingPathComponent(
 			"scenario-xpc-host-\(UUID().uuidString)")
 		let stagedApp = temporary.appendingPathComponent("\(definition.appName).app")
 		let contents = stagedApp.appendingPathComponent("Contents")
@@ -80,6 +80,10 @@ public struct XPCHostDefinition {
 				serviceInfo["CFBundleExecutable"] as? String == serviceName
 			else { throw ScenarioFailure.message("XPC service executable does not match plist") }
 			serviceInfo["CFBundleIdentifier"] = identifier
+			var xpc = serviceInfo["XPCService"] as? [String: Any] ?? [:]
+			xpc["EnvironmentVariables"] = try ProjectTemporaryDirectory.environment(
+				xpc["EnvironmentVariables"] as? [String: String] ?? [:])
+			serviceInfo["XPCService"] = xpc
 			try Self.save(serviceInfo, to: serviceContents.appendingPathComponent("Info.plist"))
 			try Self.stageResources(
 				definition.appResources, under: contents.appendingPathComponent("Resources"))

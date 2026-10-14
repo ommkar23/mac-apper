@@ -1,4 +1,5 @@
 import Foundation
+import Scenario
 import OpenXPCSpecification
 import Testing
 
@@ -257,7 +258,7 @@ private let subscriptionContract = """
 
 @Test func generatedSubscriptionTargetsTypecheck() throws {
 	let spec = try OpenXPCSpecification(yaml: subscriptionContract)
-	let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+	let root = try ProjectTemporaryDirectory.root().appendingPathComponent(UUID().uuidString)
 	try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
 	defer { try? FileManager.default.removeItem(at: root) }
 	for target in ["EventService", "EventClient"] {
@@ -402,7 +403,7 @@ private let subscriptionContract = """
 
 @Test func functionalOutputsTypecheckAsStandaloneTargets() throws {
 	let spec = try OpenXPCSpecification(yaml: functionalContract)
-	let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+	let root = try ProjectTemporaryDirectory.root().appendingPathComponent(UUID().uuidString)
 	try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
 	defer { try? FileManager.default.removeItem(at: root) }
 	for target in ["ProbeService", "ProbeClient", "ProbeAgentClient"] {
@@ -423,7 +424,7 @@ private let subscriptionContract = """
 @Test func generatedServiceDispatchesTypedPayloads() throws {
 	let spec = try OpenXPCSpecification(yaml: functionalContract)
 	let source = try OpenXPCSourceGenerator.generate(spec: spec, target: "ProbeService")
-	let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+	let root = try ProjectTemporaryDirectory.root().appendingPathComponent(UUID().uuidString)
 	try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
 	defer { try? FileManager.default.removeItem(at: root) }
 	let generated = root.appendingPathComponent("OpenXPCGenerated.swift")
@@ -484,7 +485,7 @@ private let subscriptionContract = """
 @Test func generatedAgentClientReportsFailureByDefaultAndSilencesOnlyWithFlag() throws {
 	let spec = try OpenXPCSpecification(yaml: functionalContract)
 	let source = try OpenXPCSourceGenerator.generate(spec: spec, target: "ProbeAgentClient")
-	let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+	let root = try ProjectTemporaryDirectory.root().appendingPathComponent(UUID().uuidString)
 	try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
 	defer { try? FileManager.default.removeItem(at: root) }
 	let generated = root.appendingPathComponent("Generated.swift")

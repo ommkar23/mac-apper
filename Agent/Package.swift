@@ -52,7 +52,8 @@ let package = Package(
 				"AgentScenarioSupport", "AgentMacosClient", "AgentMacosClientModel",
 				.product(name: "Scenario", package: "Scenario"),
 				.product(name: "Testing", package: "swift-testing"),
-			]
+			],
+			exclude: ["HTView/README.md"]
 		),
 		.testTarget(
 			name: "AgentApplicationTests",
@@ -73,6 +74,7 @@ let package = Package(
 			name: "AgentMacosClientTests",
 			dependencies: [
 				"AgentMacosClient",
+				.product(name: "Scenario", package: "Scenario"),
 				.product(name: "Testing", package: "swift-testing"),
 			]
 		),
@@ -80,6 +82,7 @@ let package = Package(
 			name: "AgentTests",
 			dependencies: [
 				"AgentApplication",
+				.product(name: "Scenario", package: "Scenario"),
 				"AgentMacosClient",
 				"AgentMacosClientModel",
 				"PreviewContract",

@@ -8,7 +8,8 @@ import Testing
 
 @Test func createCounterOwnedServiceCleanupOffline() throws {
 	let manager = FileManager.default
-	let app = URL(fileURLWithPath: "/private/tmp/mac-apper-counter-cleanup-\(UUID().uuidString).app")
+	let app = try ProjectTemporaryDirectory.appending(
+		"mac-apper-counter-cleanup-\(UUID().uuidString).app")
 	let relative = "Owned.xpc/Contents/MacOS/OwnedService"
 	let binary = app.appendingPathComponent("Contents/XPCServices/" + relative)
 	try manager.createDirectory(
@@ -36,8 +37,8 @@ import Testing
 @Test @MainActor func counterBehaviorOfflineRegression() throws {
 	let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
 		.deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
-	let directory = URL(
-		fileURLWithPath: "/private/tmp/mac-apper-counter-offline-\(UUID().uuidString)")
+	let directory = try ProjectTemporaryDirectory.appending(
+		"mac-apper-counter-offline-\(UUID().uuidString)")
 	let project = directory.appendingPathComponent("project")
 	let scratch = directory.appendingPathComponent("build")
 	let manager = FileManager.default

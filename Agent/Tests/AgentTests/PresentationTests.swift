@@ -2,6 +2,7 @@
 // Tests presentation controls, host actions, composer state, and refresh lifecycle.
 // @frontmatter:end
 import Foundation
+import Scenario
 import Testing
 @testable import AgentApplication
 @testable import AgentMacosClient
@@ -36,7 +37,7 @@ private typealias BuiltApp = AgentMacosClientModel.BuiltApp
 }
 
 @MainActor @Test func presentationHostActionsAndRefreshLifecycle() async throws {
-	let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+	let root = try ProjectTemporaryDirectory.root().appendingPathComponent(UUID().uuidString)
 	defer { try? FileManager.default.removeItem(at: root) }
 	let project = try ProjectScaffold.create(under: root)
 	let session = WorkspaceSession(
@@ -71,7 +72,7 @@ private typealias BuiltApp = AgentMacosClientModel.BuiltApp
 }
 
 @MainActor @Test func presentationOwnsComposerAndNavigation() async throws {
-	let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+	let root = try ProjectTemporaryDirectory.root().appendingPathComponent(UUID().uuidString)
 	defer { try? FileManager.default.removeItem(at: root) }
 	let session = WorkspaceSession(
 		runtime: PresentationRuntime(), workspaceStore: LocalWorkspaceStore(projectsRoot: root))

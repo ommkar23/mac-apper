@@ -8,10 +8,13 @@ public final class IsolatedScenarioHome {
 	public let directory: URL
 	private var credentials: [URL] = []
 	public var environment: [String: String] {
-		["HOME": directory.path, "CFFIXED_USER_HOME": directory.path]
+		[
+			"HOME": directory.path, "CFFIXED_USER_HOME": directory.path,
+			"TMPDIR": directory.deletingLastPathComponent().path + "/",
+		]
 	}
 	public init() throws {
-		directory = URL(fileURLWithPath: "/private/tmp/scenario-home-\(UUID().uuidString)")
+		directory = try ProjectTemporaryDirectory.appending("scenario-home-\(UUID().uuidString)")
 		try FileManager.default.createDirectory(
 			at: directory, withIntermediateDirectories: false, attributes: [.posixPermissions: 0o700])
 	}

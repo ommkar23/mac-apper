@@ -49,6 +49,13 @@
 ## Run
 
 - Pi arguments are an empty object. [RunController](../Sources/Application/Controllers/RunController.swift) uses Build's selected executable and limits, then stages `.mac-apper/DevBuild/<request-uuid>/<target>.app`, including bounded-scope executable/resource validation and bundle metadata.
+- Root `Info.plist` supplies branding through `CFBundleDisplayName`, falling back to `CFBundleName`.
+  - The file must be regular, nonlinked and at most 16 KiB.
+  - Every supplied name must be a valid string under the existing 1–64-character sanitation policy.
+  - Full sanitized names populate both staged branding fields without truncation.
+  - Only an absent plist falls back to the executable target for compatibility.
+  - Existing malformed metadata or missing names fail explicitly.
+  - The service retains its own executable, identifier and version fields rather than copying the project plist wholesale.
 - It launches the staged executable directly, checks immediate liveness and tracks it as an owned process. Replacement stops the previous live instance for that project; a monitor reaps ended instances.
 - `RunResult` returns `summary` (4096), `target` (256) and project-relative `relativePath` (4096).
 - Child output is bounded to 65,536 bytes. Process ownership/cancellation cleanup is implemented by [OwnedProcess](../Sources/Application/OwnedProcess.swift); Run does not report a former readiness handshake.

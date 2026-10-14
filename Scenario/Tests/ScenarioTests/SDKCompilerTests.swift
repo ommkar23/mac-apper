@@ -44,7 +44,7 @@ import Testing
 		let manager = FileManager.default
 		func ownedScratch() throws -> Set<String> {
 			Set(
-				try manager.contentsOfDirectory(atPath: "/private/tmp").filter {
+				try manager.contentsOfDirectory(atPath: ProjectTemporaryDirectory.root().path).filter {
 					$0.hasPrefix("mac-apper-sdk-preflight-") || $0.hasPrefix("mac-apper-sdk-command-")
 				})
 		}
@@ -59,8 +59,8 @@ import Testing
 			try SDKCompiler.command(URL(fileURLWithPath: "/bin/sleep"), ["5"], timeout: 0.05)
 		}
 		#expect(try ownedScratch() == before)
-		let scratch = URL(
-			fileURLWithPath: "/private/tmp/mac-apper-sdk-import-test-\(UUID().uuidString)")
+		let scratch = try ProjectTemporaryDirectory.appending(
+			"mac-apper-sdk-import-test-\(UUID().uuidString)")
 		try manager.createDirectory(
 			at: scratch, withIntermediateDirectories: false, attributes: [.posixPermissions: 0o700])
 		defer { try? manager.removeItem(at: scratch) }

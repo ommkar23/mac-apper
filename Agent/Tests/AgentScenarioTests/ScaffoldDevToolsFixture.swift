@@ -98,7 +98,8 @@ import Testing
 		import Foundation
 		import Testing
 		@Test @MainActor func packagedTypedCoreDataSaveRollbackReopen() throws {
-		    let home = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent("packaged-coredata-\(UUID().uuidString)")
+		    let temporary = try #require(ProcessInfo.processInfo.environment["TMPDIR"])
+		    let home = URL(fileURLWithPath: temporary).appendingPathComponent("packaged-coredata-\(UUID().uuidString)")
 		    defer { try? FileManager.default.removeItem(at: home) }
 		    let url = try ApplicationPersistence.productionURL(appID: FixtureRecords.id.uuidString, home: home)
 		    #expect(url.path.hasSuffix("MacApperGenerated/11111111-1111-4111-8111-111111111111/CoreData/data.sqlite"))

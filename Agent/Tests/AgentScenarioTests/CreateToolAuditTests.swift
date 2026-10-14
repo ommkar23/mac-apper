@@ -4,11 +4,12 @@
 import AgentMacosClientModel
 import CoreGraphics
 import Foundation
+import Scenario
 import ImageIO
 import Testing
 
 @Test func createPlanToolAuditOffline() throws {
-	let root = URL(fileURLWithPath: "/private/tmp/mac-apper-plan-evidence-\(UUID().uuidString)")
+	let root = try ProjectTemporaryDirectory.appending("mac-apper-plan-evidence-\(UUID().uuidString)")
 	try FileManager.default.createDirectory(at: root, withIntermediateDirectories: false)
 	defer { try? FileManager.default.removeItem(at: root) }
 	let pending: [String: Any] = [
@@ -53,7 +54,8 @@ import Testing
 }
 
 @Test func createPreviewToolAuditOffline() throws {
-	let root = URL(fileURLWithPath: "/private/tmp/mac-apper-preview-evidence-\(UUID().uuidString)")
+	let root = try ProjectTemporaryDirectory.appending(
+		"mac-apper-preview-evidence-\(UUID().uuidString)")
 	let project = root.appendingPathComponent(UUID().uuidString.lowercased())
 	try FileManager.default.createDirectory(at: project, withIntermediateDirectories: true)
 	defer { try? FileManager.default.removeItem(at: root) }

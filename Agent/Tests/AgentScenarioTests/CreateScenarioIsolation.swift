@@ -48,8 +48,10 @@ import Testing
 	}
 	static func requireHome() throws -> URL {
 		let path = try #require(ProcessInfo.processInfo.environment["AGENT_CREATE_HOME"])
-		try #require(path.hasPrefix("/private/tmp/scenario-home-"))
 		let home = URL(fileURLWithPath: path)
+		let temporary = try ProjectTemporaryDirectory.root()
+		try #require(home.deletingLastPathComponent() == temporary)
+		try #require(home.lastPathComponent.hasPrefix("scenario-home-"))
 		let values = try home.resourceValues(forKeys: [.isDirectoryKey, .isSymbolicLinkKey])
 		try #require(values.isDirectory == true && values.isSymbolicLink != true)
 		try #require(
@@ -59,8 +61,8 @@ import Testing
 	}
 	static func archive(project: URL, home: URL) throws {
 		let manager = FileManager.default
-		let archive = URL(
-			fileURLWithPath: "/private/tmp/mac-apper-create-evidence-\(UUID().uuidString)")
+		let archive = try ProjectTemporaryDirectory.appending(
+			"mac-apper-create-evidence-\(UUID().uuidString)")
 		try manager.createDirectory(
 			at: archive, withIntermediateDirectories: false, attributes: [.posixPermissions: 0o700])
 		print("CREATE_EVIDENCE_RETAINED: \(archive.path)")

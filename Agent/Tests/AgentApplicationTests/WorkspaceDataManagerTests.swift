@@ -2,6 +2,7 @@
 // Tests server-side workspace preparation and catalog responses.
 // @frontmatter:end
 import Foundation
+import Scenario
 import Testing
 @testable import AgentApplication
 
@@ -34,7 +35,7 @@ import Testing
 @MainActor @Test func serviceKeepsChatInOneProjectAndCreatesSessionsInExistingCreateProjects()
 	async throws
 {
-	let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+	let root = try ProjectTemporaryDirectory.root().appendingPathComponent(UUID().uuidString)
 	defer { try? FileManager.default.removeItem(at: root) }
 	let manager = WorkspaceDataManager(projectsRoot: root, preparations: SessionPreparationRegistry())
 	func prepared(_ request: WorkspaceServiceRequest) async throws -> WorkspacePreparedRecord {
@@ -81,7 +82,7 @@ import Testing
 }
 
 @MainActor @Test func serviceWorkspaceManagerOwnsProjectCreationAndCatalogData() async throws {
-	let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+	let root = try ProjectTemporaryDirectory.root().appendingPathComponent(UUID().uuidString)
 	defer { try? FileManager.default.removeItem(at: root) }
 	let manager = WorkspaceDataManager(projectsRoot: root, preparations: SessionPreparationRegistry())
 

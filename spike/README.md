@@ -4,6 +4,16 @@
 - Reference: `../apps/built-in/dev-tools/Sources/Application/Resources/PreviewRenderer.swift`.
 - Motivation: read-only report `/private/tmp/mac-apper-counter-lifecycle-live.xE4QZx/report.md`, which reports missing Increment/Decrement labels in a validated preview. This spike does **not** rerun that workflow, modify its retained fixtures, or establish its exact internal cause.
 
+## Temporary work
+
+- New reproduction scratch, logs, PNGs and review folders use private repository-root `.tmp/`.
+- `scripts/temporary-directory.py` rejects linked, non-directory, foreign-owned or public temporary roots. It never falls back to system temp.
+- Shell entry points export its `TMPDIR` before SDK or compiler commands.
+- Historical `spike/evidence/` artifacts and links below remain unchanged. No migration or cleanup moves them.
+- Follow the [temporary-work contract](../README.md#temporary-work). Retained review PNGs are still disposable.
+- Allocator-only checks: `python3 spike/scripts/test-temporary-directory.py`.
+- Rendering scripts still need separate execution approval. The migration does not repair or exercise their process-cleanup contracts.
+
 ## Broad native-view review (2026-10-11)
 
 - Primary review folder: **`/Users/ommkar/dev/mac-sde/mac-apper/spike/evidence/native-review.eZlLLf`** ([open](evidence/native-review.eZlLLf/)).
@@ -34,7 +44,7 @@
   - `scrolling-cards.png`: cards 1–5 and part of 6 appear; the rest are intentionally below the viewport. Scroll interaction is untested, not missing-data coverage.
   - Inactive sidebar/control labels are subdued and prominent buttons do not establish active accent-color fidelity. Menu/picker popups, alternate tabs, actions/typing/focus, accessibility, active key windows, dark appearance, Retina scale, async content and other platforms remain unverified. Asset-catalog lookup remains unavailable as documented below; no tooling installation was attempted.
 - Reproduce from project root: `bash spike/scripts/review.sh`.
-  - Creates a new unique `native-review.*` primary folder and separate `review-work.*` for scratch/logs/repeat PNGs; does not regenerate or overwrite old resources/evidence.
+  - Creates new unique `.tmp/spike-native-review-*` and `.tmp/spike-review-work-*` folders for primary PNGs and scratch/logs/repeats. It does not regenerate or overwrite old resources/evidence.
   - Explicit `swift64="$HOME/Library/Developer/Toolchains/swift-6.4.0-RELEASE.xctoolchain/usr/bin/swift"`; `sdk=$(xcrun --sdk macosx --show-sdk-path)`; `env -u SDKROOT "$swift64" test/build --package-path spike --scratch-path "$work/build" -j 2 -Xswiftc -sdk -Xswiftc "$sdk"`. Supervisor: `python3 spike/scripts/review-capture.py "$bin/render-spike" "$work" "$review" "$PWD/spike/fixtures/local-checker.png"`.
   - Selected native-only CLI: `render-spike --review /new/path/typography.png spike/fixtures/local-checker.png typography`; destination must not exist. `--review-list` lists this matrix; original CLI/`--list` remain unchanged.
   - Actual commands/results: `test.log`, `final-test-2.log`, `final-build-2.log`, `final-format.log`, `lint-clt.log`, `final-supervisor-tests.log`, `verified-final-result.txt` and `verified-source-sha256.json` under the auxiliary folder.
@@ -108,16 +118,21 @@ bash spike/scripts/minimal.sh
 ```
 
 - `run.sh` explicitly selects `~/Library/Developer/Toolchains/swift-6.4.0-RELEASE.xctoolchain/usr/bin/swift`, removes inherited SDKROOT and passes the system SDK to Swift. No `--build-system native`, package dependencies or paid calls are used.
-- Each run creates a nonempty scratch path under `spike/evidence/run.*`, sets its child TMPDIR there, retains logs/builds/PNGs, and only signals its direct owned capture child on timeout (30 seconds, then wait). No historical path is removed.
+- Each new run creates a private scratch path under repository-root `.tmp/spike-run-*` and sets child TMPDIR to the private `.tmp/` root. Logs, builds and PNGs remain disposable. Capture supervision is unchanged. No historical path is removed.
 - The tests use the **installed toolchain's Testing 6.4** without adding a package dependency; this spike does not change the product's pinned Testing convention.
 - Smallest **verified failing** selection uses the package's counter fixture, not the successful independent reduction:
 
 ```sh
 swift64="$HOME/Library/Developer/Toolchains/swift-6.4.0-RELEASE.xctoolchain/usr/bin/swift"
-run="$PWD/spike/evidence/run.IDMajI"
+run=$(python3 spike/scripts/temporary-directory.py spike-counter-only)
+export TMPDIR="$(dirname "$run")/"
+sdk=$(xcrun --sdk macosx --show-sdk-path)
+env -u SDKROOT "$swift64" build --package-path spike \
+  --scratch-path "$run/build" -j 2 -Xswiftc -sdk -Xswiftc "$sdk"
 bin=$(env -u SDKROOT "$swift64" build --package-path spike \
   --scratch-path "$run/build" --show-bin-path)
-out=$(mktemp -d "$PWD/spike/evidence/counter-only.XXXXXX")
+out="$run/capture"
+mkdir "$out"
 python3 - "$bin/render-spike" "$out" "$PWD/spike/fixtures/local-checker.png" <<'PY'
 import subprocess, sys
 subprocess.run([*sys.argv[1:], 'counter'], check=True, timeout=30)
@@ -139,5 +154,5 @@ PY
 
 - Product packages, original GUI, Agent/DevTools scenarios, Pi/model/Gemini/MCP calls, credentials, global configuration and historical cleanup were excluded.
 - Only public Apple documentation was fetched. No package dependency was added or installed.
-- Owned capture windows were closed; exact direct children were reaped and checked absent. Build scratch and artifacts are intentionally retained **under spike/**.
+- Owned capture windows were closed; exact direct children were reaped and checked absent. Historical build scratch and artifacts remain intentionally retained **under spike/**. New reproduction work uses disposable repository-root `.tmp/`.
 - No product bundle rebuild was needed or performed: no app-affecting product source/resource changed. Git status is unavailable because the project directory is not a Git repository.

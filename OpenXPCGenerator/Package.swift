@@ -9,6 +9,7 @@ let package = Package(
 		.plugin(name: "OpenXPCBuildPlugin", targets: ["OpenXPCBuildPlugin"]),
 	],
 	dependencies: [
+		.package(path: "../Scenario"),
 		.package(url: "https://github.com/jpsim/Yams.git", from: "6.0.0"),
 		.package(url: "https://github.com/swiftlang/swift-testing.git", exact: "6.2.3"),
 	],
@@ -28,6 +29,7 @@ let package = Package(
 			name: "OpenXPCSpecificationTests",
 			dependencies: [
 				"OpenXPCSpecification",
+				.product(name: "Scenario", package: "Scenario"),
 				.product(name: "Testing", package: "swift-testing"),
 			]
 		),

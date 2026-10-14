@@ -7,7 +7,7 @@ import Testing
 
 @Test @MainActor func testHostStagesOnlyItsDeclaredInputsAndCleansUp() throws {
 	let manager = FileManager.default
-	let fixture = manager.temporaryDirectory.appendingPathComponent(
+	let fixture = try ProjectTemporaryDirectory.root().appendingPathComponent(
 		"scenario-test-fixture-\(UUID().uuidString)")
 	try manager.createDirectory(at: fixture, withIntermediateDirectories: false)
 	defer { try? manager.removeItem(at: fixture) }

@@ -9,16 +9,16 @@ func scaffoldCommand(
 	_ executable: URL, _ arguments: [String], environment: [String: String] = [:],
 	timeout: Int, logOutput: Bool = true
 ) throws -> String {
-	let log = URL(
-		fileURLWithPath: "/private/tmp/mac-apper-coredata-task5-command-\(UUID().uuidString).log")
+	let log = try ProjectTemporaryDirectory.appending(
+		"mac-apper-coredata-task5-command-\(UUID().uuidString).log")
 	try Data().write(to: log, options: .withoutOverwriting)
 	let handle = try FileHandle(forWritingTo: log)
 	defer { try? handle.close() }
 	let process = Process()
 	process.executableURL = executable
 	process.arguments = arguments
-	process.environment = ProcessInfo.processInfo.environment.merging(environment) { _, value in value
-	}
+	process.environment = try ProjectTemporaryDirectory.environment(
+		ProcessInfo.processInfo.environment.merging(environment) { _, value in value })
 	process.standardInput = FileHandle.nullDevice
 	process.standardOutput = handle
 	process.standardError = handle

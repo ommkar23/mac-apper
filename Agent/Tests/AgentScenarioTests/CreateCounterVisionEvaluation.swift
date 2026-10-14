@@ -55,7 +55,7 @@ func verifyCounterVision(_ preview: VerifiedCounterPreview) async throws {
 	let request = try counterVisionRequest(
 		preview, identity: identity, model: model, criteria: criteria)
 	let manager = FileManager.default
-	let scratch = URL(fileURLWithPath: "/private/tmp").appendingPathComponent(
+	let scratch = try ProjectTemporaryDirectory.root().appendingPathComponent(
 		"agent-counter-vision-\(UUID().uuidString)")
 	try manager.createDirectory(
 		at: scratch, withIntermediateDirectories: false, attributes: [.posixPermissions: 0o700])

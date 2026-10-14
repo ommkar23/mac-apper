@@ -30,6 +30,7 @@ extension BaseAppTemplate {
 			"app-manifest.json": try ContractSource.appManifest(appID: appID),
 			"Sources/PreviewContract/PreviewProtocol.swift": try ContractSource.text,
 			"Sources/ProductionApp/ProductionApp.swift": #"""
+			import Foundation
 			import SwiftUI
 			import Observation
 			import AppModel
@@ -44,9 +45,24 @@ extension BaseAppTemplate {
 			        service?.start()
 			    }
 			}
+			enum ProductionWindowTitle {
+			    static func resolve(bundle: Bundle = .main) -> String {
+			        for key in ["CFBundleDisplayName", "CFBundleName"] {
+			            if let name = bundle.object(forInfoDictionaryKey: key) as? String,
+			               !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+			                return name
+			            }
+			        }
+			        return "Generated App"
+			    }
+			}
 			@main @MainActor struct ProductionApplication: App {
 			    @State private var runtime = ProductionRuntime()
-			    var body: some Scene { WindowGroup("Application") { ApplicationRoot(model: runtime.model) } }
+			    var body: some Scene {
+			        WindowGroup(Text(verbatim: ProductionWindowTitle.resolve())) {
+			            ApplicationRoot(model: runtime.model)
+			        }
+			    }
 			}
 			"""#,
 			"Sources/PreviewApp/PreviewApp.swift": #"""

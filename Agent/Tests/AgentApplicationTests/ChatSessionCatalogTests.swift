@@ -2,6 +2,7 @@
 // Tests scoped Pi session catalog loading and rejection of linked histories.
 // @frontmatter:end
 import Foundation
+import Scenario
 import Testing
 @testable import AgentApplication
 
@@ -31,10 +32,11 @@ private func writeCatalogSession(in project: URL, filename: String, prompt: Stri
 }
 
 @Test func sessionCatalogRejectsForeignAndLinkedHistories() throws {
-	let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+	let root = try ProjectTemporaryDirectory.root().appendingPathComponent(
+		UUID().uuidString, isDirectory: true)
 	defer { try? FileManager.default.removeItem(at: root) }
-	let first = root.appendingPathComponent("first")
-	let second = root.appendingPathComponent("second")
+	let first = root.appendingPathComponent("first", isDirectory: true)
+	let second = root.appendingPathComponent("second", isDirectory: true)
 	let file = try writeCatalogSession(
 		in: first, filename: "one.jsonl", prompt: "One", answer: "Reply")
 	_ = try writeCatalogSession(in: second, filename: "two.jsonl", prompt: "Two", answer: "Reply")
@@ -52,7 +54,8 @@ private func writeCatalogSession(in project: URL, filename: String, prompt: Stri
 }
 
 @Test func sessionCatalogLoadsRealPiHistoryAndGeneratesTitles() throws {
-	let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+	let root = try ProjectTemporaryDirectory.root().appendingPathComponent(
+		UUID().uuidString, isDirectory: true)
 	defer { try? FileManager.default.removeItem(at: root) }
 	let file = try writeCatalogSession(
 		in: root, filename: "one.jsonl", prompt: "Build a notes app", answer: "Done")

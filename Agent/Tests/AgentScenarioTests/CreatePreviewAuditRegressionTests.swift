@@ -3,6 +3,7 @@
 // @frontmatter:end
 import CryptoKit
 import Foundation
+import Scenario
 import Testing
 
 @Test func createPreviewDefaultCanvasTextOnlyOffline() throws {
@@ -33,7 +34,7 @@ func createPreviewRejectsInvalidPathEvidenceOffline(mutation: String) throws {
 			width: mutation == "invalidCanvas" ? 640 : 64,
 			height: mutation == "invalidCanvas" ? 480 : 64)
 		defer { fixture.remove() }
-		var project = URL(fileURLWithPath: String(fixture.project.path.dropFirst(8)))
+		var project = fixture.project
 		var result = fixture.result
 		var arguments: [String: Any] = [
 			"viewPath": fixture.viewPath, "screenSize": ["width": 64, "height": 64],
@@ -69,7 +70,7 @@ func createPreviewRejectsInvalidPathEvidenceOffline(mutation: String) throws {
 			artifact["reviewPath"] = fixture.review.path.replacingOccurrences(
 				of: fixture.sessionID, with: UUID().uuidString.lowercased())
 		case "archiveAlias":
-			artifact["reviewPath"] = String(fixture.review.path.dropFirst(8))
+			artifact["reviewPath"] = "/System/Volumes/Data" + fixture.review.path
 		case "archiveAncestorLink":
 			try fixture.link(fixture.root.appendingPathComponent("previews"))
 		case "clientLink":
@@ -127,8 +128,8 @@ func createPreviewRejectsInvalidPathEvidenceOffline(mutation: String) throws {
 		let session = try fixture.store(
 			nested: nested,
 			arguments: ["viewPath": fixture.viewPath, "screenSize": ["width": 64, "height": 64]])
-		let clientProject = URL(fileURLWithPath: String(fixture.project.path.dropFirst(8)))
-		#expect(clientProject.path.hasPrefix("/tmp/"))
+		let clientProject = URL(fileURLWithPath: "/System/Volumes/Data" + fixture.project.path)
+		#expect(clientProject.path != fixture.project.path)
 		let preview = try verifyPreview(session: session, project: clientProject)
 		#expect(preview.reviewPath.path == fixture.review.path)
 		let request = try counterVisionRequest(
@@ -167,7 +168,7 @@ private struct PreviewAuditFixture {
 		]
 	}
 	init(width: Int = 64, height: Int = 64) throws {
-		root = URL(fileURLWithPath: "/private/tmp/mac-apper-preview-audit-\(UUID().uuidString)")
+		root = try ProjectTemporaryDirectory.appending("mac-apper-preview-audit-\(UUID().uuidString)")
 		project = root.appendingPathComponent(UUID().uuidString.lowercased())
 		self.width = width; self.height = height
 		bytes = try auditPNG(width: width, height: height)

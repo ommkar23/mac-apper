@@ -29,7 +29,7 @@ private func git(_ arguments: [String], in project: URL) throws -> String {
 }
 
 @Test func projectScaffoldOwnsManifestAndValidatesTampering() throws {
-	let parent = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+	let parent = try ProjectTemporaryDirectory.root().appendingPathComponent(UUID().uuidString)
 	try FileManager.default.createDirectory(at: parent, withIntermediateDirectories: true)
 	defer { try? FileManager.default.removeItem(at: parent) }
 	let project = try ProjectScaffold.create(under: parent)
@@ -60,7 +60,7 @@ private func git(_ arguments: [String], in project: URL) throws -> String {
 			"ProductionApp\", dependencies: [\"AppModel\", \"AppViews\", \"DevExtension\"]"))
 	#expect(
 		try String(contentsOf: project.appendingPathComponent("Scaffold.version"), encoding: .utf8)
-			== "8")
+			== "9")
 	#expect(!manifest.contains("PreviewFixtures"))
 	#expect(!FileManager.default.fileExists(atPath: project.appendingPathComponent("Fixtures").path))
 	for path in [
@@ -86,7 +86,7 @@ private func git(_ arguments: [String], in project: URL) throws -> String {
 }
 
 @Test func generatedDevExtensionBuildsAndPassesItsContractTests() throws {
-	let parent = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+	let parent = try ProjectTemporaryDirectory.root().appendingPathComponent(UUID().uuidString)
 	try FileManager.default.createDirectory(at: parent, withIntermediateDirectories: true)
 	defer { try? FileManager.default.removeItem(at: parent) }
 	let project = try ProjectScaffold.create(under: parent)

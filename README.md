@@ -13,6 +13,25 @@ Mac Apper ships with two agents: **Chat** and **Create**. Chat is a general-purp
   - Pi discovery checks PATH, `~/.local/bin`, Homebrew and installed NVM Node versions. Finder does not inherit the full shell environment.
 - Zed for **Open in Zed**. Optional screenshot review uses the separate [VisionCLI](VisionCLI/README.md), not a product dependency.
 
+## Temporary work
+
+- Use the gitignored repository-root `.tmp/` for disposable scratch, test fixtures, scenario homes, logs and reports.
+- It is not durable storage. Retained review apps and scenario evidence there are temporary too.
+- Keep authored source, reusable `dist/` outputs, production projects and persistent user data outside `.tmp/`.
+- Scenario and test helpers create private UUID-scoped paths there. They never fall back to system temp when the root is unsafe.
+- Export `TMPDIR` before starting developer commands or a new Pi session. This also directs inherited tool temporary work there.
+
+```sh
+# From the physical repository root. Do not use a linked .tmp directory.
+mkdir -p .tmp && chmod 700 .tmp
+export TMPDIR="$(pwd -P)/.tmp/"
+# Start pi here if it should inherit this setting.
+```
+
+- You may clear its contents periodically when quitting Pi. First finish builds, tests, scenario cleanup and any review apps using those files.
+- Credential staging still requires prompt scrubbing and confirmed process cleanup. Session-quit deletion is not a substitute.
+- No automatic directory-wide purge runs on exit. Existing system-temp artifacts and historical report locations are not migrated or deleted.
+
 ## Build and run
 
 From the project root, when authorized:
@@ -74,7 +93,7 @@ The native client owns presentation; Agent owns workspaces, Pi RPC and durable e
 
 ## Package tests
 
-Initialize `swift64` as above; select only authorized checks. Root tests do not run all packages:
+Initialize `swift64` and export `TMPDIR` as above; select only authorized checks. Root tests do not run all packages:
 
 ```sh
 "$swift64" test

@@ -8,7 +8,7 @@ import Testing
 @Test @MainActor func deployedHostPreservesResourcesIsolatesIdentitiesAndCleansOnlyItsCopy() throws
 {
 	let manager = FileManager.default
-	let directory = manager.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+	let directory = try ProjectTemporaryDirectory.root().appendingPathComponent(UUID().uuidString)
 	try manager.createDirectory(at: directory, withIntermediateDirectories: false)
 	defer { try? manager.removeItem(at: directory) }
 	let source = directory.appendingPathComponent("Fixture.app")
@@ -18,10 +18,17 @@ import Testing
 		try manager.createDirectory(at: macOS, withIntermediateDirectories: true)
 		try manager.copyItem(
 			at: URL(fileURLWithPath: "/usr/bin/true"), to: macOS.appendingPathComponent("FixtureClient"))
-		let info = [
+		var info: [String: Any] = [
 			"CFBundleIdentifier": "com.macapper.fixture", "CFBundleExecutable": "FixtureClient",
 			"CFBundlePackageType": bundle.pathExtension == "xpc" ? "XPC!" : "APPL",
 		]
+		if bundle.pathExtension == "xpc" {
+			info["XPCService"] = [
+				"EnvironmentVariables": [
+					"TMPDIR": "/must-not-be-used", "PRESERVED": "ordinary configuration",
+				]
+			]
+		}
 		try PropertyListSerialization.data(fromPropertyList: info, format: .xml, options: 0)
 			.write(to: bundle.appendingPathComponent("Contents/Info.plist"))
 		let resources = bundle.appendingPathComponent("Contents/Resources")
@@ -47,15 +54,26 @@ import Testing
 		let original = try #require(
 			PropertyListSerialization.propertyList(
 				from: Data(contentsOf: source.appendingPathComponent(relative)), format: nil)
-				as? [String: String])
+				as? [String: Any])
 		let copied = try #require(
 			PropertyListSerialization.propertyList(
 				from: Data(contentsOf: staged.appendingPathComponent(relative)), format: nil)
-				as? [String: String])
-		#expect(original["CFBundleIdentifier"] == "com.macapper.fixture")
-		let id = try #require(copied["CFBundleIdentifier"])
+				as? [String: Any])
+		#expect(original["CFBundleIdentifier"] as? String == "com.macapper.fixture")
+		let id = try #require(copied["CFBundleIdentifier"] as? String)
 		#expect(id.hasPrefix("com.macapper.scenario."))
 		#expect(ids.insert(id).inserted)
+		if relative.contains(".xpc/") {
+			let xpc = try #require(copied["XPCService"] as? [String: Any])
+			let environment = try #require(xpc["EnvironmentVariables"] as? [String: String])
+			let temporary = try ProjectTemporaryDirectory.root()
+			#expect(environment["TMPDIR"] == temporary.path + "/")
+			#expect(environment["PRESERVED"] == "ordinary configuration")
+			let originalXPC = try #require(original["XPCService"] as? [String: Any])
+			let originalEnvironment = try #require(
+				originalXPC["EnvironmentVariables"] as? [String: String])
+			#expect(originalEnvironment["TMPDIR"] == "/must-not-be-used")
+		}
 	}
 	#expect(throws: (any Error).self) { try host.prepare() }
 	try host.remove()
@@ -92,7 +110,7 @@ import Testing
 
 @Test @MainActor func deployedHostRejectsLinkedAppWithoutDeletingItsSource() throws {
 	let manager = FileManager.default
-	let directory = manager.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+	let directory = try ProjectTemporaryDirectory.root().appendingPathComponent(UUID().uuidString)
 	try manager.createDirectory(at: directory, withIntermediateDirectories: false)
 	defer { try? manager.removeItem(at: directory) }
 	let source = directory.appendingPathComponent("Source.app")
@@ -110,7 +128,7 @@ import Testing
 
 @Test @MainActor func deployedHostRejectsUnsignedAppAndLeavesSourceIntact() throws {
 	let manager = FileManager.default
-	let directory = manager.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+	let directory = try ProjectTemporaryDirectory.root().appendingPathComponent(UUID().uuidString)
 	try manager.createDirectory(at: directory, withIntermediateDirectories: false)
 	defer { try? manager.removeItem(at: directory) }
 	let source = directory.appendingPathComponent("Unsigned.app")

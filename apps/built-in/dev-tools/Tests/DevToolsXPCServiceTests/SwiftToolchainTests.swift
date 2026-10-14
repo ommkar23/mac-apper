@@ -1,4 +1,5 @@
 import Foundation
+import Scenario
 import Testing
 
 @testable import DevToolsApplication
@@ -23,7 +24,7 @@ import Testing
 }
 
 @Test func toolchainSelectionPreservesInjectedToolsAndOwnedProcesses() throws {
-	let fixture = URL(fileURLWithPath: "/private/tmp/injected-tool")
+	let fixture = try ProjectTemporaryDirectory.appending("injected-tool")
 	let command = try SwiftToolchain.command(
 		executable: fixture, arguments: ["swift", "test"], environment: ["fixture": "yes"])
 	#expect(command.executable == fixture)
@@ -33,7 +34,7 @@ import Testing
 
 @Test func productionToolchainPreflightsBothExecutablesWithoutFallback() throws {
 	let manager = FileManager.default
-	let bin = URL(fileURLWithPath: "/private/tmp/devtools-toolchain-\(UUID().uuidString)")
+	let bin = try ProjectTemporaryDirectory.appending("devtools-toolchain-\(UUID().uuidString)")
 	try manager.createDirectory(at: bin, withIntermediateDirectories: false)
 	defer { try? manager.removeItem(at: bin) }
 	for missing in ["swift", "swiftc"] {

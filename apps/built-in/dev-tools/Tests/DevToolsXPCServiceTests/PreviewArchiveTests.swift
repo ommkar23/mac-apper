@@ -3,6 +3,7 @@
 // @frontmatter:end
 import Darwin
 import Foundation
+import Scenario
 import ImageIO
 import Testing
 @testable import DevToolsApplication
@@ -51,7 +52,7 @@ func readArchiveWithoutFollowingLinks(_ path: String) throws -> Data {
 
 @Test func previewArchiveReturnsCanonicalNoFollowReviewPath() throws {
 	let homeName = "scenario-home-\(UUID().uuidString)"
-	let home = URL(fileURLWithPath: "/private/tmp/\(homeName)")
+	let home = try ProjectTemporaryDirectory.appending("\(homeName)")
 	let root = home.appendingPathComponent(".mac-apper")
 	try FileManager.default.createDirectory(
 		at: root, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
@@ -62,8 +63,9 @@ func readArchiveWithoutFollowingLinks(_ path: String) throws -> Data {
 				"iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
 		))
 	let projectID = UUID(), sessionID = UUID()
-	for prefix in ["/tmp", "/private/tmp"] {
-		let input = URL(fileURLWithPath: "\(prefix)/\(homeName)/.mac-apper")
+	let alias = home.appendingPathComponent("home-alias")
+	try FileManager.default.createSymbolicLink(at: alias, withDestinationURL: home)
+	for input in [root, alias.appendingPathComponent(".mac-apper")] {
 		let review = try PreviewArchive.save(
 			png, projectsRoot: input, projectID: projectID, sessionID: sessionID)
 		// Production PreviewRendering uses review.path unchanged in the typed artifact.
@@ -71,21 +73,21 @@ func readArchiveWithoutFollowingLinks(_ path: String) throws -> Data {
 			relativePath: ".mac-apper/Artifacts/render.png", reviewPath: review.path, kind: "png")
 		let decoded = try JSONDecoder().decode(
 			PreviewArtifact.self, from: JSONEncoder().encode(artifact))
-		#expect(decoded.reviewPath.hasPrefix("/private/tmp/\(homeName)/.mac-apper/previews/"))
+		#expect(decoded.reviewPath.hasPrefix(root.path + "/previews/"))
 		let bytes = try readArchiveWithoutFollowingLinks(decoded.reviewPath)
 		#expect(bytes == png)
 		let source = try #require(CGImageSourceCreateWithData(bytes as CFData, nil))
 		#expect(CGImageSourceCreateImageAtIndex(source, 0, nil) != nil)
 		#expect(throws: (any Error).self) {
 			try readArchiveWithoutFollowingLinks(
-				"/tmp/\(homeName)/.mac-apper/previews/\(projectID.uuidString.lowercased())/\(sessionID.uuidString.lowercased())/\(review.lastPathComponent)"
+				"\(alias.path)/.mac-apper/previews/\(projectID.uuidString.lowercased())/\(sessionID.uuidString.lowercased())/\(review.lastPathComponent)"
 			)
 		}
 	}
 }
 
 @Test func previewArchiveRetainsImagesAfterProjectRemovalWithoutOverwriting() throws {
-	let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+	let root = try ProjectTemporaryDirectory.root().appendingPathComponent(UUID().uuidString)
 	try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
 	defer { try? FileManager.default.removeItem(at: root) }
 	let projectID = UUID(), sessionID = UUID()
@@ -113,7 +115,7 @@ func readArchiveWithoutFollowingLinks(_ path: String) throws -> Data {
 }
 
 @Test func previewArchiveRejectsRootLinksBoundsAndPreservesLeafCollisions() throws {
-	let root = URL(fileURLWithPath: "/private/tmp/archive-safety-\(UUID().uuidString)")
+	let root = try ProjectTemporaryDirectory.appending("archive-safety-\(UUID().uuidString)")
 	try FileManager.default.createDirectory(at: root, withIntermediateDirectories: false)
 	defer { try? FileManager.default.removeItem(at: root) }
 	let projectID = UUID(), sessionID = UUID(), date = Date(timeIntervalSince1970: 1_700_000_000)
@@ -151,7 +153,7 @@ func readArchiveWithoutFollowingLinks(_ path: String) throws -> Data {
 
 @Test func previewArchiveRejectsLinksAtEveryDirectoryLevel() throws {
 	for level in 0...2 {
-		let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+		let root = try ProjectTemporaryDirectory.root().appendingPathComponent(UUID().uuidString)
 		try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
 		defer { try? FileManager.default.removeItem(at: root) }
 		let projectID = UUID(), sessionID = UUID()

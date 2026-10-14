@@ -39,6 +39,7 @@ let package = Package(
 			name: "DevToolsTests",
 			dependencies: [
 				"DevToolsApplication",
+				.product(name: "Scenario", package: "Scenario"),
 				.product(name: "Testing", package: "swift-testing"),
 			]
 		),
@@ -55,6 +56,7 @@ let package = Package(
 			name: "DevToolsXPCServiceTests",
 			dependencies: [
 				"DevToolsApplication",
+				.product(name: "Scenario", package: "Scenario"),
 				.product(name: "Testing", package: "swift-testing"),
 			]
 		),

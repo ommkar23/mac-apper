@@ -8,6 +8,7 @@ enum ScenarioProcess {
 		let process = Process()
 		process.executableURL = URL(fileURLWithPath: path)
 		process.arguments = arguments
+		process.environment = try ProjectTemporaryDirectory.environment()
 		process.standardOutput = FileHandle.nullDevice
 		process.standardError = FileHandle.nullDevice
 		let finished = DispatchSemaphore(value: 0)

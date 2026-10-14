@@ -2,10 +2,12 @@
 // Exercises the counter evidence audit with an offline JSONL fixture and real standalone Swift 6.4 parse output.
 // @frontmatter:end
 import Foundation
+import Scenario
 import Testing
 
 @Test func counterEvidenceParsesSwift64WithoutModelOrToolCalls() async throws {
-	let root = URL(fileURLWithPath: "/private/tmp/mac-apper-counter-evidence-\(UUID().uuidString)")
+	let root = try ProjectTemporaryDirectory.appending(
+		"mac-apper-counter-evidence-\(UUID().uuidString)")
 	try FileManager.default.createDirectory(at: root, withIntermediateDirectories: false)
 	defer { try? FileManager.default.removeItem(at: root) }
 	let relative = "Tests/AppModelTests/CounterChecks.swift"

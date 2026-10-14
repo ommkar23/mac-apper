@@ -39,11 +39,27 @@ xcrun --show-sdk-version
 - Manual scratch must be newly created, nonempty and validated before passing it to SwiftPM; remove only the exact owned directory after work exits, never unrelated retained artifacts.
 
 ```sh
-scratch=$(mktemp -d /private/tmp/mac-apper-test.XXXXXX)
+# Initialize private .tmp and TMPDIR using the root temporary-work contract.
+scratch=$(mktemp -d "$TMPDIR/mac-apper-test.XXXXXX")
 test -n "$scratch" && test -d "$scratch" || exit 1
 "$swift64" test --package-path Agent --scratch-path "$scratch"
 # Remove only this exact validated owned scratch after its work exits.
 ```
+
+## Naming verification boundary
+
+- Naming relies on correct bundle metadata and SwiftUI API wiring, not independent platform naming checks.
+- [ScaffoldNamingTests](../Tests/AgentApplicationTests/ScaffoldNamingTests.swift) retains protected source-wiring checks.
+- [AppNameTests](../Tests/AgentApplicationTests/AppNameTests.swift) retains validation and rename-command logic checks.
+- [NameAndRenameExtensionTests](../Tests/AgentApplicationTests/NameAndRenameExtensionTests.swift) retains authored naming and packaging logic checks.
+- [DevTools RunControllerTests](../../apps/built-in/dev-tools/Tests/DevToolsXPCServiceTests/RunControllerTests.swift) retains shared branding validation and staging checks.
+- Scene compiler probes, synthetic Bundle execution and CoreGraphics window observation are retired naming checks.
+- HTView still requests its app name and main window title.
+- Acceptance excludes rendered naming checks and naming-observation permission requirements.
+- No tests or runtime checks were run for this retirement documentation.
+- Full Agent acceptance remains unverified. Removing its historical failing check is not a passing suite.
+- The retained HTView resource-staging failure is not repaired by naming-check retirement.
+- Historical results remain in the [archive](../../docs/verification-archive.md#naming-verification-retirement--2026-10-14).
 
 ## No-model startup and bundled resources
 
@@ -58,9 +74,9 @@ test -n "$scratch" && test -d "$scratch" || exit 1
   ```
 
   - The case reads the workspace library, prepares/opens a test-owned project through WorkspaceSession and compares AnimationIntent, PreviewProtocol and the development-service template with bundled bytes.
-  - Test-only HOME/CFFIXED_USER_HOME and identities are isolated, exact PID/kernel-path/start evidence identifies/reaps the service before host/home removal, and v8 checks require an empty programmatic schema plus CoreData SQLite path.
+  - Test-only HOME/CFFIXED_USER_HOME and identities are isolated, exact PID/kernel-path/start evidence identifies/reaps the service before host/home removal, and current scaffold checks require an empty programmatic schema plus CoreData SQLite path.
   - Deployed verification stages only the real release Agent executable/resources in a re-signed minimal host rather than claiming the original product identity or GUI was exercised.
-  - AGENT_RESOURCE_EXPORT_DIRECTORY optionally retains fresh sources in a precreated task-owned `/private/tmp` directory.
+  - AGENT_RESOURCE_EXPORT_DIRECTORY optionally retains fresh sources in a precreated task-owned `.tmp/mac-apper-coredata-task6-<ID>` directory beneath the repository root.
 
 ## No-model scaffold integration
 
@@ -79,7 +95,7 @@ test -n "$scratch" && test -d "$scratch" || exit 1
   AGENT_SCAFFOLD_DEVTOOLS_SCENARIO=1 "$swift64" test --package-path Agent -j 2 --filter agentScaffoldDevToolsScenario
   ```
 
-  - The case prepares a real v8 project through Agent's production model/native client and separately drives generated DevTools client/service in signed hosts without Web, Pi, VisionCLI or Mac Apper.app.
+  - The case prepares a real v9 project through Agent's production model/native client and separately drives generated DevTools client/service in signed hosts without Web, Pi, VisionCLI or Mac Apper.app.
   - Private HOME/CFFIXED_USER_HOME scopes projects/SQLite, only the installed compiler is linked into the owned home, and AGENT_SCENARIO_PRODUCTS/DEV_TOOLS_SCENARIO_PRODUCTS support existing custom product directories.
 - **Assertions and cleanup**
   - Editable fixture sources register typed entities/model actions while protected composition remains byte-identical, with Test requiring passed/exitCode 0 and the named save/validation-rollback/reopen passing diagnostic.

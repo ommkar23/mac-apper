@@ -1,12 +1,11 @@
 #!/bin/bash
 set -euo pipefail
-root=$(cd "$(dirname "$0")/.." && pwd)
+root=$(cd "$(dirname "$0")/.." && pwd -P)
 swift64="$HOME/Library/Developer/Toolchains/swift-6.4.0-RELEASE.xctoolchain/usr/bin/swift"
-sdk=$(xcrun --sdk macosx --show-sdk-path)
-run=$(mktemp -d "$root/evidence/run.XXXXXX")
+run=$(python3 "$root/scripts/temporary-directory.py" spike-run)
 test -n "$run" && test -d "$run"
-export TMPDIR="$run/tmp"
-mkdir "$TMPDIR"
+export TMPDIR="$(dirname "$run")/"
+sdk=$(xcrun --sdk macosx --show-sdk-path)
 python3 "$root/scripts/make-fixtures.py"
 {
   "$swift64" --version

@@ -3,6 +3,7 @@
 // @frontmatter:end
 import AgentMacosClientModel
 import Foundation
+import Scenario
 import Testing
 @testable import AgentMacosClient
 
@@ -116,7 +117,7 @@ import Testing
 }
 
 @MainActor @Test func fixedChatAndCreateDriveTheRuntime() async throws {
-	let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+	let root = try ProjectTemporaryDirectory.root().appendingPathComponent(UUID().uuidString)
 	defer { try? FileManager.default.removeItem(at: root) }
 	let runtime = AgentSelectionRuntime()
 	let model = WorkspaceSession(

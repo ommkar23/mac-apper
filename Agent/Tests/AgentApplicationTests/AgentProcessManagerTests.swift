@@ -2,6 +2,7 @@
 // Tests server-owned session lifetime, event replay, subscriptions, and scoped operations.
 // @frontmatter:end
 import Foundation
+import Scenario
 import Testing
 
 @testable import AgentApplication
@@ -48,7 +49,8 @@ import Testing
 }
 
 @MainActor @Test func managerKeepsRunningAndBuffersEventsWithoutAClientListener() async throws {
-	let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+	let root = try ProjectTemporaryDirectory.root().appendingPathComponent(
+		UUID().uuidString, isDirectory: true)
 	defer { try? FileManager.default.removeItem(at: root) }
 	let project = root.appendingPathComponent(UUID().uuidString.lowercased())
 	let session = project.appendingPathComponent(".pi/sessions/session-1.jsonl")
@@ -82,7 +84,8 @@ import Testing
 }
 
 @MainActor @Test func managerPersistsAndPagesCompleteHistoryAcrossReattach() async throws {
-	let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+	let root = try ProjectTemporaryDirectory.root().appendingPathComponent(
+		UUID().uuidString, isDirectory: true)
 	defer { try? FileManager.default.removeItem(at: root) }
 	let project = root.appendingPathComponent(UUID().uuidString.lowercased())
 	let session = project.appendingPathComponent(".pi/sessions/session-1.jsonl")
@@ -133,7 +136,8 @@ import Testing
 }
 
 @MainActor @Test func managerBoundsLiveSubscribersWithoutLimitingHistory() async throws {
-	let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+	let root = try ProjectTemporaryDirectory.root().appendingPathComponent(
+		UUID().uuidString, isDirectory: true)
 	defer { try? FileManager.default.removeItem(at: root) }
 	let project = root.appendingPathComponent(".chat")
 	let session = project.appendingPathComponent(".pi/sessions/session-1.jsonl")
@@ -157,7 +161,8 @@ import Testing
 }
 
 @MainActor @Test func managerAllowsSessionReattachWithoutRestartingPi() async throws {
-	let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+	let root = try ProjectTemporaryDirectory.root().appendingPathComponent(
+		UUID().uuidString, isDirectory: true)
 	defer { try? FileManager.default.removeItem(at: root) }
 	let project = root.appendingPathComponent(UUID().uuidString.lowercased())
 	let session = project.appendingPathComponent(".pi/sessions/session-1.jsonl")
@@ -185,7 +190,8 @@ import Testing
 }
 
 @MainActor @Test func stoppedSessionCanStartAgain() async throws {
-	let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+	let root = try ProjectTemporaryDirectory.root().appendingPathComponent(
+		UUID().uuidString, isDirectory: true)
 	defer { try? FileManager.default.removeItem(at: root) }
 	let project = root.appendingPathComponent(UUID().uuidString.lowercased())
 	let session = project.appendingPathComponent(".pi/sessions/session-1.jsonl")
@@ -214,7 +220,8 @@ import Testing
 }
 
 @MainActor @Test func terminalSessionResumesPiAndRetainsEarlierHistory() async throws {
-	let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+	let root = try ProjectTemporaryDirectory.root().appendingPathComponent(
+		UUID().uuidString, isDirectory: true)
 	defer { try? FileManager.default.removeItem(at: root) }
 	let project = root.appendingPathComponent(".chat")
 	let session = project.appendingPathComponent(".pi/sessions/session-1.jsonl")
@@ -244,7 +251,8 @@ import Testing
 }
 
 @MainActor @Test func managerStartsOnlySessionsPreparedByTheService() async throws {
-	let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+	let root = try ProjectTemporaryDirectory.root().appendingPathComponent(
+		UUID().uuidString, isDirectory: true)
 	defer { try? FileManager.default.removeItem(at: root) }
 	let preparations = SessionPreparationRegistry()
 	let workspace = WorkspaceDataManager(projectsRoot: root, preparations: preparations)
@@ -308,7 +316,8 @@ import Testing
 }
 
 @MainActor @Test func createStartsWithThePreparedProjectAndFirstRequestIntent() async throws {
-	let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+	let root = try ProjectTemporaryDirectory.root().appendingPathComponent(
+		UUID().uuidString, isDirectory: true)
 	defer { try? FileManager.default.removeItem(at: root) }
 	let preparations = SessionPreparationRegistry()
 	let workspace = WorkspaceDataManager(projectsRoot: root, preparations: preparations)
@@ -343,7 +352,8 @@ import Testing
 }
 
 @MainActor @Test func failedStartRetainsServicePreparationForRetry() async throws {
-	let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+	let root = try ProjectTemporaryDirectory.root().appendingPathComponent(
+		UUID().uuidString, isDirectory: true)
 	defer { try? FileManager.default.removeItem(at: root) }
 	let project = root.appendingPathComponent(".chat")
 	let session = project.appendingPathComponent(".pi/sessions/\(UUID().uuidString).jsonl")
@@ -366,7 +376,8 @@ import Testing
 }
 
 @MainActor @Test func managerBindsChatAndCreateToTheirOwnProjectKinds() async throws {
-	let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+	let root = try ProjectTemporaryDirectory.root().appendingPathComponent(
+		UUID().uuidString, isDirectory: true)
 	defer { try? FileManager.default.removeItem(at: root) }
 	let chat = root.appendingPathComponent(".chat")
 	let create = root.appendingPathComponent(UUID().uuidString.lowercased())
@@ -411,7 +422,8 @@ import Testing
 }
 
 @MainActor @Test func managerRejectsProjectsOutsideItsOwnedRoot() async throws {
-	let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+	let root = try ProjectTemporaryDirectory.root().appendingPathComponent(
+		UUID().uuidString, isDirectory: true)
 	let runtime = ManagedRuntimeFixture()
 	let manager = AgentProcessManager(
 		projectsRoot: root, preparations: SessionPreparationRegistry()

@@ -1,14 +1,13 @@
 #!/bin/bash
 set -euo pipefail
-root=$(cd "$(dirname "$0")/.." && pwd)
+root=$(cd "$(dirname "$0")/.." && pwd -P)
 swift64="$HOME/Library/Developer/Toolchains/swift-6.4.0-RELEASE.xctoolchain/usr/bin/swift"
+work=$(python3 "$root/scripts/temporary-directory.py" spike-review-work)
+review=$(python3 "$root/scripts/temporary-directory.py" spike-native-review)
+export TMPDIR="$(dirname "$work")/"
 sdk=$(xcrun --sdk macosx --show-sdk-path)
-work=$(mktemp -d "$root/evidence/review-work.XXXXXX")
-review=$(mktemp -d "$root/evidence/native-review.XXXXXX")
 test -n "$work" && test -d "$work" && test -n "$review" && test -d "$review"
 printf 'work=%s\nreview=%s\n' "$work" "$review"
-mkdir "$work/tmp"
-export TMPDIR="$work/tmp"
 {
   "$swift64" --version
   sw_vers

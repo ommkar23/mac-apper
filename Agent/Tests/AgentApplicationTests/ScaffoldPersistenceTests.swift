@@ -8,7 +8,7 @@ import Testing
 @testable import AgentApplication
 
 @Test func generatedScaffoldSupportsOfflineFirstPersistenceAndPresentation() throws {
-	let parent = URL(fileURLWithPath: "/private/tmp/mac-apper-scaffold-\(UUID().uuidString)")
+	let parent = try ProjectTemporaryDirectory.appending("mac-apper-scaffold-\(UUID().uuidString)")
 	try FileManager.default.createDirectory(at: parent, withIntermediateDirectories: false)
 	var completed = false
 	defer {
@@ -20,7 +20,7 @@ import Testing
 	}
 	let project = try ProjectScaffold.create(under: parent)
 	try ProjectScaffold.validate(project)
-	#expect(BaseAppTemplate.version == "8")
+	#expect(BaseAppTemplate.version == "9")
 	let production = try String(
 		contentsOf: project.appendingPathComponent("Sources/ProductionApp/ProductionApp.swift"),
 		encoding: .utf8)
@@ -91,7 +91,7 @@ private func runPersistenceCommand(
 	process.executableURL = executable
 	process.arguments = arguments
 	process.currentDirectoryURL = directory
-	var environment = ProcessInfo.processInfo.environment
+	var environment = try ProjectTemporaryDirectory.environment()
 	environment["SWIFT_EXEC"] = try SwiftToolchain.executable("swiftc").path
 	environment["DEVELOPER_DIR"] = "/Library/Developer/CommandLineTools"
 	environment["SDKROOT"] = "/Library/Developer/CommandLineTools/SDKs/MacOSX26.2.sdk"
@@ -215,7 +215,8 @@ private enum PersistenceFixture {
 		let id = UUID(uuidString: "11111111-1111-4111-8111-111111111111")!
 		enum Rejected: Error { case mutation }
 		func fixtureRoot() throws -> URL {
-		    let url = URL(fileURLWithPath: "/private/tmp/mac-apper-coredata-fixture-\(UUID().uuidString)")
+		    let temporary = try #require(ProcessInfo.processInfo.environment["TMPDIR"])
+		    let url = URL(fileURLWithPath: temporary).appendingPathComponent("mac-apper-coredata-fixture-\(UUID().uuidString)")
 		    try FileManager.default.createDirectory(at: url, withIntermediateDirectories: false)
 		    return url
 		}

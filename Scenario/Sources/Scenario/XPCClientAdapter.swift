@@ -30,7 +30,7 @@ public struct XPCClientAdapter {
 			attributes.isSymbolicLink != true,
 			FileManager.default.isExecutableFile(atPath: executable.path)
 		else { throw ScenarioFailure.message("invalid XPC client or request") }
-		let directory = FileManager.default.temporaryDirectory.appendingPathComponent(
+		let directory = try ProjectTemporaryDirectory.root().appendingPathComponent(
 			"scenario-xpc-\(UUID().uuidString)", isDirectory: true)
 		try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: false)
 		defer { try? FileManager.default.removeItem(at: directory) }
@@ -45,9 +45,8 @@ public struct XPCClientAdapter {
 		let process = Process()
 		process.executableURL = executable
 		process.arguments = arguments
-		process.environment = ProcessInfo.processInfo.environment.merging(environment) { _, value in
-			value
-		}
+		process.environment = try ProjectTemporaryDirectory.environment(
+			ProcessInfo.processInfo.environment.merging(environment) { _, value in value })
 		process.standardInput = input
 		process.standardOutput = outputHandle
 		process.standardError = errorHandle

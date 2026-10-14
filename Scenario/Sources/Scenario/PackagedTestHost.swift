@@ -61,7 +61,7 @@ public struct TestHostApplication {
 	}
 
 	public static func withInputDirectory<Value>(_ body: (URL) throws -> Value) throws -> Value {
-		let directory = FileManager.default.temporaryDirectory.appendingPathComponent(
+		let directory = try ProjectTemporaryDirectory.root().appendingPathComponent(
 			"scenario-test-inputs-\(UUID().uuidString)")
 		try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: false)
 		defer { try? FileManager.default.removeItem(at: directory) }
@@ -115,7 +115,7 @@ public struct TestHostApplication {
 		guard
 			directory == nil
 		else { throw ScenarioFailure.message("test host already staged") }
-		let temporary = FileManager.default.temporaryDirectory.appendingPathComponent(
+		let temporary = try ProjectTemporaryDirectory.root().appendingPathComponent(
 			"scenario-test-host-\(UUID().uuidString)")
 		let staged = temporary.appendingPathComponent("ScenarioTests.app")
 		do {
@@ -179,7 +179,8 @@ public struct TestHostApplication {
 		try Self.name(service.bundleName, suffix: ".xpc")
 		let bundle = root.appendingPathComponent(service.bundleName)
 		try stageExecutable(
-			service.executable, plist: service.infoPlist, bundle: bundle, environment: service.environment
+			service.executable, plist: service.infoPlist, bundle: bundle,
+			environment: try ProjectTemporaryDirectory.environment(service.environment)
 		)
 		try stage(service.resources, under: bundle.appendingPathComponent("Contents/Resources"))
 		try sign(bundle)
@@ -283,7 +284,7 @@ public struct TestHostApplication {
 		_ executable: URL, arguments: [String], environment: [String: String] = [:], timeout: Int
 	) throws -> Result {
 		let manager = FileManager.default
-		let scratch = manager.temporaryDirectory.appendingPathComponent(
+		let scratch = try ProjectTemporaryDirectory.root().appendingPathComponent(
 			"scenario-test-output-\(UUID().uuidString)")
 		try manager.createDirectory(at: scratch, withIntermediateDirectories: false)
 		defer { try? manager.removeItem(at: scratch) }
@@ -292,9 +293,8 @@ public struct TestHostApplication {
 		let handle = try FileHandle(forWritingTo: output)
 		defer { try? handle.close() }
 		let process = Process(); process.executableURL = executable; process.arguments = arguments
-		process.environment = ProcessInfo.processInfo.environment.merging(environment) { _, value in
-			value
-		}
+		process.environment = try ProjectTemporaryDirectory.environment(
+			ProcessInfo.processInfo.environment.merging(environment) { _, value in value })
 		process.standardInput = FileHandle.nullDevice; process.standardOutput = handle;
 		process.standardError = handle
 		let finished = DispatchSemaphore(value: 0)

@@ -62,8 +62,19 @@ async function buildProduct(cwd: string, product: "PreviewApp" | "ProductionApp"
   return { executable: join(bin, product), output };
 }
 
-async function packageProduction(cwd: string, requestedName: string, signal?: AbortSignal): Promise<string> {
+async function updateAppName(cwd: string, requestedName: string): Promise<string> {
   const appName = sanitizeAppName(requestedName);
+  const settings = join(cwd, "Info.plist");
+  await command("/usr/bin/plutil", ["-lint", settings], cwd);
+  for (const key of ["CFBundleDisplayName", "CFBundleName"]) {
+    await command("/usr/bin/plutil", ["-replace", key, "-string", appName, settings], cwd);
+  }
+  await command("/usr/bin/plutil", ["-lint", settings], cwd);
+  return appName;
+}
+
+async function packageProduction(cwd: string, signal?: AbortSignal): Promise<string> {
+  const appName = await currentAppName(cwd);
   const built = await buildProduct(cwd, "ProductionApp", signal);
 	const outputRoot = process.env.MAC_APPER_OUTPUT_ROOT;
 	if (!outputRoot) throw new Error("Mac Apper did not bind the common output folder.");
@@ -86,8 +97,7 @@ async function packageProduction(cwd: string, requestedName: string, signal?: Ab
 }
 
 async function currentAppName(cwd: string): Promise<string> {
-  try { return sanitizeAppName((await command("/usr/bin/plutil", ["-extract", "CFBundleDisplayName", "raw", "-o", "-", join(cwd, "Info.plist")], cwd)).trim()); }
-  catch { return "Generated App"; }
+  return sanitizeAppName((await command("/usr/bin/plutil", ["-extract", "CFBundleDisplayName", "raw", "-expect", "string", "-o", "-", join(cwd, "Info.plist")], cwd)).trim());
 }
 
 export default function macApper(pi: ExtensionAPI) {
@@ -98,8 +108,8 @@ export default function macApper(pi: ExtensionAPI) {
   pi.registerCommand("mac-apper-rename", {
     description: "Rebuild, repackage, and register the generated app with a sanitized display name.",
     handler: async (args, ctx) => {
-      const appName = decodeNameArgument(args.trim());
-      await packageProduction(ctx.cwd, appName);
+      const appName = await updateAppName(ctx.cwd, decodeNameArgument(args.trim()));
+      await packageProduction(ctx.cwd);
       ctx.ui.notify(`MAC_APPER_RENAMED:${Buffer.from(appName, "utf8").toString("base64")}`, "info");
     },
   });
@@ -111,12 +121,7 @@ export default function macApper(pi: ExtensionAPI) {
     parameters: Type.Object({ name: Type.String({ minLength: 1, maxLength: 64 }) }),
     async execute(_id, params) {
       try {
-        const appName = sanitizeAppName(params.name);
-        const cwd = process.cwd();
-        const settings = join(cwd, "Info.plist");
-        await command("/usr/libexec/PlistBuddy", ["-c", `Set :CFBundleDisplayName ${appName}`, settings], cwd);
-        await command("/usr/libexec/PlistBuddy", ["-c", `Set :CFBundleName ${appName}`, settings], cwd);
-        await command("/usr/bin/plutil", ["-lint", settings], cwd);
+        const appName = await updateAppName(process.cwd(), params.name);
         return result(`App name set to ${appName}.`);
       } catch (error) { return { ...result(`Could not set app name: ${String(error)}`), isError: true }; }
     },

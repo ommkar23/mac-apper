@@ -90,7 +90,8 @@ public struct SDKCompiler: Sendable {
 				"SCENARIO_SDK_PREFLIGHT: \(passed ? "passed" : "failed") compile and transitive import in \(Date().timeIntervalSince(start)) seconds; SDK=\(sdk.path)"
 			)
 		}
-		let scratch = URL(fileURLWithPath: "/private/tmp/mac-apper-sdk-preflight-\(UUID().uuidString)")
+		let scratch = try ProjectTemporaryDirectory.appending(
+			"mac-apper-sdk-preflight-\(UUID().uuidString)")
 		try FileManager.default.createDirectory(
 			at: scratch, withIntermediateDirectories: false, attributes: [.posixPermissions: 0o700])
 		defer { try? FileManager.default.removeItem(at: scratch) }
@@ -136,7 +137,8 @@ public struct SDKCompiler: Sendable {
 		_ executable: URL, _ arguments: [String],
 		environment: [String: String] = ProcessInfo.processInfo.environment, timeout: TimeInterval
 	) throws -> Result {
-		let directory = URL(fileURLWithPath: "/private/tmp/mac-apper-sdk-command-\(UUID().uuidString)")
+		let directory = try ProjectTemporaryDirectory.appending(
+			"mac-apper-sdk-command-\(UUID().uuidString)")
 		try FileManager.default.createDirectory(
 			at: directory, withIntermediateDirectories: false, attributes: [.posixPermissions: 0o700])
 		defer { try? FileManager.default.removeItem(at: directory) }
@@ -147,7 +149,7 @@ public struct SDKCompiler: Sendable {
 		let process = Process()
 		process.executableURL = executable
 		process.arguments = arguments
-		var environment = environment
+		var environment = try ProjectTemporaryDirectory.environment(environment)
 		environment.removeValue(forKey: "SDKROOT")
 		process.environment = environment
 		process.standardInput = FileHandle.nullDevice

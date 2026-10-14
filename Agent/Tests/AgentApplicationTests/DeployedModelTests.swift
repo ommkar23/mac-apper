@@ -2,11 +2,12 @@
 // Tests the deployed Agent runtime's explicit provider, model, and thinking launch arguments.
 // @frontmatter:end
 import Foundation
+import Scenario
 import Testing
 @testable import AgentApplication
 
 @Test @MainActor func deployedAgentPinsRequestedModelAndThinking() async throws {
-	let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+	let root = try ProjectTemporaryDirectory.root().appendingPathComponent(UUID().uuidString)
 	try FileManager.default.createDirectory(at: root, withIntermediateDirectories: false)
 	defer { try? FileManager.default.removeItem(at: root) }
 	let executable = root.appendingPathComponent("fixture-pi")

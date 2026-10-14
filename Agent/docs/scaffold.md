@@ -6,7 +6,8 @@
 
 - **Project contract**
   - Generated projects are working Swift packages with shared model/views, separate production and no-input preview executables, tests, protected rendering/packaging infrastructure and an initial Git commit.
-  - Scaffold v8 supplies offline-first programmatic Core Data only for new Create projects, without automatic legacy source/store migration or dual-engine support.
+  - Scaffold v9 supplies offline-first programmatic Core Data for new Create projects.
+  - It adds bundle-derived default window titles without automatic source or store migration.
 - **Persistence ownership**
   - `Sources/AppModel/Persistence.swift` defines main-actor ApplicationPersistence owning an NSManagedObjectModel, coordinator and directly store-backed main-queue context.
   - Editable `makeSchema()` registers app-specific typed NSManagedObject subclasses with `@NSManaged` properties, explicit entity/class names, attributes, optionality and validation, starting from an empty schema without a universal entity, SwiftData macros, momc or Xcode model files.
@@ -25,11 +26,33 @@
 ## Editable and protected inventory
 
 - Extend editable `Sources/AppModel/ApplicationModel.swift`, `ApplicationState.swift`, `Persistence.swift`, `Sources/AppViews/ApplicationRoot.swift` and `Tests/AppModelTests/` rather than replacing the package.
-- [BaseAppTemplate](../Sources/Application/BaseAppTemplate.swift) defines v8 and the package/model/view templates; [ScaffoldPersistenceTemplate](../Sources/Application/ScaffoldPersistenceTemplate.swift) defines the schema/state APIs.
+- [BaseAppTemplate](../Sources/Application/BaseAppTemplate.swift) defines v9 and the package/model/view templates; [ScaffoldPersistenceTemplate](../Sources/Application/ScaffoldPersistenceTemplate.swift) defines the schema/state APIs.
 - [PreviewTemplate](../Sources/Application/PreviewTemplate.swift) supplies protected Package.swift/Package.resolved, Scaffold.version, app-manifest.json, PreviewContract, PreviewSupport, PreviewApp, ProductionApp and DevExtension sources.
 - [ProjectScaffold](../Sources/Application/ProjectScaffold.swift) creates a UUID project, copies bundled resources and commits an initial Git baseline. Validation requires the supported scaffold version, exact protected bytes and expected protected-directory inventories through bounded nonlinked source collection.
 - Protected ProductionApp constructs ApplicationModel.production(appID:) with the stable UUID; preserve default initialization, production factory, title/detail/apply/reset and reduced-motion APIs used by protected infrastructure.
 - Unsupported versions are preserved and rejected, not silently upgraded. The rollout provides no automatic legacy source/store conversion or dual-engine support.
+
+## App naming and window titles
+
+- The project's `Info.plist` owns app branding.
+- `set_app_name` and rename update both `CFBundleDisplayName` and `CFBundleName` through the same validated path.
+- Production packaging reads the canonical display name before building.
+- Names retain the existing 1–64-character policy without silent truncation.
+- Packaging preserves its own executable, identifier and version fields.
+- Development naming validation belongs to [DevTools Run](../../apps/built-in/dev-tools/docs/tools.md#run).
+- The protected v9 production scene uses the packaged `CFBundleDisplayName`, then `CFBundleName`, as literal title text.
+- Missing or blank bundle names fall back to `Generated App`.
+- Editable window content may use SwiftUI `navigationTitle` to override that default.
+- The earlier `Application` title was a default, not a ban on supported overrides.
+- Existing v8 sources are preserved and rejected by current scaffold validation rather than rewritten.
+- Naming does not change app UUIDs or persistence paths.
+- Naming relies on correct bundle metadata and SwiftUI API wiring.
+- [Source-wiring tests](../Tests/AgentApplicationTests/ScaffoldNamingTests.swift) retain checks for protected title composition and supported overrides.
+- [AppName tests](../Tests/AgentApplicationTests/AppNameTests.swift) and [name/rename extension tests](../Tests/AgentApplicationTests/NameAndRenameExtensionTests.swift) retain project-owned naming logic coverage.
+- [DevTools branding tests](../../apps/built-in/dev-tools/Tests/DevToolsXPCServiceTests/RunControllerTests.swift) retain shared validation and staging coverage.
+- Scene compiler probes, synthetic Bundle execution and CoreGraphics window observation are retired naming checks.
+- App-name rendering and actual native-window titles are not independently verified.
+- Correct API wiring does not guarantee all generated app behavior.
 
 ## Tool integration and previews
 

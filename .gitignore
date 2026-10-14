@@ -1,6 +1,9 @@
 # Local Pi configuration, skills, sessions and evidence
 .pi/
 
+# Disposable repository-local temporary work
+/.tmp/
+
 # SwiftPM and other dependency/build output
 .build/
 .swiftpm/

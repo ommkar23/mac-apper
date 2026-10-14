@@ -4,7 +4,7 @@
 
 ## Home isolation
 
-- [IsolatedScenarioHome](../Sources/Scenario/IsolatedScenarioHome.swift) creates one owned UUID directory beneath `/private/tmp` with mode 0700.
+- [IsolatedScenarioHome](../Sources/Scenario/IsolatedScenarioHome.swift) creates one owned UUID directory beneath repository-root `.tmp/` with mode 0700. See the [temporary-work contract](../../README.md#temporary-work).
   - `environment` supplies `HOME` and `CFFIXED_USER_HOME` for client/child commands.
   - Pass these overrides to `TestHostService.environment` before host preparation/signing to scope launchd services and their inherited development children too.
   - Client-only HOME overrides and isolated bundle IDs do not prove service-home isolation before automatic workspace reads.

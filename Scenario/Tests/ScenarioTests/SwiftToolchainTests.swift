@@ -33,7 +33,8 @@ private final class SwiftToolchainTestAnchor: NSObject {}
 @Test @MainActor func preparationRedirectsBothSwiftToolsAndPinsCompiler() throws {
 	for tool in ["swift", "swiftc"] {
 		var resolved: [String] = []
-		let bin = URL(fileURLWithPath: "/private/tmp/standalone-swift64/usr/bin")
+		let bin = try ProjectTemporaryDirectory.appending("standalone-swift64")
+			.appendingPathComponent("usr/bin")
 		let command = try PackagedTestHost.preparationCommand(
 			URL(fileURLWithPath: "/usr/bin/xcrun"), arguments: [tool, "--version"]
 		) { name in

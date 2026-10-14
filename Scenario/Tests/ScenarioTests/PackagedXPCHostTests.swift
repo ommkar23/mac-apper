@@ -30,7 +30,7 @@ import Testing
 
 @Test @MainActor func xpcHostStagesDeclaredResourcesBeforeSigning() throws {
 	let manager = FileManager.default
-	let fixture = manager.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+	let fixture = try ProjectTemporaryDirectory.root().appendingPathComponent(UUID().uuidString)
 	try manager.createDirectory(at: fixture, withIntermediateDirectories: false)
 	defer { try? manager.removeItem(at: fixture) }
 	let source = fixture.appendingPathComponent("Renderer.swift")
@@ -54,7 +54,7 @@ import Testing
 @Test @MainActor func xpcHostRejectsUnsafeResourcesAndCleansPartialSetup() throws {
 	for linked in [false, true] {
 		let manager = FileManager.default
-		let fixture = manager.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+		let fixture = try ProjectTemporaryDirectory.root().appendingPathComponent(UUID().uuidString)
 		try manager.createDirectory(at: fixture, withIntermediateDirectories: false)
 		defer { try? manager.removeItem(at: fixture) }
 		let source = fixture.appendingPathComponent("resource")

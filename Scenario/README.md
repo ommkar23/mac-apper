@@ -18,7 +18,7 @@ Scenario is a reusable macOS support library for package-local Swift tests. It p
 - The root `Scenarios/`, standalone runner and Scenario command plugin are retired. Package-local filtered Swift tests are the supported entry points.
 - Host `remove()` deletes owned packaging **without independently reaping XPC services**. Confirm exact-owned cleanup first; retain fixtures if confirmation fails.
 - Isolation/path checks are not a sandbox. Tests, generated code and child processes run with the user's permissions.
-- Repository policy remains in [AGENTS.md](../AGENTS.md), [conventions](../.pi/CONVENTIONS.yaml) and [guidance](../.pi/GUIDANCE.yaml); [learnings](../.pi/LEARNINGS.yaml) record history, not current commands.
+- Repository policy remains in [conventions](../.pi/CONVENTIONS.yaml) and [guidance](../.pi/GUIDANCE.yaml); [learnings](../.pi/LEARNINGS.yaml) record history, not current commands.
 
 ## Setup
 
@@ -27,6 +27,15 @@ Scenario is a reusable macOS support library for package-local Swift tests. It p
   - The library has no external target dependencies and imports Foundation/Darwin.
   - Tests use exact `swift-testing` 6.2.3. SwiftPM resolves dependencies automatically; no separate Testing installation or manual SwiftSyntax dependency is needed.
 - Callers supply executables, plists and resources. Signing uses installed `codesign`; Scenario does not install tools, discover product fixtures or authorize credential/live operations.
+
+## Temporary storage
+
+- [ProjectTemporaryDirectory](Sources/Scenario/ProjectTemporaryDirectory.swift) allocates disposable work beneath the repository-root `.tmp/`.
+- The default repository root comes from the compiled support source location, not the hosted process working directory or isolated HOME.
+- A missing root is created with mode 0700. Links, non-directory entries, foreign ownership and public permissions fail closed.
+- Isolated homes, host staging, SDK probes and command logs use this root. Child commands and staged XPC services receive its `TMPDIR` before startup.
+- Production storage is unchanged. Temporary retention does not make review apps or reports durable.
+- Follow the [temporary-work and manual-cleanup contract](../README.md#temporary-work). The library removes only its exact owned fixtures after existing cleanup gates permit it.
 
 ## Practical usage
 

@@ -40,7 +40,7 @@ Request rules:
 - Request ≤64 KiB; 1–20 unique criterion IDs, lowercase ASCII letters/digits/underscore/hyphen, beginning with a letter/digit, ≤64 bytes.
 - Nonblank criterion descriptions ≤2048 UTF-8 bytes; optional nonblank context ≤4096 bytes. Text permits LF but rejects other control characters. Schema character bounds are supplemented by runtime UTF-8 byte bounds.
 - Absolute nonlinked regular PNG/JPEG ≤8 MiB; one image, dimensions 1–8192 and ≤16,777,216 pixels; complete envelope plus successful ImageIO decode required. Image format comes from bytes, not extension. No OCR is run.
-- Any linked path component, `.`/`..`, control characters, or empty component is rejected. macOS `/tmp` and `/var` are symlinks: use `/private/tmp` and `/private/var` when constructing temporary paths. Do not use Foundation's `resolvingSymlinksInPath()` to obtain these paths: it can shorten them back to their aliases.
+- Any linked path component, `.`/`..`, control characters, or empty component is rejected. Use private repository-root `.tmp/` paths for disposable fixtures. See the [temporary-work contract](../README.md#temporary-work). macOS `/tmp` and `/var` are symlinks and remain rejected. Do not use Foundation's `resolvingSymlinksInPath()` to obtain canonical paths: it can shorten them back to aliases.
 
 ## Results and exit codes
 

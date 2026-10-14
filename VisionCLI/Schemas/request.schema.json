@@ -21,7 +21,7 @@
       "type": "string",
       "pattern": "^/",
       "maxLength": 4096,
-      "description": "Absolute nonlinked PNG/JPEG path. Runtime rejects dot components and control characters. Use /private/tmp rather than /tmp."
+      "description": "Absolute nonlinked PNG/JPEG path. Runtime rejects dot components and control characters. Disposable repository fixtures use the private repository-root .tmp directory; durable images stay in their existing storage."
     },
     "context": {
       "type": [

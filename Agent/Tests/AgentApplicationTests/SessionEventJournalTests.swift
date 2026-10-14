@@ -2,11 +2,12 @@
 // Tests journal tail repair, paged history, and rejection of foreign session paths.
 // @frontmatter:end
 import Foundation
+import Scenario
 import Testing
 @testable import AgentApplication
 
 @Test func journalRepairsIncompleteFinalRecordAndPagesEarlierHistory() throws {
-	let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+	let root = try ProjectTemporaryDirectory.root().appendingPathComponent(UUID().uuidString)
 	defer { try? FileManager.default.removeItem(at: root) }
 	let session = root.appendingPathComponent(".pi/sessions/session-1.jsonl")
 	try FileManager.default.createDirectory(
@@ -27,7 +28,7 @@ import Testing
 }
 
 @Test func journalRejectsForeignSessionPaths() throws {
-	let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+	let root = try ProjectTemporaryDirectory.root().appendingPathComponent(UUID().uuidString)
 	#expect(throws: (any Error).self) {
 		try SessionEventJournal(
 			sessionFile: root.appendingPathComponent("foreign.jsonl"),

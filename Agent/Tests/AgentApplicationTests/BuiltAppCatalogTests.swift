@@ -2,12 +2,13 @@
 // Tests discovery of complete app bundles and exclusion of linked projects.
 // @frontmatter:end
 import Foundation
+import Scenario
 import Testing
 
 @testable import AgentApplication
 
 @Test func builtAppCatalogFindsOnlyCompleteProductionBundles() throws {
-	let root = FileManager.default.temporaryDirectory.appendingPathComponent(
+	let root = try ProjectTemporaryDirectory.root().appendingPathComponent(
 		UUID().uuidString, isDirectory: true)
 	defer { try? FileManager.default.removeItem(at: root) }
 	try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
@@ -41,7 +42,7 @@ import Testing
 }
 
 @Test func builtAppCatalogSkipsSymbolicLinkedProjects() throws {
-	let root = FileManager.default.temporaryDirectory.appendingPathComponent(
+	let root = try ProjectTemporaryDirectory.root().appendingPathComponent(
 		UUID().uuidString, isDirectory: true)
 	defer { try? FileManager.default.removeItem(at: root) }
 	try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)

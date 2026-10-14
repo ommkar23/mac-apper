@@ -7,27 +7,26 @@ import GuardFormatCore
 @main enum GuardFormatTool {
 	static func main() throws {
 		let arguments = Array(CommandLine.arguments.dropFirst())
-		guard arguments.count >= 2, ["--apply", "--check"].contains(arguments[0]) else {
-			throw Failure.invalidArguments
-		}
+		guard
+			arguments.count >= 2,
+			["--apply", "--check"].contains(arguments[0])
+		else { throw Failure.invalidArguments }
 		let manager = FileManager.default
 		var files: [URL] = []
 		for path in arguments.dropFirst() {
 			let url = URL(fileURLWithPath: path)
 			var isDirectory: ObjCBool = false
-			guard manager.fileExists(atPath: url.path, isDirectory: &isDirectory) else {
-				throw Failure.missingPath(path)
-			}
+			guard
+				manager.fileExists(atPath: url.path, isDirectory: &isDirectory)
+			else { throw Failure.missingPath(path) }
 			if isDirectory.boolValue {
 				guard
 					let enumerator = manager.enumerator(
 						at: url,
 						includingPropertiesForKeys: [.isRegularFileKey, .isSymbolicLinkKey])
-				else {
-					throw Failure.missingPath(path)
-				}
+				else { throw Failure.missingPath(path) }
 				for case let file as URL in enumerator {
-					if [".build", ".git", ".swiftpm", "dist", "HostBuilds", "Generated"].contains(
+					if [".tmp", ".build", ".git", ".swiftpm", "dist", "HostBuilds", "Generated"].contains(
 						file.lastPathComponent)
 					{
 						enumerator.skipDescendants()
@@ -45,7 +44,9 @@ import GuardFormatCore
 		for file in files.sorted(by: { $0.path < $1.path }) {
 			let source = try String(contentsOf: file, encoding: .utf8)
 			let formatted = formatGuards(source)
-			guard formatted != source else { continue }
+			guard
+				formatted != source
+			else { continue }
 			changed += 1
 			if arguments[0] == "--apply" {
 				try formatted.write(to: file, atomically: true, encoding: .utf8)
@@ -53,9 +54,9 @@ import GuardFormatCore
 				fputs("Guard style: \(file.path)\n", stderr)
 			}
 		}
-		guard changed == 0 || arguments[0] == "--apply" else {
-			throw Failure.needsFormatting(changed)
-		}
+		guard
+			changed == 0 || arguments[0] == "--apply"
+		else { throw Failure.needsFormatting(changed) }
 	}
 }
 

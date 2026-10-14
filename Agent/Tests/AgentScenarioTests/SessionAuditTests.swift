@@ -3,10 +3,11 @@
 // @frontmatter:end
 import AgentScenarioSupport
 import Foundation
+import Scenario
 import Testing
 
 private func auditFixture() throws -> URL {
-	let root = URL(fileURLWithPath: "/private/tmp/session-audit-\(UUID().uuidString)")
+	let root = try ProjectTemporaryDirectory.appending("session-audit-\(UUID().uuidString)")
 	try FileManager.default.createDirectory(
 		at: root, withIntermediateDirectories: false, attributes: [.posixPermissions: 0o700])
 	return root
@@ -75,24 +76,17 @@ private func auditData(
 	defer { try? FileManager.default.removeItem(at: root) }
 	let project = root.appendingPathComponent(".mac-apper/\(UUID().uuidString.lowercased())")
 	try FileManager.default.createDirectory(at: project, withIntermediateDirectories: true)
-	let alias = "/tmp/\(root.lastPathComponent)/.mac-apper/\(project.lastPathComponent)"
-	for (cwd, expected) in [(project.path, alias), (alias, project.path), (alias, alias)] {
-		let audit = try ScenarioSessionAudit.read(auditData(cwd: cwd), expectedProject: expected)
-		#expect(audit.profile == .required)
+	#expect(
+		try ScenarioSessionAudit.read(auditData(cwd: project.path), expectedProject: project.path)
+			.profile
+			== .required)
+	// Read existing OS aliases only. Disposable fixtures remain under repository .tmp.
+	for (alias, canonical) in [("/tmp", "/private/tmp"), ("/var", "/private/var")] {
+		for (cwd, expected) in [(canonical, alias), (alias, canonical), (alias, alias)] {
+			let audit = try ScenarioSessionAudit.read(auditData(cwd: cwd), expectedProject: expected)
+			#expect(audit.profile == .required)
+		}
 	}
-	// A second OS alias ensures the implementation is not a /tmp spelling substitution.
-	let temporary = FileManager.default.temporaryDirectory
-	let other = temporary.appendingPathComponent("session-audit-\(UUID().uuidString)")
-	try FileManager.default.createDirectory(at: other, withIntermediateDirectories: false)
-	defer { try? FileManager.default.removeItem(at: other) }
-	let canonical = "/private" + other.path
-	try #require(other.path.hasPrefix("/var/"))
-	#expect(
-		try ScenarioSessionAudit.read(auditData(cwd: canonical), expectedProject: other.path).profile
-			== .required)
-	#expect(
-		try ScenarioSessionAudit.read(auditData(cwd: other.path), expectedProject: canonical).profile
-			== .required)
 }
 
 @Test func sessionAuditRejectsUnsafeOrNonexistentDirectoryIdentity() throws {

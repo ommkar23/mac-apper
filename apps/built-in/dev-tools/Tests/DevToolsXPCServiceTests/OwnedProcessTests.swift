@@ -3,6 +3,7 @@
 // @frontmatter:end
 import Darwin
 import Foundation
+import Scenario
 import Testing
 
 @testable import DevToolsApplication
@@ -10,7 +11,7 @@ import Testing
 private func owned(_ script: String, limit: Int = 4096) throws -> OwnedProcess {
 	try OwnedProcess(
 		executable: URL(fileURLWithPath: "/bin/sh"), arguments: ["-c", script],
-		directory: FileManager.default.temporaryDirectory, environment: [:], outputLimit: limit)
+		directory: try ProjectTemporaryDirectory.root(), environment: [:], outputLimit: limit)
 }
 
 @Test func processOutputIsBoundedAndOverflowIsNotSuccess() async throws {

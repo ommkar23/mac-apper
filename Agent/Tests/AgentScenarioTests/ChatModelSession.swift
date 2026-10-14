@@ -222,7 +222,8 @@ private enum ChatModelFailure: Error {
 		}
 		let journal = project.appendingPathComponent(
 			".pi/agent-events/\(try id.uuidString.lowercased()).jsonl")
-		let archive = URL(fileURLWithPath: "/private/tmp/mac-apper-chat-evidence-\(UUID().uuidString)")
+		let archive = try ProjectTemporaryDirectory.appending(
+			"mac-apper-chat-evidence-\(UUID().uuidString)")
 		try manager.createDirectory(
 			at: archive, withIntermediateDirectories: false,
 			attributes: [.posixPermissions: 0o700])

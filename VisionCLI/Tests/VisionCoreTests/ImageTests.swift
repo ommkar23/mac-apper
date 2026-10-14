@@ -2,12 +2,13 @@
 // Tests real PNG decoding, truncated and unsupported image rejection, bounded file reads, and symlink refusal in owned temporary fixtures.
 // @frontmatter:end
 import Foundation
+import Scenario
 import ImageIO
 import Testing
 @testable import VisionCore
 
 @Test func imagesAreDecodedAndBoundToTheirBytesAndDimensions() throws {
-	let root = URL(fileURLWithPath: "/private/tmp").appendingPathComponent(UUID().uuidString)
+	let root = try ProjectTemporaryDirectory.root().appendingPathComponent(UUID().uuidString)
 	try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
 	defer { try? FileManager.default.removeItem(at: root) }
 	let context = try #require(
@@ -28,10 +29,10 @@ import Testing
 		criteria: [Criterion(id: "offline", description: "No Gemini call")])
 	let decoded = try VisionRequest.decode(JSONEncoder().encode(request))
 	#expect(decoded.imagePath == file.path)
-	#expect(decoded.imagePath.hasPrefix("/private/tmp/"))
+	#expect(decoded.imagePath.hasPrefix(root.path + "/"))
 	let loaded = try LoadedImage.load(path: decoded.imagePath)
-	let alias = String(file.path.dropFirst(8))
-	#expect(alias.hasPrefix("/tmp/"))
+	let alias = root.path + "/./image.png"
+	#expect(alias.contains("/./"))
 	#expect(throws: (any Error).self) { try LoadedImage.load(path: alias) }
 	#expect(loaded.width == 4 && loaded.height == 3 && loaded.mimeType == "image/png")
 	#expect(loaded.data == bytes as Data && loaded.sha256.count == 64)
