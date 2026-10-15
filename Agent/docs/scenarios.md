@@ -22,6 +22,10 @@ AGENT_SCENARIO_LIVE=1 "$swift64" test --package-path Agent --filter agentCreateH
 ```
 
 - AGENT_SCENARIO_PRODUCTS and DEV_TOOLS_SCENARIO_PRODUCTS select existing debug product directories for custom scratch builds. AGENT_CREATE_KEEP_PROJECT=1 retains the owned Create project.
+- `AGENT_VISION_PRODUCTS` selects an existing absolute products directory containing `vision-cli`. Explicit input requires nonlinked directory ancestors and a nonlinked regular executable leaf. Empty, relative, traversal, missing, linked, nonregular and nonexecutable input fails without fallback or a default Vision build.
+- Without this override, Vision preparation retains the legacy release build and `VisionCLI/.build/release/vision-cli` selection. Strict private runs must supply the override using the [private build recipe](../../VisionCLI/README.md#private-scenario-products).
+- Preparation still runs the selected executable with `check-config --env-file` and stages only `VisionCLI/vision-cli`. It does not reuse hosted `AGENT_SCENARIO_VISION_CLI`. Cases without Vision ignore unused Vision overrides.
+- The scenario-run helper clears inherited `AGENT_` variables, including `AGENT_VISION_PRODUCTS`. It exposes no arbitrary plan environment overrides. Private product selection requires a deliberate direct `swift test` invocation.
 - Filters use scenario names without end anchors/parentheses. Require actual selected-test started/passed markers and exit 0; zero-test selection is not a pass. Helper status is last recorded state, not process liveness or proof of completion.
 - Scenario-only commands do not run offline units; underlying runtime/library changes separately require focused and affected package tests. This rewrite executes none of these paths.
 
@@ -75,7 +79,7 @@ AGENT_SCENARIO_LIVE=1 "$swift64" test --package-path Agent --filter agentCreateH
   - A task must be in_progress during a successful Swift source write/edit and later completed by an update, with a final nonempty fully completed plan matching client tasks.
   - IDs, titles, task count and overall tool order remain agent-selected, verifying implementation-time plan use rather than a final checklist or self-report.
 - **Vision review and deadlines**
-  - Local VisionCLI build/check-config precedes Create and only its executable is staged, never `.env`, with GEMINI_API_KEY overriding private `VisionCLI/.env` and AGENT_VISION_ENV_FILE selecting an alternate absolute private file.
+  - Local VisionCLI preparation/check-config precedes Create and only its executable is staged, never `.env`, with GEMINI_API_KEY overriding private `VisionCLI/.env` and AGENT_VISION_ENV_FILE selecting an alternate absolute private file.
   - One integrated pinned `gemini-3.8-flash` review of the last validated preview checks readable integer count, legible Increment/Decrement/Reset labels and no clipping/overlap, with uncertainty inconclusive and operational errors distinct from visual failures.
   - Assertions check request UUID/model/exact criteria, dimensions/SHA-256, aggregate verdict and exit code, without prescribing particular preview state or dimensions.
   - The reviewer uses a 120-second child deadline, bounded private temporary I/O/cancellation cleanup and CREATE_VISION logging, inside 1020-second case and 1320-second hosted bounds.

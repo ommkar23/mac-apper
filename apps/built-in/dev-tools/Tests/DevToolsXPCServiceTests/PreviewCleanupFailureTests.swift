@@ -5,14 +5,39 @@ import Foundation
 import Testing
 @testable import DevToolsApplication
 
-private enum PreviewFailureStage: Sendable { case compiler, snapshot }
+private enum PreviewFailureStage: Int, CaseIterable, Sendable {
+	case compiler, binPath, sdk, previewAST, productionAST, snapshotBuild, snapshot
+	var phase: String {
+		[
+			"appViewsBuild", "binPath", "sdkDiscovery", "previewAST", "productionAST", "snapshotBuild",
+			"snapshotExecution",
+		][rawValue]
+	}
+	var outputLimit: Int { [65_536, 4096, 65_536, 4_194_304, 4_194_304, 65_536, 65_536][rawValue] }
+	var timeout: Duration { .seconds([120, 10, 10, 30, 30, 120, 15][rawValue]) }
+}
+
+private final class PreviewCallCounter: @unchecked Sendable {
+	private let lock = NSLock()
+	private var count = 0
+	func next() -> Int {
+		lock.withLock {
+			defer { count += 1 }; return count
+		}
+	}
+	var value: Int { lock.withLock { count } }
+}
 
 private func injectedPreviewRunner(
-	_ failure: any Error & Sendable, stage: PreviewFailureStage
+	_ failure: any Error & Sendable, stage: PreviewFailureStage,
+	counter: PreviewCallCounter = PreviewCallCounter()
 ) -> PreviewRendering.ProcessRunner {
-	return { executable, arguments, workspace, _, _ in
+	return { executable, arguments, workspace, timeout, outputLimit in
 		let manager = FileManager.default
-		if stage == .compiler { throw failure }
+		let current = PreviewFailureStage(rawValue: counter.next())!
+		#expect(timeout == current.timeout)
+		#expect(outputLimit == current.outputLimit)
+		if current == stage && stage != .snapshot { throw failure }
 		let products = workspace.appendingPathComponent("Build/products")
 		if arguments.contains("--show-bin-path") {
 			try manager.createDirectory(at: products, withIntermediateDirectories: true)
@@ -38,7 +63,7 @@ private func injectedPreviewRunner(
 
 @Test func previewCleanupFailuresPropagateAndRetainRequestFiles() async throws {
 	for failure in [OwnedProcess.Failure.cleanupFailed, .reapFailed] {
-		for stage in [PreviewFailureStage.compiler, .snapshot] {
+		for stage in PreviewFailureStage.allCases {
 			let fixture = try PreviewFixture(source: "// frozen-source")
 			defer { try? fixture.remove() }  // All injected failures occur without any real child.
 			let original = try Data(contentsOf: fixture.project.appendingPathComponent("Package.swift"))
@@ -62,6 +87,11 @@ private func injectedPreviewRunner(
 						contentsOf: workspace.appendingPathComponent("Sources/AppViews/Example.swift"),
 						encoding: .utf8) == "// frozen-source")
 			}
+			if stage != .snapshot {
+				#expect(
+					!FileManager.default.fileExists(
+						atPath: fixture.project.appendingPathComponent(".mac-apper/Artifacts").path))
+			}
 			if stage == .snapshot {
 				let artifacts = try FileManager.default.contentsOfDirectory(
 					at: fixture.project.appendingPathComponent(".mac-apper/Artifacts"),
@@ -81,24 +111,53 @@ private func injectedPreviewRunner(
 
 @Test func previewCompletedChildFailuresKeepTypedDiagnosticsAndRemoveScratch() async throws {
 	let failures: [any Error & Sendable] = [
-		PreviewRendering.Failure.processFailed("compiler-or-worker-diagnostic"),
-		OwnedProcess.Failure.timedOut, OwnedProcess.Failure.outputExceeded,
+		PreviewRendering.Failure.processFailed(
+			"private-source /private/path SECRET=hidden\u{001B}[31m"),
+		OwnedProcess.Failure.timedOut, OwnedProcess.Failure.outputExceeded, OwnedProcess.Failure.launch,
+		SwiftToolchain.Failure.missingExecutable(URL(fileURLWithPath: "/private/SECRET/swift")),
+		NSError(domain: "SECRET", code: 1, userInfo: [NSLocalizedDescriptionKey: "private-source"]),
 	]
 	for failure in failures {
-		for stage in [PreviewFailureStage.compiler, .snapshot] {
+		for stage in PreviewFailureStage.allCases {
 			let fixture = try PreviewFixture(source: "// frozen-source")
 			defer { try? fixture.remove() }
+			let original = try Data(contentsOf: fixture.project.appendingPathComponent("Package.swift"))
+			let counter = PreviewCallCounter()
 			let controller = PreviewController(
 				projects: ProjectResolver(projectsRoot: fixture.root), gate: DevToolsOperationGate(),
-				processRunner: injectedPreviewRunner(failure, stage: stage))
+				processRunner: injectedPreviewRunner(failure, stage: stage, counter: counter))
 			let result = try await controller.handle(
 				fixture.id, UUID(),
 				PreviewRequest(
 					projectRoot: fixture.project.path, viewPath: "Sources/AppViews/Example.swift",
 					screenSize: nil))
 			#expect(result.status == "error")
-			#expect(result.summary == String(describing: failure))
+			#expect(result.summary.contains("phase=\(stage.phase)"))
+			#expect(result.summary.contains("outputLimitBytes=\(stage.outputLimit)"))
+			let code =
+				(failure as? OwnedProcess.Failure).map { String(describing: $0) }
+				?? (failure is SwiftToolchain.Failure
+					? "toolchainUnavailable"
+					: failure is PreviewRendering.Failure ? "processFailed" : "processError")
+			#expect(result.summary.hasPrefix(code + ":"))
+			#expect(
+				result.summary.contains("outputTruncated=\(code == "outputExceeded" ? "true" : "unknown")"))
+			#expect(result.summary.contains("output=omitted"))
+			#expect(!result.summary.contains("private-source") && !result.summary.contains("SECRET"))
+			#expect(result.summary.utf8.count <= 4096)
+			#expect(counter.value == stage.rawValue + 1)
+			#expect(
+				try Data(contentsOf: fixture.project.appendingPathComponent("Package.swift")) == original)
+			#expect(
+				try String(
+					contentsOf: fixture.project.appendingPathComponent("Sources/AppViews/Example.swift"),
+					encoding: .utf8) == "// frozen-source")
 			#expect(result.artifact == nil && result.width == nil && result.height == nil)
+			if stage != .snapshot {
+				#expect(
+					!FileManager.default.fileExists(
+						atPath: fixture.project.appendingPathComponent(".mac-apper/Artifacts").path))
+			}
 			#expect(
 				try FileManager.default.contentsOfDirectory(
 					atPath: fixture.project.appendingPathComponent(".mac-apper/PreviewBuild").path
@@ -109,6 +168,35 @@ private func injectedPreviewRunner(
 						atPath: fixture.project.appendingPathComponent(".mac-apper/Artifacts").path
 					).isEmpty)
 			}
+		}
+	}
+}
+
+@Test func previewCancellationRemainsThrownAfterCompletedCleanup() async throws {
+	for stage in PreviewFailureStage.allCases {
+		let fixture = try PreviewFixture(source: "// frozen-source")
+		defer { try? fixture.remove() }  // No actual child is started by this seam.
+		let counter = PreviewCallCounter()
+		let controller = PreviewController(
+			projects: ProjectResolver(projectsRoot: fixture.root), gate: DevToolsOperationGate(),
+			processRunner: injectedPreviewRunner(CancellationError(), stage: stage, counter: counter))
+		await #expect(throws: CancellationError.self) {
+			_ = try await controller.handle(
+				fixture.id, UUID(),
+				PreviewRequest(
+					projectRoot: fixture.project.path, viewPath: "Sources/AppViews/Example.swift",
+					screenSize: nil))
+		}
+		#expect(counter.value == stage.rawValue + 1)
+		#expect(
+			try FileManager.default.contentsOfDirectory(
+				atPath: fixture.project.appendingPathComponent(".mac-apper/PreviewBuild").path
+			).isEmpty)
+		if stage == .snapshot {
+			#expect(
+				try FileManager.default.contentsOfDirectory(
+					atPath: fixture.project.appendingPathComponent(".mac-apper/Artifacts").path
+				).isEmpty)
 		}
 	}
 }

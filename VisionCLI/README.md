@@ -27,6 +27,32 @@ VisionCLI/.build/release/vision-cli models
 - Tests cover request validation, image decoding/hash/link/truncation checks, request construction, conservative verdicts, invalid provider results and credential precedence/permissions.
 - “Offline” means no model/API call, not guaranteed air-gapped SwiftPM dependency resolution.
 
+## Private scenario products
+
+For authorized local preparation, allocate unique scratch beneath repository-root `.tmp/`.
+Verify both standalone Swift executables as described in the [root setup](../README.md#new-mac-setup).
+Use the same driver, scratch and configuration to build and discover products:
+
+```sh
+# From the physical repository root, after initializing private TMPDIR.
+private=$(mktemp -d "$PWD/.tmp/vision-products.XXXXXX")
+test -n "$private" && test -d "$private" || exit 1
+"$swift64" build --package-path VisionCLI --scratch-path "$private" -c release --product vision-cli
+vision_products=$("$swift64" build --package-path VisionCLI --scratch-path "$private" -c release --show-bin-path)
+test -x "$vision_products/vision-cli" || exit 1
+# In a separately authorized direct Counter/Plan swift test invocation:
+# AGENT_VISION_PRODUCTS="$vision_products" ... "$swift64" test --package-path Agent ...
+```
+
+- Do not infer the Swift Build output layout from the scratch path.
+- Strict private runs must supply `AGENT_VISION_PRODUCTS`. Agent then skips the default Vision build and selects this directory's `vision-cli`.
+- Explicit paths must be absolute, without traversal or linked ancestors/leaves. The selected leaf must be a regular executable. Invalid input fails without fallback.
+- Absent input preserves legacy preparation. Unused Vision overrides are ignored when Vision is not requested.
+- Agent retains `check-config --env-file` arguments and stages only the executable at `VisionCLI/vision-cli`, never the credential file. Hosted `AGENT_SCENARIO_VISION_CLI` is not a preparation input.
+- The scenario-run helper clears inherited `AGENT_` overrides and has no arbitrary plan environment support. Use deliberate direct invocations for private products.
+- Building and discovering products above does not read credentials, start a host or authorize live calls.
+- Keep the exact owned scratch until its builds and scenario consumers have exited. Remove only that directory after confirmed cleanup; retain meaningful logs/evidence separately under `.tmp/`.
+
 ## Review interface
 
 - `verify` reads one bounded version-1 JSON object from stdin, then requires EOF, and writes one JSON result line to stdout.

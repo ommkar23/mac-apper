@@ -88,25 +88,11 @@ import Testing
 	}
 	let binary = current.appendingPathComponent("ProductionApp")
 	try #require(FileManager.default.isExecutableFile(atPath: binary.path))
-	let marker = fixture.url.appendingPathComponent("run-pid")
 	let deadline = ContinuousClock.now.advanced(by: .seconds(10))
-	while !FileManager.default.fileExists(atPath: marker.path), ContinuousClock.now < deadline {
-		try await Task.sleep(for: .milliseconds(20))
-	}
-	let values = try marker.resourceValues(forKeys: [
-		.isRegularFileKey, .isSymbolicLinkKey, .fileSizeKey,
-	])
-	try #require(values.isRegularFile == true && values.isSymbolicLink != true)
-	try #require((values.fileSize ?? 65) <= 64)
-	let pid = try #require(Int32(try String(contentsOf: marker, encoding: .utf8)))
-	// Marker PID is only corroboration. Exact binary discovery confers identity authority.
-	let child = try OwnedExecutableProcess.capture(executable: binary)
-	lifecycle.child = child
-	try #require(child.pid == pid)
+	let child = try ToolchainScenarioHandshake.acquire(
+		binary: binary, root: fixture.url, lifecycle: lifecycle)
 	print("DEVTOOLS_CHILD_CAPTURED pid=\(child.pid) start=\(child.start) path=\(child.path)")
 	print("DEVTOOLS_CHILD_PRIVATE_HOME_COMPILER_CONFIRMED")
-	try "release".write(
-		to: fixture.url.appendingPathComponent("run-release"), atomically: true, encoding: .utf8)
 	while kill(child.pid, 0) == 0, ContinuousClock.now < deadline {
 		try await Task.sleep(for: .milliseconds(50))
 	}
@@ -117,4 +103,48 @@ import Testing
 			== manifest)
 	try #require(
 		!FileManager.default.fileExists(atPath: fixture.url.appendingPathComponent(".build").path))
+}
+
+// Keep polling, validation, exact capture, caching, corroboration and release in one
+// synchronous MainActor window. Unrelated synchronous Preview work must not intervene.
+@MainActor enum ToolchainScenarioHandshake {
+	struct Operations {
+		var now: () -> TimeInterval = { ProcessInfo.processInfo.systemUptime }
+		var ready: (URL) -> Bool = { FileManager.default.fileExists(atPath: $0.path) }
+		var wait: (TimeInterval) throws -> Void = Thread.sleep(forTimeInterval:)
+		var capture: (URL) throws -> OwnedProcessIdentity = {
+			try OwnedExecutableProcess.capture(executable: $0)
+		}
+		var release: (URL) throws -> Void = {
+			try "release".write(to: $0, atomically: true, encoding: .utf8)
+		}
+	}
+
+	static func acquire(
+		binary: URL, root: URL, lifecycle: DevToolsScenarioLifecycle,
+		using operations: Operations = Operations()
+	) throws -> OwnedProcessIdentity {
+		let marker = root.appendingPathComponent("run-pid")
+		let deadline = operations.now() + 10
+		while !operations.ready(marker), operations.now() < deadline {
+			try operations.wait(0.02)
+		}
+		let values = try marker.resourceValues(forKeys: [
+			.isRegularFileKey, .isSymbolicLinkKey, .fileSizeKey,
+		])
+		guard
+			values.isRegularFile == true,
+			values.isSymbolicLink != true,
+			(values.fileSize ?? 65) <= 64,
+			let pid = Int32(try String(contentsOf: marker, encoding: .utf8))
+		else { throw ScenarioFailure.message("invalid development PID marker") }
+		// Marker PID is only corroboration. Exact executable discovery confers authority.
+		let child = try operations.capture(binary)
+		lifecycle.child = child
+		guard
+			child.pid == pid
+		else { throw ScenarioFailure.message("development PID marker mismatch") }
+		try operations.release(root.appendingPathComponent("run-release"))
+		return child
+	}
 }

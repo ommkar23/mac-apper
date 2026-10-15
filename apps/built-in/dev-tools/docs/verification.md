@@ -21,6 +21,20 @@ Commands below run from the repository root and require authorization for their 
 - Root `swift test` is not a substitute for this package. Underlying runtime/library changes require focused tests and the affected package suite; scenario-only changes use selected cases rather than unrelated units.
 - The [Plugins guide](../../../../Plugins/README.md) owns optional clean-test/private-scratch mechanics. A custom build-product directory must be passed via `DEV_TOOLS_SCENARIO_PRODUCTS`; retained default caches are not proof of a fresh build. Never pass an empty scratch path or delete unrelated retained artifacts.
 
+## Preview phase diagnostics checks
+
+- Run focused offline checks with scenario gates unset, validated private scratch and repository-local `TMPDIR`:
+
+  ```sh
+  "$swift64" test --package-path apps/built-in/dev-tools --scratch-path "$scratch" \
+    --filter 'preview(CompletedChildFailures|CleanupFailures|CancellationRemains|Diagnostic|ProductionDiagnostic|DiscoveryDiagnostics|RealOutputOverflow)'
+  ```
+
+- Injection covers all seven subprocess phases with unchanged timeouts and output limits. It checks stable error codes, metadata-only summaries, no later phase, no artifact/dimensions, original-source preservation, completed-failure removal and exact cleanup-uncertainty/cancellation propagation.
+- Unicode/control checks enforce the 4096 UTF-8 byte bound and output omission. A real local output-overflow child must reach ESRCH before fixture removal. These focused checks need no signed service.
+- Follow focused checks with the restricted unit/contract/service selection above. Signed-provider verification and bundle recreation are separate authorized paths.
+- See [Preview diagnostics](preview.md#results-and-diagnostics) for the result contract. Overflow alone does not identify a historical subprocess phase or establish a PNG-size failure. Controlled regressions do not prove historical causation.
+
 ## Provider scenarios
 
 - [Scenario](../../../../Scenario/README.md) owns reusable signed-host preparation, compiler helpers and lifecycle APIs. DevTools tests own prompts/assertions, fixtures and provider selections; no full Mac Apper.app build/copy or retired Scenario runner/plugin is required.
@@ -53,7 +67,23 @@ Commands below run from the repository root and require authorization for their 
 - `plan-project-isolation`: separate plans per project, independent of session identity.
 - `test-package`: two real Swift Testing targets, successful execution, assertion failure, compilation failure, repaired pass, foreign-scope rejection and source/request-scratch preservation. Fixtures use pinned Testing and an explicit macOS 14 deployment target rather than XCTest. The passing model test checks inherited private-home values and access to both standalone compiler executables.
 - `devToolsToolchainBuildRunScenario`: requires compiler 6.4. It validates generated-client Build/Run metadata, complete scoped staging paths, source preservation and absence of project `.build`. The child checks private-home/compiler inheritance before writing its marker. It waits at most 60 seconds for a fixture-only release marker.
-- The parent captures immutable identity by the exact staged binary before releasing the child. The marker PID is only corroboration, never signaling authority. Natural exit must reach ESRCH. This is development launch evidence, not UI readiness or production packaging.
+- The parent polls and validates the marker, captures immutable identity by the exact staged binary, immediately caches it, corroborates the marker PID and writes release in one synchronous MainActor window. There is no await or actor hop before release. Polling remains bounded to 10 seconds. Exact capture keeps its default bound. The child lease remains 60 seconds.
+- The marker PID is only corroboration, never signaling authority. A mismatch preserves the cached exact identity for teardown. Capture failure never releases the child and still fails closed. Natural exit must reach ESRCH. This is development launch evidence, not UI readiness or production packaging.
+
+### Build/Run acquisition scheduling regression
+
+- Run focused offline handshake/lifecycle checks with validated private scratch and repository-local `TMPDIR`:
+
+  ```sh
+  "$swift64" test --package-path apps/built-in/dev-tools --scratch-path "$scratch" \
+    --filter 'ToolchainScenarioHandshakeTests|DevToolsScenarioLifecycleTests'
+  ```
+
+- `ToolchainScenarioHandshakeTests` exercises the helper called by Build/Run. Controlled clock, readiness, waiting, discovery and release seams check the bounded acquisition window.
+- Acquisition captures, immediately caches and corroborates the exact child identity before release in one synchronous MainActor window. No await or actor hop occurs before release. A controlled queued actor job checks release ordering without relying on Task.yield, priorities or scheduler luck.
+- Coverage includes the missing-marker deadline, linked/oversized/malformed markers, cached identity on PID mismatch, no release on capture failure and cached identity on release failure. The marker PID is corroboration, not signaling authority.
+- A copied local executable checks kernel path/start/PID agreement and ESRCH with a parent-written marker. The separately authorized `devToolsToolchainBuildRunScenario` checks the child-written marker/release protocol, private-home/compiler inheritance and child/service cleanup through signed XPC.
+- These harness regressions do not establish a historical actor schedule, lease-expiry cause or child exit status. They do not change provider runtime, Preview or Scenario ownership contracts.
 
 ### Preview prerequisites, selections and coverage
 

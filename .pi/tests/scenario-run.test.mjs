@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, writeFileSync, readFileSync, rmSync, existsSync } from 'node:fs';
+import { mkdtempSync, writeFileSync, readFileSync, rmSync, existsSync, chmodSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { projectTempRoot as tmpdir } from './project-temporary-directory.mjs';
 import { resolve, join } from 'node:path';
@@ -92,6 +92,25 @@ test('supervisor executes sequentially and stops on failure without retries', ()
       assert.equal(existsSync(join(dir, 'selection-2.result.json')), expected === 2);
     } finally { rmSync(dir, { recursive: true, force: true }); }
   }
+});
+test('worker clears inherited Vision products without exposing arbitrary plan overrides', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'scenario-run-vision-environment-'));
+  try {
+    // This injected command prints only a synthetic environment; it ignores swift test arguments.
+    const fixture = join(dir, 'environment-fixture');
+    writeFileSync(fixture, '#!/bin/sh\n/usr/bin/env\n');
+    chmodSync(fixture, 0o700);
+    writeFileSync(join(dir, 'plan.json'), JSON.stringify({ plan: { root, entries: [preview] },
+      swift: fixture, authorizedLive: false }));
+    const result = spawnSync(swift, [script, 'worker', dir], { encoding: 'utf8', timeout: 30000,
+      env: { HOME: homedir(), PATH: '/usr/bin:/bin', TMPDIR: tmpdir() + '/',
+        AGENT_VISION_PRODUCTS: '/must-not-inherit-vision', AGENT_SCENARIO_VISION_CLI: '/hosted-only' } });
+    assert.equal(result.status, 0, result.stderr);
+    const log = readFileSync(join(dir, 'selection-1.log'), 'utf8');
+    assert.doesNotMatch(log, /AGENT_VISION_PRODUCTS|must-not-inherit-vision|AGENT_SCENARIO_VISION_CLI|hosted-only/);
+    assert.match(log, /DEV_TOOLS_SCENARIO_CASE=preview-render/);
+    assert.notEqual(check([{ ...preview, environment: { AGENT_VISION_PRODUCTS: '/arbitrary' } }]).status, 0);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
 });
 test('worker cannot replay an already-started run', () => {
   const dir = mkdtempSync(join(tmpdir(), 'scenario-run-worker-test-'));

@@ -64,6 +64,19 @@ AGENT_COUNTER_OFFLINE_TESTING_CHECKOUT="$scratch/checkouts/swift-testing" \
 - Offline host preparation also needs current custom product directories through the existing `AGENT_SCENARIO_PRODUCTS` and `DEV_TOOLS_SCENARIO_PRODUCTS` overrides.
 - Validate those products before a non-live package run. Keep live/resource/scaffold gates unset. No root `.build` symlinks or user configuration changes are needed.
 
+### Vision preparation offline regression
+
+```sh
+# Keep live/resource/scaffold gates unset; this filter never prepares a host or reads credentials.
+"$swift64" test --package-path Agent --scratch-path "$scratch" --filter agentVisionPreparation
+node --test .pi/tests/scenario-run.test.mjs
+```
+
+- Injected runners and env-file providers check explicit product selection, suppressed builds, exact check-config arguments and staged destination.
+- Negative controls cover invalid directory/executable overrides, legacy behavior, disabled Vision and propagated preparation errors.
+- Strict private Counter/Plan runs supply `AGENT_VISION_PRODUCTS` from the [private Vision build recipe](../../VisionCLI/README.md#private-scenario-products), in addition to Agent/DevTools product overrides.
+- Offline preparation tests do not establish a signed-host or live Gemini pass. Configuration and credential checks still require separate authorization.
+
 ## Naming verification boundary
 
 - Naming relies on correct bundle metadata and SwiftUI API wiring, not independent platform naming checks.

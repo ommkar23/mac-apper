@@ -36,7 +36,7 @@ Preview compiles an authored factory in an isolated workspace and captures only 
   - Bin-path query: 10 seconds and 4096 output bytes; SDK discovery: 10 seconds.
   - Each AST call: 30 seconds and 4 MiB output.
   - Snapshot execution: 15 seconds and 65,536 output bytes.
-- Owned processes are canceled/reaped on execution failure/cancellation. Ordinary completed compiler/worker failures retain typed diagnostics and attempt request workspace and incomplete artifact removal.
+- Owned processes are canceled/reaped on execution failure/cancellation. Ordinary wait failures are formatted only after `OwnedProcess.wait` finishes cleanup. Completed compiler/worker failures return typed diagnostics and attempt request workspace and incomplete artifact removal. Cancellation remains thrown.
 - `OwnedProcess.Failure.cleanupFailed` and `.reapFailed` mean child cleanup is uncertain. The renderer preserves the request workspace and any incomplete artifact directory. The controller rethrows these failures instead of reporting a completed typed rendering error. Do not remove outer fixtures or assume child quiescence from generic failed-tool text.
 - Removal after confirmed child completion remains best effort. Filesystem removal failure can leave scratch for caller checks; no universal cleanup guarantee is made. Deterministic injected compiler/worker failures test propagation and retention without leaving real children.
 
@@ -55,7 +55,12 @@ Preview compiles an authored factory in an isolated workspace and captures only 
 - `status: error` contains bounded summary diagnostics and no artifact/dimensions. [PreviewController](../Sources/Application/Controllers/PreviewController.swift) formats discovery errors with code, selected source path, explanation, repair instructions and a guarded example, aligned with the schema-owned tool description.
 - `missing_preview`, `ambiguous_preview`, `invalid_preview_factory` and `preview_in_production` describe discovery failures. The last means the factory is present without `MAC_APPER_PREVIEW`, not that Preview was invoked in production.
 - Transport/scope/request validation and uncertain child-cleanup failures remain failed XPC/Pi tool operations, distinct from typed rendering errors. The transport schema and generated tool failure output are unchanged. Check `status` separately from transport success or Pi `isError`.
-- Preview summaries are schema-bounded to 4096; compiler failure output is compacted and tailed before the controller's bounded diagnostic summary.
+- Every subprocess has an explicit stable phase: `appViewsBuild`, `binPath`, `sdkDiscovery`, `previewAST`, `productionAST`, `snapshotBuild` or `snapshotExecution`. Successful AST payloads still reach factory discovery unchanged.
+- Ordinary subprocess errors begin with a stable code: `processFailed` for nonzero exit, `launch`, `timedOut`, `outputExceeded`, `toolchainUnavailable` or the fallback `processError`. Summaries include `phase`, the exact configured `outputLimitBytes`, `outputTruncated`, `capture=boundedPrefix` and `output=omitted`.
+- `outputTruncated=true` means an observed output overflow. Other failures report `unknown`, not `false`: cleanup may drain more bytes, and OwnedProcess does not expose its final overflow flag. The retained prefix is never described as the final stream tail.
+- All subprocess output is omitted by policy, including build and worker errors. There are no raw AST, bin-path, SDK, generated-source, environment, path or secret excerpts. Token-pattern redaction is not considered sufficient for arbitrary generated content. Unknown errors are not stringified.
+- Error summaries fit within 4096 UTF-8 bytes without splitting Unicode scalars. Controls are normalized except the repair example's line breaks. Discovery diagnostics retain the selected relative source context and guarded repair example. Transport/schema, timeouts, output limits and PNG bounds are unchanged.
+- The retained HTView attempt establishes subprocess stdout/stderr overflow. It does not identify the failing phase or establish a PNG-size failure. No producer-limit change is justified without reproduction. A reduced offline fixture, if used, identifies only its own actual failing phase; it cannot establish the historical phase.
 
 ## Artifacts and optional inspection
 

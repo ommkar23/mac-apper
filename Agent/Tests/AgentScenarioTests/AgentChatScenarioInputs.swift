@@ -56,15 +56,12 @@ private final class ChatTestBundleAnchor: NSObject {}
 				TestHostResource(
 					source: package.appendingPathComponent("Extensions"), relativePath: "AgentExtensions"),
 			]
-			if includeVision {
-				let visionPackage = root.appendingPathComponent("VisionCLI")
-				try PackagedTestHost.runPreparation(
-					URL(fileURLWithPath: "/usr/bin/xcrun"),
-					arguments: ["swift", "build", "--package-path", visionPackage.path, "-c", "release"])
-				let vision = visionPackage.appendingPathComponent(".build/release/vision-cli")
-				try PackagedTestHost.runPreparation(
-					vision, arguments: ["check-config", "--env-file", try counterVisionEnvFile().path])
-				resources.append(TestHostResource(source: vision, relativePath: "VisionCLI/vision-cli"))
+			if let vision = try AgentVisionPreparation.resource(
+				includeVision: includeVision, root: root, environment: environment,
+				envFile: counterVisionEnvFile,
+				run: { try PackagedTestHost.runPreparation($0, arguments: $1) })
+			{
+				resources.append(vision)
 			}
 			if includeDevTools {
 				let devPackage = root.appendingPathComponent("apps/built-in/dev-tools")

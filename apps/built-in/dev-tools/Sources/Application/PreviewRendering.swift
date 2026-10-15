@@ -37,8 +37,8 @@ struct PreviewRendering: Sendable {
 		defer { if !childCleanupUncertain { try? manager.removeItem(at: workspace) } }
 		// Mark uncertainty before either request-file defer can run.
 		func run(
-			_ executable: URL, arguments: [String], directory: URL, timeout: Duration,
-			outputLimit: Int = 65_536
+			_ executable: URL, phase: PreviewProcessDiagnostic.Phase,
+			arguments: [String], directory: URL, timeout: Duration, outputLimit: Int = 65_536
 		) async throws -> String {
 			do {
 				return try await self.run(
@@ -49,6 +49,11 @@ struct PreviewRendering: Sendable {
 			{
 				childCleanupUncertain = true
 				throw error
+			} catch let error as CancellationError {
+				throw error
+			} catch {
+				// Production wait() has already completed owned cleanup before throwing.
+				throw PreviewProcessDiagnostic(phase: phase, error: error, outputLimit: outputLimit)
 			}
 		}
 		// Freeze sources before discovery so the selected declaration and build use the same snapshot.
@@ -73,13 +78,14 @@ struct PreviewRendering: Sendable {
 		let source = workspace.appendingPathComponent(sourcePath)
 		let build = workspace.appendingPathComponent("Build")
 		_ = try await run(
-			xcrunURL,
+			xcrunURL, phase: .appViewsBuild,
 			arguments: [
 				"swift", "build", "--target", "AppViews", "--scratch-path", build.path, "-Xswiftc",
 				"-DMAC_APPER_PREVIEW",
 			], directory: workspace, timeout: .seconds(120))
 		let productsPath = try await run(
-			xcrunURL, arguments: ["swift", "build", "--scratch-path", build.path, "--show-bin-path"],
+			xcrunURL, phase: .binPath,
+			arguments: ["swift", "build", "--scratch-path", build.path, "--show-bin-path"],
 			directory: workspace, timeout: .seconds(10), outputLimit: 4096
 		).trimmingCharacters(in: .whitespacesAndNewlines)
 		let products = URL(fileURLWithPath: productsPath).resolvingSymlinksInPath()
@@ -107,7 +113,8 @@ struct PreviewRendering: Sendable {
 			}
 		}
 		let sdk = try await run(
-			xcrunURL, arguments: ["--show-sdk-path"], directory: workspace, timeout: .seconds(10)
+			xcrunURL, phase: .sdkDiscovery, arguments: ["--show-sdk-path"], directory: workspace,
+			timeout: .seconds(10)
 		).trimmingCharacters(in: .whitespacesAndNewlines)
 		let otherSources = try sourceFiles(workspace.appendingPathComponent("Sources/AppViews")).filter
 		{
@@ -121,10 +128,12 @@ struct PreviewRendering: Sendable {
 				"-primary-file", source.path,
 			] + otherSources
 		let previewAST = try await run(
-			xcrunURL, arguments: astArguments + ["-D", "MAC_APPER_PREVIEW"], directory: workspace,
+			xcrunURL, phase: .previewAST, arguments: astArguments + ["-D", "MAC_APPER_PREVIEW"],
+			directory: workspace,
 			timeout: .seconds(30), outputLimit: 4_194_304)
 		let productionAST = try await run(
-			xcrunURL, arguments: astArguments, directory: workspace, timeout: .seconds(30),
+			xcrunURL, phase: .productionAST, arguments: astArguments, directory: workspace,
+			timeout: .seconds(30),
 			outputLimit: 4_194_304)
 		let factory = try PreviewDiscovery.select(previewAST: previewAST, productionAST: productionAST)
 		guard
@@ -153,7 +162,7 @@ struct PreviewRendering: Sendable {
 			"""
 		try packageSource.write(to: package, atomically: true, encoding: .utf8)
 		_ = try await run(
-			xcrunURL,
+			xcrunURL, phase: .snapshotBuild,
 			arguments: [
 				"swift", "build", "--product", "ApperSnapshot", "--scratch-path", build.path, "-Xswiftc",
 				"-DMAC_APPER_PREVIEW",
@@ -175,7 +184,8 @@ struct PreviewRendering: Sendable {
 			manager.isExecutableFile(atPath: executable.path)
 		else { throw Failure.invalidArtifact }
 		_ = try await run(
-			executable, arguments: [String(width), String(height), artifact.path], directory: workspace,
+			executable, phase: .snapshotExecution,
+			arguments: [String(width), String(height), artifact.path], directory: workspace,
 			timeout: .seconds(15))
 		_ = try project.scope.resolve(artifactPath)
 		let values = try artifact.resourceValues(forKeys: [
@@ -254,10 +264,7 @@ struct PreviewRendering: Sendable {
 		let status = try await process.wait(timeout: timeout)
 		guard
 			status == 0
-		else {
-			throw Failure.processFailed(
-				String(SwiftToolchain.compactDiagnostics(process.output).suffix(3500)))
-		}
+		else { throw Failure.processFailed("nonzeroExit") }
 		return process.output
 	}
 

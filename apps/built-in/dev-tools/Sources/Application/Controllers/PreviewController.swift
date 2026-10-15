@@ -37,12 +37,10 @@ struct PreviewController: OpenXPCPreviewController {
 				where error == .cleanupFailed || error == .reapFailed
 			{
 				throw error
-			} catch is CancellationError { throw CancellationError() } catch {
-				let diagnostic =
-					(error as? PreviewDiscovery.Failure)?.diagnostic(sourcePath: request.viewPath)
-					?? String(describing: error)
+			} catch let error as CancellationError { throw error } catch {
 				return try PreviewResult(
-					status: "error", summary: String(diagnostic.prefix(4000)), width: nil,
+					status: "error", summary: PreviewDiagnostic.summary(error, sourcePath: request.viewPath),
+					width: nil,
 					height: nil, artifact: nil)
 			}
 		}
