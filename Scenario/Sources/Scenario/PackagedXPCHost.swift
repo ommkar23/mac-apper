@@ -11,11 +11,14 @@ public struct XPCHostDefinition {
 	public let servicePlist: URL
 	public let appResources: [TestHostResource]
 	public let serviceResources: [TestHostResource]
+	public let serviceEnvironment: [String: String]
+	public let clientEnvironment: [String: String]
 
 	public init(
 		appName: String, clientExecutable: URL, serviceExecutable: URL,
 		appPlist: URL, servicePlist: URL,
-		appResources: [TestHostResource] = [], serviceResources: [TestHostResource] = []
+		appResources: [TestHostResource] = [], serviceResources: [TestHostResource] = [],
+		serviceEnvironment: [String: String] = [:], clientEnvironment: [String: String] = [:]
 	) throws {
 		guard
 			appName.range(of: "^[A-Za-z][A-Za-z0-9-]{0,63}$", options: .regularExpression) != nil
@@ -27,11 +30,18 @@ public struct XPCHostDefinition {
 		self.servicePlist = servicePlist
 		self.appResources = appResources
 		self.serviceResources = serviceResources
+		self.serviceEnvironment = serviceEnvironment
+		self.clientEnvironment = clientEnvironment
 	}
 }
 
 @MainActor public final class PackagedXPCHost {
 	private let definition: XPCHostDefinition
+	// Internal discovery-free seam for boundary tests; production retains the existing adapter.
+	var clientCall: (URL, Data, [String: String], Int) throws -> XPCClientAdapter.Reply = {
+		try XPCClientAdapter().call(
+			$0, request: $1, environment: $2, maxResponseBytes: 131_072, timeoutSeconds: $3)
+	}
 	private var directory: URL?
 	private var client: URL?
 	public private(set) var app: URL?
@@ -82,7 +92,8 @@ public struct XPCHostDefinition {
 			serviceInfo["CFBundleIdentifier"] = identifier
 			var xpc = serviceInfo["XPCService"] as? [String: Any] ?? [:]
 			xpc["EnvironmentVariables"] = try ProjectTemporaryDirectory.environment(
-				xpc["EnvironmentVariables"] as? [String: String] ?? [:])
+				(xpc["EnvironmentVariables"] as? [String: String] ?? [:])
+					.merging(definition.serviceEnvironment) { _, scoped in scoped })
 			serviceInfo["XPCService"] = xpc
 			try Self.save(serviceInfo, to: serviceContents.appendingPathComponent("Info.plist"))
 			try Self.stageResources(
@@ -195,11 +206,10 @@ public struct XPCHostDefinition {
 			"version": 1, "requestID": requestID, "projectID": project,
 			"sessionID": session, "command": command, "payload": body.base64EncodedString(),
 		])
-		let reply = try XPCClientAdapter().call(
-			client, request: envelope,
-			environment: [
-				"OPENXPC_PROJECT_ID": project, "OPENXPC_SESSION_ID": session,
-			], maxResponseBytes: 131_072, timeoutSeconds: timeoutSeconds)
+		let environment = definition.clientEnvironment.merging([
+			"OPENXPC_PROJECT_ID": project, "OPENXPC_SESSION_ID": session,
+		]) { _, generated in generated }
+		let reply = try clientCall(client, envelope, environment, timeoutSeconds)
 		return (reply, requestID, project)
 	}
 

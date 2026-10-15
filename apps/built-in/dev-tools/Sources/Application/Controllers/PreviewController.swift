@@ -12,11 +12,13 @@ struct PreviewController: OpenXPCPreviewController {
 	init(
 		projects: ProjectResolver, gate: DevToolsOperationGate,
 		xcrunURL: URL = URL(fileURLWithPath: "/usr/bin/xcrun"),
-		environment: [String: String] = ProcessInfo.processInfo.environment
+		environment: [String: String] = ProcessInfo.processInfo.environment,
+		processRunner: PreviewRendering.ProcessRunner? = nil
 	) {
 		self.projects = projects
 		self.gate = gate
-		self.rendering = PreviewRendering(xcrunURL: xcrunURL, environment: environment)
+		self.rendering = PreviewRendering(
+			xcrunURL: xcrunURL, environment: environment, processRunner: processRunner)
 	}
 
 	func handle(_ projectID: UUID, _ sessionID: UUID, _ request: PreviewRequest) async throws
@@ -31,6 +33,10 @@ struct PreviewController: OpenXPCPreviewController {
 				return try await rendering.render(
 					project: project, sessionID: sessionID, sourcePath: request.viewPath,
 					size: request.screenSize)
+			} catch let error as OwnedProcess.Failure
+				where error == .cleanupFailed || error == .reapFailed
+			{
+				throw error
 			} catch is CancellationError { throw CancellationError() } catch {
 				let diagnostic =
 					(error as? PreviewDiscovery.Failure)?.diagnostic(sourcePath: request.viewPath)

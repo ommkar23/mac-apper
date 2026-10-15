@@ -36,7 +36,9 @@ Preview compiles an authored factory in an isolated workspace and captures only 
   - Bin-path query: 10 seconds and 4096 output bytes; SDK discovery: 10 seconds.
   - Each AST call: 30 seconds and 4 MiB output.
   - Snapshot execution: 15 seconds and 65,536 output bytes.
-- Owned processes are canceled/reaped on execution failure/cancellation. Request workspace removal is attempted on exit; do not generalize this best-effort removal to a guarantee under arbitrary filesystem or process-cleanup failure.
+- Owned processes are canceled/reaped on execution failure/cancellation. Ordinary completed compiler/worker failures retain typed diagnostics and attempt request workspace and incomplete artifact removal.
+- `OwnedProcess.Failure.cleanupFailed` and `.reapFailed` mean child cleanup is uncertain. The renderer preserves the request workspace and any incomplete artifact directory. The controller rethrows these failures instead of reporting a completed typed rendering error. Do not remove outer fixtures or assume child quiescence from generic failed-tool text.
+- Removal after confirmed child completion remains best effort. Filesystem removal failure can leave scratch for caller checks; no universal cleanup guarantee is made. Deterministic injected compiler/worker failures test propagation and retention without leaving real children.
 
 ## Native capture and limits
 
@@ -52,7 +54,7 @@ Preview compiles an authored factory in an isolated workspace and captures only 
 - `status: rendered` includes summary, width/height and `artifact: {kind: "png", relativePath, reviewPath}`. The service validates a bounded regular nonlinked single PNG, ImageIO decoding and exact requested dimensions before publishing.
 - `status: error` contains bounded summary diagnostics and no artifact/dimensions. [PreviewController](../Sources/Application/Controllers/PreviewController.swift) formats discovery errors with code, selected source path, explanation, repair instructions and a guarded example, aligned with the schema-owned tool description.
 - `missing_preview`, `ambiguous_preview`, `invalid_preview_factory` and `preview_in_production` describe discovery failures. The last means the factory is present without `MAC_APPER_PREVIEW`, not that Preview was invoked in production.
-- Transport/scope/request validation failures remain failed XPC/Pi tool operations, distinct from typed rendering errors. Check `status` separately from transport success or Pi `isError`.
+- Transport/scope/request validation and uncertain child-cleanup failures remain failed XPC/Pi tool operations, distinct from typed rendering errors. The transport schema and generated tool failure output are unchanged. Check `status` separately from transport success or Pi `isError`.
 - Preview summaries are schema-bounded to 4096; compiler failure output is compacted and tailed before the controller's bounded diagnostic summary.
 
 ## Artifacts and optional inspection

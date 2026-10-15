@@ -513,9 +513,16 @@ internal enum OpenXPCFunctionalGenerator {
 				  const record = JSON.stringify({ version: 1, requestID, projectID, sessionID, command,
 				    payload: Buffer.from(body).toString("base64") }) + "\\n";
 				  if (Buffer.byteLength(record) > \(limit)) throw new Error("Request exceeds limit.");
+				  const childEnvironment: Record<string, string> = {};
+				  for (const key of ["HOME", "CFFIXED_USER_HOME", "TMPDIR"]) {
+				    const value = process.env[key];
+				    if (value !== undefined) childEnvironment[key] = value;
+				  }
+				  childEnvironment.OPENXPC_PROJECT_ID = projectID;
+				  childEnvironment.OPENXPC_SESSION_ID = sessionID;
 				  return await new Promise((resolve, reject) => {
 				    const child = spawn(executable, [], { shell: false, stdio: ["pipe", "pipe", "pipe"],
-				      env: { OPENXPC_PROJECT_ID: projectID, OPENXPC_SESSION_ID: sessionID } });
+				      env: childEnvironment });
 				    let stdout = "", stderr = "", settled = false;
 				    const finish = (error?: Error, value?: unknown) => {
 				      if (settled) return;

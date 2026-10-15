@@ -6,7 +6,8 @@
 
 - [IsolatedScenarioHome](../Sources/Scenario/IsolatedScenarioHome.swift) creates one owned UUID directory beneath repository-root `.tmp/` with mode 0700. See the [temporary-work contract](../../README.md#temporary-work).
   - `environment` supplies `HOME` and `CFFIXED_USER_HOME` for client/child commands.
-  - Pass these overrides to `TestHostService.environment` before host preparation/signing to scope launchd services and their inherited development children too.
+  - Pass these overrides to `TestHostService.environment` or `XPCHostDefinition.serviceEnvironment` before host preparation/signing to scope launchd services and their inherited development children too.
+  - For a terminal XPC host, also pass them to `XPCHostDefinition.clientEnvironment`. Repository `TMPDIR` remains final in both environments.
   - Client-only HOME overrides and isolated bundle IDs do not prove service-home isolation before automatic workspace reads.
 - `privateDirectory` creates nonlinked private relative subdirectories and rejects empty, dot, traversal and backslash components.
 - `linkInstalledToolchain` links only the selected installed standalone compiler tree into the owned home for home-relative tool selection. It is an intentional compiler link, not permission to copy/link user home or configuration trees.
@@ -39,6 +40,12 @@
 - [OwnedProcessIdentity](../Sources/Scenario/OwnedProcessIdentity.swift) captures PID, kernel executable path and microsecond start identity using `proc_pidpath`/`proc_pidinfo`, then validates that captured identity.
   - Capture while the owned executable still exists. Removing a host first can make kernel-path attribution unavailable.
   - Match exact owned identities, not executable names, broad process scans or reused service identifiers. Unrelated same-binary processes are not cleanup targets.
+- [OwnedExecutableProcess](../Sources/Scenario/OwnedExecutableProcess.swift) provides `capture(executable:timeout:)` when a unique host executable is known but its PID is not.
+  - Supply a still-existing executable in a caller-owned host. Discovery requires an executable regular file and rejects a linked leaf or untrusted ancestor link. Root-owned spelling aliases under root-owned, non-group/world-writable ancestors are resolved with `realpath` before exact kernel-path comparison. This is narrower than the descriptor/ACL directory audit above.
+  - A bounded inventory scans at most 65,536 PID slots. Multiple exact matches, a full/truncated or failed inventory, failed identity capture and captured PID/path mismatch throw. Same-name executables at other paths do not match.
+  - No match polls for up to the timeout, then throws. The default is two seconds; finite timeouts from zero through 60 seconds are accepted. Zero performs one inventory. This is not exit confirmation or proof that a service never started.
+  - Cache the returned identity early. Discovery does not signal processes, silently replace cached generations or infer ownership from PID/argv. Reaping and exit-race handling remain solely in `OwnedProcessIdentity`.
+  - Checks are point-in-time. Retain fixtures on unexplained capture/restart or request-completion failures. Discovery cannot prove request quiescence, descendant cleanup or universal cleanup after ambiguous transport failure.
 - `reap()` rejects PIDs ≤1 before probing, checks liveness and revalidates exact path/start identity before each TERM/KILL.
   - TERM waits up to two seconds; if still alive, KILL requires a fresh identity validation. The final wait is up to ten seconds and success requires a fresh `kill(pid, 0)` ESRCH result.
   - Failed validation/signaling can mean an exit race. It counts as already-reaped success only after a fresh ESRCH probe, including after signal-time ESRCH.
@@ -61,7 +68,7 @@
   - `removeFixtures: false` returns false and retains host/home after scrubbing; true removes the host, then the home and returns true.
   - `remove(cleanupConfirmed:)` likewise refuses an unconfirmed home removal. Confirmation is supplied by tests, not inferred by the home API.
 - Host `remove()` has no equivalent inner/service gate. Do not place unconditional host removal in a defer around a potentially failing cleanup sequence.
-- **Current provider coverage is narrower than this cleanup contract.** As documented in [DevTools verification](../../apps/built-in/dev-tools/docs/verification.md#cleanup-boundaries-and-source-inspected-limit), Preview explicitly captures/revalidates exact service identity and requires reaping before host removal. Current Plan/Test call `host.remove()` directly; the toolchain fixture uses best-effort project/host removal after development-child ESRCH, without Preview's explicit service-reaping gate.
-  - This is a source-inspected limit, not a newly observed leak or test failure. It does not authorize a runtime repair or historical cleanup; review it before execution requiring strict exact-service cleanup.
+- **Provider coverage is case-specific.** [DevTools verification](../../apps/built-in/dev-tools/docs/verification.md#cleanup-boundaries-and-source-inspected-limit) owns the current consumer coverage. Adding environment/discovery support does not migrate all callers or establish signed runtime acceptance.
+  - The prior source review found direct host removal in Plan/Test and best-effort toolchain cleanup, unlike Preview's explicit service-reaping gate. Preserve that historical limit rather than treating these support-unit checks as proof of consumer recovery or authorization for historical cleanup.
 - A failed assertion can retain evidence **after safe cleanup**; an unconfirmed cleanup must retain fixtures **without bypass**. Neither implies authorization to clean historical retained processes, stores, archives or snapshots.
 - Registry teardown and bounded child commands cannot guarantee cleanup after abrupt external termination. Report unconfirmed cleanup as a failure, not a pass obtained by sleeping or deleting paths.

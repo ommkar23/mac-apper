@@ -8,7 +8,10 @@ enum DevToolsScenarioInputs {
 	private static let package = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
 		.deletingLastPathComponent().deletingLastPathComponent()
 
-	@MainActor static func host(includePreviewResources: Bool = false) throws -> PackagedXPCHost {
+	@MainActor static func host(
+		includePreviewResources: Bool = false, serviceEnvironment: [String: String] = [:],
+		clientEnvironment: [String: String] = [:]
+	) throws -> PackagedXPCHost {
 		let products =
 			ProcessInfo.processInfo.environment["DEV_TOOLS_SCENARIO_PRODUCTS"].map {
 				URL(fileURLWithPath: $0)
@@ -42,6 +45,7 @@ enum DevToolsScenarioInputs {
 				serviceExecutable: products.appendingPathComponent("DevToolsApplication"),
 				appPlist: package.appendingPathComponent("Resources/Info.plist"),
 				servicePlist: package.appendingPathComponent("Resources/DevToolsXPCService-Info.plist"),
-				appResources: appResources, serviceResources: serviceResources))
+				appResources: appResources, serviceResources: serviceResources,
+				serviceEnvironment: serviceEnvironment, clientEnvironment: clientEnvironment))
 	}
 }

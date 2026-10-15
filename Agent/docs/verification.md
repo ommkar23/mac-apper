@@ -47,6 +47,23 @@ test -n "$scratch" && test -d "$scratch" || exit 1
 # Remove only this exact validated owned scratch after its work exits.
 ```
 
+### Counter offline checkout override
+
+- `counterBehaviorOfflineRegression` defaults to `Agent/.build/checkouts/swift-testing`.
+- For custom SwiftPM scratch, set `AGENT_COUNTER_OFFLINE_TESTING_CHECKOUT` to that scratch's existing `checkouts/swift-testing` directory.
+- The override must be an absolute, nonlinked directory path with a readable regular `Package.swift`.
+- Empty, relative, traversal, linked, missing and manifest-unsafe paths fail before fixture manifest use. Invalid explicit input never falls back to the default.
+- Use the current package-resolved checkout. Testing remains pinned to 6.2.3. The override changes dependency location only. Independent compiler probes and counter behavior assertions remain required.
+
+```sh
+AGENT_COUNTER_OFFLINE_TESTING_CHECKOUT="$scratch/checkouts/swift-testing" \
+  "$swift64" test --package-path Agent --scratch-path "$scratch" \
+  --filter counterBehaviorOfflineRegression
+```
+
+- Offline host preparation also needs current custom product directories through the existing `AGENT_SCENARIO_PRODUCTS` and `DEV_TOOLS_SCENARIO_PRODUCTS` overrides.
+- Validate those products before a non-live package run. Keep live/resource/scaffold gates unset. No root `.build` symlinks or user configuration changes are needed.
+
 ## Naming verification boundary
 
 - Naming relies on correct bundle metadata and SwiftUI API wiring, not independent platform naming checks.

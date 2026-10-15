@@ -21,6 +21,10 @@
   - Declare `TestHostService`, optional nested `TestHostApplication` providers and `TestHostResource` inputs. Services go in `Contents/XPCServices`, providers in `Contents/Applications`, and declared resources in their owner's `Contents/Resources`.
 - [PackagedXPCHost](../Sources/Scenario/PackagedXPCHost.swift) stages a generated headless terminal client plus one real XPC service from an `XPCHostDefinition`.
   - Supply app/service executable and plist inputs plus explicit app/service resources.
+  - `XPCHostDefinition.serviceEnvironment` and `clientEnvironment` default to empty dictionaries. Existing callers need no changes.
+  - Service overrides merge into the supplied unsigned plist before signing. Explicit values win over its `XPCService.EnvironmentVariables`. Repository `TMPDIR` wins last. Other service plist keys are preserved.
+  - Client overrides flow through the existing `XPCClientAdapter`. Host-generated `OPENXPC_PROJECT_ID` and `OPENXPC_SESSION_ID` win over caller values. The adapter applies repository `TMPDIR` last.
+  - Neither dictionary changes the parent process environment. Supply both when client and launchd service homes must agree.
   - `request` validates exit 0, version/request/project identity, success and a bounded base64 JSON-object payload. `expectRejected` requires exit 1 and an identified failure envelope with the expected error, allowing absent or null payload.
   - Keep UUID wire spelling (`UUID.uuidString`) distinct from lowercase filesystem naming.
 - [PackagedApplicationHost](../Sources/Scenario/PackagedApplicationHost.swift) verifies and copies an explicitly supplied deployed app, assigns new nested app/service identities and re-signs it.
@@ -37,7 +41,7 @@
   - PackagedApplicationHost rejects linked copied contents and more than 4096 enumerated entries; its plist reader is bounded to 64 KiB.
   - These APIs have different checks; do not infer a uniform filesystem-hardening guarantee across them.
 - For SwiftPM `Bundle.module`, stage the resource bundle under the **owning service's** `Contents/Resources`. A host-level copy alone cannot establish service lookup. Include a host copy separately only where consumers require it.
-- `TestHostService.environment` merges overrides into `XPCService.EnvironmentVariables` **before signing**. Client process environment alone does not establish a launchd service home. See [isolation](Isolation-and-cleanup.md#home-isolation).
+- `TestHostService.environment` and `XPCHostDefinition.serviceEnvironment` merge overrides into `XPCService.EnvironmentVariables` **before signing**. Client process environment alone does not establish a launchd service home. See [isolation](Isolation-and-cleanup.md#home-isolation).
 
 ## Run a filtered Swift test
 

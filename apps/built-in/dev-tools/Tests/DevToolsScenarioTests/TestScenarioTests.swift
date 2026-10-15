@@ -6,19 +6,18 @@ import Scenario
 import Testing
 
 @MainActor private final class DevToolsTestCollection: CollectionContext {
-	let host: PackagedXPCHost
-	init() throws { host = try DevToolsScenarioInputs.host() }
+	let lifecycle = DevToolsScenarioLifecycle()
 }
 
 @MainActor private final class DevToolsTestCase: CaseContext {
 	let collection: DevToolsTestCollection
-	let projects = DevToolsScenarioProjects()
 	var project: (id: UUID, url: URL)?
 	let sessionID = UUID()
 
 	init(_ collection: DevToolsTestCollection) { self.collection = collection }
 
 	func setup() throws {
+		let projects = try #require(collection.lifecycle.projects)
 		project = try projects.create()
 		let root = try #require(project?.url)
 		try """
@@ -41,9 +40,20 @@ import Testing
 				to: root.appendingPathComponent("Sources/AppModel/Counter.swift"), atomically: true,
 				encoding: .utf8)
 		try """
+		import Foundation
 		import Testing
 		import AppModel
-		@Test func counterInitialValue() { #expect(Counter().value == 0) }
+		@Test func counterInitialValue() throws {
+		    #expect(Counter().value == 0)
+		    let environment = ProcessInfo.processInfo.environment
+		    try #require(environment["HOME"] == \(String(reflecting: try #require(collection.lifecycle.home?.directory.path))))
+		    try #require(environment["CFFIXED_USER_HOME"] == environment["HOME"])
+		    try #require(environment["TMPDIR"] == \(String(reflecting: try ProjectTemporaryDirectory.root().path + "/")))
+		    for name in ["swift", "swiftc"] {
+		        try #require(FileManager.default.isExecutableFile(atPath:
+		            environment["HOME"]! + "/Library/Developer/Toolchains/swift-6.4.0-RELEASE.xctoolchain/usr/bin/" + name))
+		    }
+		}
 		""".write(
 			to: root.appendingPathComponent("Tests/AppModelTests/CounterChecks.swift"), atomically: true,
 			encoding: .utf8)
@@ -69,26 +79,35 @@ import Testing
 			contentsOf: fixture.url.appendingPathComponent("Sources/AppModel/Counter.swift"))
 		let tests = try Data(
 			contentsOf: fixture.url.appendingPathComponent("Tests/SecondaryTests/SecondaryChecks.swift"))
-		let result = try collection.host.request(
-			"test", payload: ["projectRoot": fixture.url.path], projectID: fixture.id,
-			sessionID: sessionID)
-		#expect(result["status"] as? String == status)
+		let result = try collection.lifecycle.perform {
+			try $0.request(
+				"test", payload: ["projectRoot": fixture.url.path], projectID: fixture.id,
+				sessionID: sessionID)
+		}
+		try #require(result["status"] as? String == status)
 		let exitCode = try #require(result["exitCode"] as? Int)
-		#expect(status == "passed" ? exitCode == 0 : exitCode != 0)
+		try #require(status == "passed" ? exitCode == 0 : exitCode != 0)
 		let diagnostics = try #require(result["diagnostics"] as? String)
-		#expect(diagnostics.utf8.count <= 4_096)
-		if let marker { #expect(diagnostics.contains(marker), "Missing diagnostic: \(diagnostics)") }
-		#expect(
+		try #require(diagnostics.utf8.count <= 4_096)
+		if status == "passed" {
+			try #require(diagnostics.contains("counterInitialValue"))
+			print("DEVTOOLS_TEST_PRIVATE_HOME_COMPILER_CONFIRMED")
+		}
+		if let marker {
+			try #require(diagnostics.contains(marker), "Missing diagnostic: \(diagnostics)")
+		}
+		try #require(
 			try FileManager.default.contentsOfDirectory(
 				atPath: fixture.url.appendingPathComponent(".mac-apper/TestBuild").path
 			).isEmpty)
-		#expect(
+		try #require(
 			!FileManager.default.fileExists(atPath: fixture.url.appendingPathComponent(".build").path))
-		#expect(try Data(contentsOf: fixture.url.appendingPathComponent("Package.swift")) == manifest)
-		#expect(
+		try #require(
+			try Data(contentsOf: fixture.url.appendingPathComponent("Package.swift")) == manifest)
+		try #require(
 			try Data(contentsOf: fixture.url.appendingPathComponent("Sources/AppModel/Counter.swift"))
 				== model)
-		#expect(
+		try #require(
 			try Data(
 				contentsOf: fixture.url.appendingPathComponent("Tests/SecondaryTests/SecondaryChecks.swift")
 			) == tests)
@@ -98,7 +117,7 @@ import Testing
 @Test @MainActor func devToolsTestScenarios() async throws {
 	let collection = ScenarioCollection(
 		"dev-tools-test", context: DevToolsTestCollection.init,
-		setup: { try $0.host.prepare() }, teardown: { try $0.host.remove() },
+		setup: { try $0.lifecycle.setup() }, teardown: { try $0.lifecycle.teardown() },
 		cases: [
 			ScenarioCase(
 				"test-package", context: DevToolsTestCase.init,
@@ -121,11 +140,14 @@ import Testing
 					},
 					Step("reject foreign project scope") { context in
 						let fixture = try #require(context.project)
-						try context.collection.host.expectRejected(
-							"test", payload: ["projectRoot": fixture.url.deletingLastPathComponent().path],
-							error: "operationFailed", projectID: fixture.id, sessionID: context.sessionID)
+						try context.collection.lifecycle.perform {
+							try $0.expectRejected(
+								"test", payload: ["projectRoot": fixture.url.deletingLastPathComponent().path],
+								error: "operationFailed", projectID: fixture.id, sessionID: context.sessionID)
+						}
+						context.collection.lifecycle.passed = true
 					},
-				], teardown: { try $0.projects.remove() })
+				])
 		])
 	let registry = try ScenarioRegistry([collection])
 	if let selected = ProcessInfo.processInfo.environment["DEV_TOOLS_SCENARIO_CASE"] {

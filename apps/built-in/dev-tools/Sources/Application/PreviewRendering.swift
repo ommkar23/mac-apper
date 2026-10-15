@@ -12,6 +12,9 @@ struct PreviewRendering: Sendable {
 	}
 	let xcrunURL: URL
 	let environment: [String: String]
+	// Internal deterministic test seam; nil always uses the production owned process path.
+	typealias ProcessRunner = @Sendable (URL, [String], URL, Duration, Int) async throws -> String
+	var processRunner: ProcessRunner? = nil
 
 	func render(
 		project: ResolvedProject, sessionID: UUID, sourcePath: String, size: PreviewScreenSize?
@@ -30,7 +33,24 @@ struct PreviewRendering: Sendable {
 		let manager = FileManager.default
 		try manager.createDirectory(
 			at: workspace, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
-		defer { try? manager.removeItem(at: workspace) }
+		var childCleanupUncertain = false
+		defer { if !childCleanupUncertain { try? manager.removeItem(at: workspace) } }
+		// Mark uncertainty before either request-file defer can run.
+		func run(
+			_ executable: URL, arguments: [String], directory: URL, timeout: Duration,
+			outputLimit: Int = 65_536
+		) async throws -> String {
+			do {
+				return try await self.run(
+					executable, arguments: arguments, directory: directory, timeout: timeout,
+					outputLimit: outputLimit)
+			} catch let error as OwnedProcess.Failure
+				where error == .cleanupFailed || error == .reapFailed
+			{
+				childCleanupUncertain = true
+				throw error
+			}
+		}
 		// Freeze sources before discovery so the selected declaration and build use the same snapshot.
 		var budget = 16_777_216
 		var entries = 0
@@ -144,7 +164,11 @@ struct PreviewRendering: Sendable {
 			at: artifact.deletingLastPathComponent(), withIntermediateDirectories: true,
 			attributes: [.posixPermissions: 0o700])
 		var complete = false
-		defer { if !complete { try? manager.removeItem(at: artifact.deletingLastPathComponent()) } }
+		defer {
+			if !complete && !childCleanupUncertain {
+				try? manager.removeItem(at: artifact.deletingLastPathComponent())
+			}
+		}
 		let executable = products.appendingPathComponent("ApperSnapshot").resolvingSymlinksInPath()
 		guard
 			executable.path.hasPrefix(build.resolvingSymlinksInPath().path + "/"),
@@ -218,6 +242,9 @@ struct PreviewRendering: Sendable {
 		outputLimit: Int = 65_536
 	) async throws -> String {
 		try Task.checkCancellation()
+		if let processRunner {
+			return try await processRunner(executable, arguments, directory, timeout, outputLimit)
+		}
 		let command = try SwiftToolchain.command(
 			executable: executable, arguments: arguments, environment: environment)
 		let process = try OwnedProcess(

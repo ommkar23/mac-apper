@@ -34,6 +34,81 @@ import Testing
 	try manager.removeItem(at: app)
 }
 
+private func counterOfflineTestingCheckout(root: URL, override: String?) throws -> URL {
+	let path = override ?? root.appendingPathComponent("Agent/.build/checkouts/swift-testing").path
+	let components = path.split(separator: "/", omittingEmptySubsequences: false)
+	guard
+		path.hasPrefix("/"),
+		components.dropFirst().allSatisfy({ !$0.isEmpty && $0 != "." && $0 != ".." }),
+		!path.contains("\""), !path.contains("\\"),
+		!path.unicodeScalars.contains(where: { CharacterSet.controlCharacters.contains($0) })
+	else { throw ScenarioFailure.message("Invalid AGENT_COUNTER_OFFLINE_TESTING_CHECKOUT path") }
+	var current = ""
+	for component in components.dropFirst() {
+		current += "/" + component
+		var info = stat()
+		guard
+			lstat(current, &info) == 0, info.st_mode & S_IFMT == S_IFDIR
+		else {
+			throw ScenarioFailure.message(
+				"Missing or linked counter Testing checkout directory: \(current)")
+		}
+	}
+	let checkout = URL(fileURLWithPath: path, isDirectory: true)
+	var manifest = stat()
+	guard
+		lstat(checkout.appendingPathComponent("Package.swift").path, &manifest) == 0,
+		manifest.st_mode & S_IFMT == S_IFREG,
+		FileManager.default.isReadableFile(
+			atPath: checkout.appendingPathComponent("Package.swift").path)
+	else {
+		throw ScenarioFailure.message(
+			"Counter Testing checkout requires a readable regular Package.swift")
+	}
+	return checkout
+}
+
+@Test func counterOfflineTestingCheckoutValidation() throws {
+	let root = try ProjectTemporaryDirectory.appending(
+		"counter-checkout-validation-\(UUID().uuidString)")
+	let manager = FileManager.default
+	try manager.createDirectory(at: root, withIntermediateDirectories: true)
+	defer { try? manager.removeItem(at: root) }
+	let checkout = root.appendingPathComponent(
+		"Agent/.build/checkouts/swift-testing", isDirectory: true)
+	try manager.createDirectory(at: checkout, withIntermediateDirectories: true)
+	for override in [
+		nil, "", "relative", root.path + "/missing", root.path + "/../checkout",
+		root.path + "/./checkout", root.path + "//checkout", root.path + "/quote\"",
+		root.path + "/back\\slash",
+		root.path + "/newline\n", checkout.path,
+	] as [String?] {
+		#expect(throws: (any Error).self) {
+			try counterOfflineTestingCheckout(root: root, override: override)
+		}
+	}
+	let manifest = checkout.appendingPathComponent("Package.swift")
+	try "// validation fixture only; never evaluated".write(
+		to: manifest, atomically: true, encoding: .utf8)
+	#expect(try counterOfflineTestingCheckout(root: root, override: nil).path == checkout.path)
+	#expect(
+		try counterOfflineTestingCheckout(root: root, override: checkout.path).path == checkout.path)
+	let link = root.appendingPathComponent("linked")
+	try manager.createSymbolicLink(at: link, withDestinationURL: checkout)
+	#expect(throws: (any Error).self) {
+		try counterOfflineTestingCheckout(root: root, override: link.path)
+	}
+	#expect(throws: (any Error).self) {
+		try counterOfflineTestingCheckout(
+			root: root, override: link.appendingPathComponent("child").path)
+	}
+	try manager.removeItem(at: manifest)
+	try manager.createSymbolicLink(at: manifest, withDestinationURL: URL(fileURLWithPath: #filePath))
+	#expect(throws: (any Error).self) {
+		try counterOfflineTestingCheckout(root: root, override: checkout.path)
+	}
+}
+
 @Test @MainActor func counterBehaviorOfflineRegression() throws {
 	let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
 		.deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
@@ -47,8 +122,9 @@ import Testing
 	try manager.createDirectory(
 		at: project.appendingPathComponent("Tests/AppModelTests"), withIntermediateDirectories: true)
 	defer { try? manager.removeItem(at: directory) }
-	let testing = root.appendingPathComponent("Agent/.build/checkouts/swift-testing")
-	try #require(manager.fileExists(atPath: testing.path))
+	let testing = try counterOfflineTestingCheckout(
+		root: root,
+		override: ProcessInfo.processInfo.environment["AGENT_COUNTER_OFFLINE_TESTING_CHECKOUT"])
 	try """
 	// swift-tools-version: 6.0
 	import PackageDescription

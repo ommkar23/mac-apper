@@ -1,5 +1,5 @@
 // @frontmatter:start
-// Verifies Swift 6.4 compilation and development launch through the packaged DevTools generated client and service.
+// Verifies private-home Swift 6.4 Build/Run with a bounded release handshake and exact-owned cleanup.
 // @frontmatter:end
 import Darwin
 import Foundation
@@ -7,10 +7,25 @@ import Scenario
 import Testing
 
 @Test @MainActor func devToolsToolchainBuildRunScenario() async throws {
-	let projects = DevToolsScenarioProjects()
-	let host = try DevToolsScenarioInputs.host()
+	let lifecycle = DevToolsScenarioLifecycle()
+	var bodyError: (any Error)?
+	do {
+		try lifecycle.setup()
+		try await verifyToolchain(lifecycle)
+		lifecycle.passed = true
+	} catch { bodyError = error }
+	// This runs after the body unwinds, even when that task was cancelled.
+	do { try lifecycle.teardown() } catch {
+		if let bodyError { throw DevToolsScenarioLifecycle.combined(bodyError, error) }
+		throw error
+	}
+	if let bodyError { throw bodyError }
+}
+
+@MainActor private func verifyToolchain(_ lifecycle: DevToolsScenarioLifecycle) async throws {
+	let projects = try #require(lifecycle.projects)
+	let home = try #require(lifecycle.home)
 	let fixture = try projects.create()
-	defer { try? projects.remove(); try? host.remove() }
 	let manifest = """
 		// swift-tools-version: 6.0
 		import PackageDescription
@@ -27,39 +42,79 @@ import Testing
 	#if compiler(<6.4)
 	#error("Swift 6.4 is required")
 	#endif
+	import Darwin
 	import Foundation
-	let marker = URL(fileURLWithPath: FileManager.default.currentDirectoryPath).appendingPathComponent("run-pid")
-	try String(ProcessInfo.processInfo.processIdentifier).write(to: marker, atomically: true, encoding: .utf8)
-	Thread.sleep(forTimeInterval: 2)
+	let environment = ProcessInfo.processInfo.environment
+	guard environment["HOME"] == \(String(reflecting: home.directory.path)),
+	      environment["CFFIXED_USER_HOME"] == environment["HOME"],
+	      environment["TMPDIR"] == \(String(reflecting: try ProjectTemporaryDirectory.root().path + "/"))
+	else { exit(71) }
+	for name in ["swift", "swiftc"] {
+	    guard FileManager.default.isExecutableFile(atPath:
+	        environment["HOME"]! + "/Library/Developer/Toolchains/swift-6.4.0-RELEASE.xctoolchain/usr/bin/" + name)
+	    else { exit(72) }
+	}
+	let root = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+	guard root.path == \(String(reflecting: fixture.url.path)) else { exit(73) }
+	try String(ProcessInfo.processInfo.processIdentifier).write(
+	    to: root.appendingPathComponent("run-pid"), atomically: true, encoding: .utf8)
+	let deadline = ProcessInfo.processInfo.systemUptime + 60
+	while !FileManager.default.fileExists(atPath: root.appendingPathComponent("run-release").path) {
+	    guard ProcessInfo.processInfo.systemUptime < deadline else { exit(74) }
+	    Thread.sleep(forTimeInterval: 0.02)
+	}
 	""".write(to: source, atomically: true, encoding: .utf8)
 	let original = try Data(contentsOf: source)
-	try host.prepare()
-	let built = try host.request(
-		"build", payload: ["projectRoot": fixture.url.path], projectID: fixture.id)
-	#expect(built["target"] as? String == "ProductionApp")
-	let launched = try host.request(
-		"run", payload: ["projectRoot": fixture.url.path], projectID: fixture.id)
-	#expect(launched["target"] as? String == "ProductionApp")
+	let built = try lifecycle.perform {
+		try $0.request("build", payload: ["projectRoot": fixture.url.path], projectID: fixture.id)
+	}
+	try #require(built["target"] as? String == "ProductionApp")
+	lifecycle.childAttempted = true
+	let launched = try lifecycle.perform {
+		try $0.request("run", payload: ["projectRoot": fixture.url.path], projectID: fixture.id)
+	}
+	try #require(launched["target"] as? String == "ProductionApp")
 	let relative = try #require(launched["relativePath"] as? String)
-	#expect(relative.hasPrefix(".mac-apper/DevBuild/"))
-	let binary = fixture.url.appendingPathComponent(relative + "/Contents/MacOS/ProductionApp")
-	#expect(FileManager.default.isExecutableFile(atPath: binary.path))
+	let parts = relative.split(separator: "/", omittingEmptySubsequences: false).map(String.init)
+	try #require(parts.count == 4)
+	try #require(parts[0] == ".mac-apper" && parts[1] == "DevBuild")
+	let requestID = try #require(UUID(uuidString: parts[2]))
+	try #require(parts[2] == requestID.uuidString.lowercased() && parts[3] == "ProductionApp.app")
+	var current = fixture.url
+	for part in parts + ["Contents", "MacOS"] {
+		current.appendPathComponent(part)
+		let values = try current.resourceValues(forKeys: [.isDirectoryKey, .isSymbolicLinkKey])
+		try #require(values.isDirectory == true && values.isSymbolicLink != true)
+	}
+	let binary = current.appendingPathComponent("ProductionApp")
+	try #require(FileManager.default.isExecutableFile(atPath: binary.path))
 	let marker = fixture.url.appendingPathComponent("run-pid")
-	let deadline = ContinuousClock.now.advanced(by: .seconds(5))
+	let deadline = ContinuousClock.now.advanced(by: .seconds(10))
 	while !FileManager.default.fileExists(atPath: marker.path), ContinuousClock.now < deadline {
 		try await Task.sleep(for: .milliseconds(20))
 	}
+	let values = try marker.resourceValues(forKeys: [
+		.isRegularFileKey, .isSymbolicLinkKey, .fileSizeKey,
+	])
+	try #require(values.isRegularFile == true && values.isSymbolicLink != true)
+	try #require((values.fileSize ?? 65) <= 64)
 	let pid = try #require(Int32(try String(contentsOf: marker, encoding: .utf8)))
-	#expect(kill(pid, 0) == 0)
-	// This owned fixture exits itself; wait before removing its sources and host.
-	while kill(pid, 0) == 0, ContinuousClock.now < deadline {
+	// Marker PID is only corroboration. Exact binary discovery confers identity authority.
+	let child = try OwnedExecutableProcess.capture(executable: binary)
+	lifecycle.child = child
+	try #require(child.pid == pid)
+	print("DEVTOOLS_CHILD_CAPTURED pid=\(child.pid) start=\(child.start) path=\(child.path)")
+	print("DEVTOOLS_CHILD_PRIVATE_HOME_COMPILER_CONFIRMED")
+	try "release".write(
+		to: fixture.url.appendingPathComponent("run-release"), atomically: true, encoding: .utf8)
+	while kill(child.pid, 0) == 0, ContinuousClock.now < deadline {
 		try await Task.sleep(for: .milliseconds(50))
 	}
-	#expect(kill(pid, 0) != 0 && errno == ESRCH)
-	#expect(try Data(contentsOf: source) == original)
-	#expect(
+	try child.requireReaped()
+	try #require(try Data(contentsOf: source) == original)
+	try #require(
 		try String(contentsOf: fixture.url.appendingPathComponent("Package.swift"), encoding: .utf8)
 			== manifest)
-	#expect(
+	try #require(
 		!FileManager.default.fileExists(atPath: fixture.url.appendingPathComponent(".build").path))
 }

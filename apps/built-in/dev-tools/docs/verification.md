@@ -2,7 +2,7 @@
 
 [DevTools](../README.md) · [Tools](tools.md) · [Preview](preview.md)
 
-Commands below run from the repository root and require authorization for their actual effects. This documentation rewrite inspected files and links only: no package test/build, bundle, GUI, Pi session, credential operation, model/MCP/Gemini call or historical cleanup was executed.
+Commands below run from the repository root and require authorization for their actual effects. Earlier documentation-rewrite notes describe static checks only. Selected isolation verification is recorded separately below.
 
 ## Package entry points
 
@@ -25,7 +25,9 @@ Commands below run from the repository root and require authorization for their 
 
 - [Scenario](../../../../Scenario/README.md) owns reusable signed-host preparation, compiler helpers and lifecycle APIs. DevTools tests own prompts/assertions, fixtures and provider selections; no full Mac Apper.app build/copy or retired Scenario runner/plugin is required.
 - Load [scenario-run](../../../../.pi/skills/scenario-run/SKILL.md) for authorized execution/monitoring and [scenario-write](../../../../.pi/skills/scenario-write/SKILL.md) for authoring.
-- Each selected collection stages the generated terminal client and real DevTools service in a disposable signed `DevToolsScenario.app`, with only test-owned UUID fixtures under `~/.mac-apper`. No Pi session or model/MCP/Gemini calls are required. No-model does not mean air-gapped dependency resolution, and Build/Run still executes generated native code.
+- Each selected collection stages the generated terminal client and real DevTools service in a disposable signed `DevToolsScenario.app`.
+- Test, standalone Build/Run, Plan and Preview use explicit UUID fixture roots beneath private repository `.tmp/` homes. Both client and service receive `HOME` and `CFFIXED_USER_HOME` before startup. Only the installed compiler is linked into those homes. Each Preview case owns an independent home, host and lifecycle.
+- No Pi session or model/MCP/Gemini calls are required. No-model does not mean air-gapped dependency resolution. Build/Run still executes generated native code.
 - `DEV_TOOLS_SCENARIO_CASE` selects one case within the chosen Plan/Test/Preview entry point; omit it for that entry point's collection. Unset it before selecting the entire `DevToolsScenarioTests` target, since a name from one collection is not valid in another.
 
   ```sh
@@ -49,12 +51,15 @@ Commands below run from the repository root and require authorization for their 
 - `plan-lifecycle`: repeated additions, updates and multi-delete ending in a retrievable empty plan.
 - `plan-rejections`: malformed/missing updates and second-in-progress rejection without mutation.
 - `plan-project-isolation`: separate plans per project, independent of session identity.
-- `test-package`: two real Swift Testing targets, successful execution, assertion failure, compilation failure, repaired pass, foreign-scope rejection and source/request-scratch preservation. Fixtures use pinned Testing and an explicit macOS 14 deployment target rather than XCTest.
-- `devToolsToolchainBuildRunScenario`: requires compiler 6.4, validates generated-client Build/Run metadata, executable staging, source preservation and absence of project `.build`; waits for the self-exiting fixture child to reach ESRCH. This is development launch evidence, not UI readiness or production packaging.
+- `test-package`: two real Swift Testing targets, successful execution, assertion failure, compilation failure, repaired pass, foreign-scope rejection and source/request-scratch preservation. Fixtures use pinned Testing and an explicit macOS 14 deployment target rather than XCTest. The passing model test checks inherited private-home values and access to both standalone compiler executables.
+- `devToolsToolchainBuildRunScenario`: requires compiler 6.4. It validates generated-client Build/Run metadata, complete scoped staging paths, source preservation and absence of project `.build`. The child checks private-home/compiler inheritance before writing its marker. It waits at most 60 seconds for a fixture-only release marker.
+- The parent captures immutable identity by the exact staged binary before releasing the child. The marker PID is only corroboration, never signaling authority. Natural exit must reach ESRCH. This is development launch evidence, not UI readiness or production packaging.
 
 ### Preview prerequisites, selections and coverage
 
-- Preview stages the renderer resource and generated extension without a source-tree fallback. A test-only registration harness executes the unmodified extension against the real generated client/service; it does not start a Pi session.
+- Preview supplies renderer resources before host signing. It stages the generated extension without a source-tree fallback. A test-only registration harness executes the unmodified extension against the real generated client/service. It does not start a Pi session.
+- The harness observes real spawn calls without changing arguments, options or client traffic. Bounded LF-framed records must correlate executable, project/session/request IDs and actual child close. Only controlled expected scope rejection accepts an identified `operationFailed`. Unexpected failures remain uncertainty. Completed ordinary rendering errors retain failure-recovery semantics. Generic `isError` alone never confirms completion.
+- Node and the installed production-read harness receive only deliberate home/tmp, scope, executable/module and PATH values. The generated extension forwards the narrow production home/tmp and authoritative ID allowlist. Signature-normalized owned copies verify real client executable bytes. Extension bytes are checked directly. The signed host and current products are never modified for this audit.
 - `preview-path-content` additionally requires the installed Pi production read module. Set an actual absolute installed path, not the illustrative placeholder, before selecting it or the whole Preview/provider target:
 
   ```sh
@@ -77,9 +82,33 @@ Commands below run from the repository root and require authorization for their 
 
 ### Cleanup boundaries and source-inspected limit
 
-- Preview's current teardown derives the existing service's real kernel path, captures/revalidates `OwnedProcessIdentity`, requires exact PID/path/start reaping before host removal, and fails closed if the service cannot be identified. Its archived PNGs remain retained.
-- Do not extend that Preview guarantee to every provider entry point: current Plan/Test collection teardown calls `host.remove()` directly, and the toolchain fixture uses best-effort project/host removal after waiting for its development child. These entry points do not contain Preview's explicit XPC service-reaping gate. This is a source-inspected limit, not an observed new process leak or a newly failed test; review it before authorizing execution under a strict exact-service-cleanup requirement.
+- Selected Test, standalone Build/Run, Plan and Preview own partial setup through `DevToolsScenarioLifecycle`. Typed or independently correlated request completion establishes quiescence only for these controlled fixtures. Unexpected thrown transport/operation calls leave quiescence unconfirmed. There is no invented drain API.
+- All Preview retention-critical assertions throw. A final step marks success only after every assertion succeeds. Controlled expected rendering/rejection errors are functional assertions, not case failures.
+- Preview strictly reads returned archive paths through no-follow descriptors. It compares existing parent directory device/inode identity rather than reconstructing a canonical pathname. It preserves byte equality after gated selective project deletion while the home and host remain alive. Successful final teardown removes those disposable archives with the private home. Failed assertions retain fixtures. These checks are point-in-time, not a filesystem lease.
+- Cleanup confirms the captured development child first, while its service can reap it. It then captures/revalidates and reaps the exact service while the signed host exists. Host, registered projects and home are removed only after successful assertions and cleanup. Failed assertions retain safely stopped fixtures.
+- Unknown request completion, missing development identity, unexplained service generation, failed reaping and removal errors propagate. Unconfirmed cleanup retains fixtures without stopping the service beneath unknown work. Body and teardown errors are aggregated. Teardown is synchronous and does not depend on cancellation-sensitive sleeps.
+- `DEVTOOLS_REQUEST_QUIESCENT`, identity capture/reaped markers and `DEVTOOLS_FIXTURES_REMOVED` or `DEVTOOLS_FIXTURES_RETAINED` report the reached lifecycle states. They are not a sandbox guarantee or evidence for historical fixtures.
+- A failed or ambiguous lifecycle stop poisons further request, stop and project-removal operations. No service is stopped beneath unknown compiler/renderer work. Earlier Test/Build/Run verification below is not new Plan/Preview acceptance evidence.
 - Reusable host removal is not itself proof of owned-service reaping. Do not bypass failed cleanup, signal unrelated processes, inspect credentials or clean historical fixtures to obtain a pass.
+
+## Restricted migration verification
+
+- Offline Preview checks use `--filter DevToolsPreviewLifecycleTests`. They cover strict archive identity/link rejection, deleted-project archive bytes and known versus uncertain request completion without starting signed services.
+- Observer and installed-read checks use the resource fixtures with Node's `--experimental-strip-types --test`. The production-read fixture requires the deliberate absolute `DEV_TOOLS_SCENARIO_PI_READ_MODULE` setting. It imports only the installed filesystem tool and tests absolute PNG reads after project deletion.
+- Restricted affected checks select `DevTools(ContractTests|Tests|XPCServiceTests)`, OpenXPCGenerator's package suite and Agent's package suite with live/resource/scaffold gates unset. Skipped gates are not passes. Do not use a full DevTools command to silently consume extra scenario attempts.
+- Signed migration acceptance is separate from offline checks. After explicit release, run each of the four Plan and six Preview cases sequentially once. Stop at the first failure. No retries or collection sweep are implied. Later cases are NOT RUN. Bundle recreation follows successful authorized integration; it does not authorize app launch.
+
+### Preview migration source-check results
+
+- The revised lifecycle plus Preview offline selection passed 34 tests. The final Preview-only selection passed three tests. Five Node checks passed, including unchanged real spawn forwarding, bounded observation and installed production-read bytes after project deletion.
+- OpenXPCGenerator passed 27 tests. The restricted DevTools unit/contract/service selection passed 59 tests. Scoped swift-format and pinned strict SwiftLint passed for both changed Swift files.
+- The initial Agent non-live verification failed three tests under separate scratch. One assumes `Agent/.build/checkouts/swift-testing`. Two assume `Agent/.build/debug/Agent_AgentApplication.bundle`. Live/resource/scaffold gates remained unset. That failed run remains current-task historical evidence. Separately owned Agent scratch verification then passed its full non-live package run with deliberate current products and a validated checkout override. Its groups passed 15, 63, 28, 4, 6 and 110 tests. The three originally failing tests have actual passing markers. The 63-test group retains 135 intentional known issues. Live/resource/scaffold gates remain skipped. Evidence and its test-only correction belong to `.tmp/plan-preview-agent-scratch/report.md`.
+- After explicit scenario release, all four Plan and six Preview cases passed sequentially, once each. Actual selected started/passed markers and exact reached steps were recorded. All ten distinct private homes and signed hosts were removed after matching immutable service reaping. Recorded home/host paths were absent afterward.
+- The six Preview cases verified real client/extension byte identity, with signature normalization limited to owned client copies. Render, size, failure-recovery and path-content validated nonlinked sources, complete PNG decoding and bounded archive byte/hash equality. Factories and scope verified controlled rejection with no artifacts/scratch. Render and path-content preserved archive assertions after gated project deletion while home/host remained alive.
+- Path-content observed three real correlated child closes. Rendering and ordinary typed rendering error closed with status 0. The controlled scope rejection closed with status 1 and identified `operationFailed`. Installed production read verified relative and absolute PNG paths, then the absolute archive after project deletion. No Pi session or live call was made.
+- After successful separately owned Agent verification and explicit bundle release, the documented standalone bundle command recreated `dist/com.ommkar.mac-apper/Mac Apper.app` once with status 0. Read-only strict/deep codesign checks passed for the root app, Agent service, DevTools app and DevTools service. The root signature is ad hoc. All seven assembled Info.plists passed lint; app/service metadata matches current authored plists.
+- The deployed DevTools extension matches both the current release package output and staged generated copy. Every current Agent runtime-resource file matches both host and service-local copies. Every current DevTools runtime-resource file matches the service-local copy. AnimationIntent, PreviewProtocol and PreviewRenderer bytes also match current authored resources.
+- No app launch, live call, credentials, extra scenario or suite retry followed bundling. Static artifact checks do not establish GUI/runtime readiness or notarization. Disposable commands, raw logs, cleanup checks, prior failures and frozen hashes are indexed at `.tmp/plan-preview-integration/report.md`, `.tmp/plan-preview-integration/acceptance/evidence.md` and `.tmp/plan-preview-integration/bundle/verification.json`.
 
 ## Integration navigation
 
@@ -88,7 +117,15 @@ Commands below run from the repository root and require authorization for their 
 - Paid Create cases correlate actual Test/Preview/Build/Run and plan evidence through Agent journals/Pi results. Nested script text or parent success cannot establish child execution. Their PNG/source/canvas/scratch/archive audits are additional consumer checks, not transport-success inference.
 - [VisionCLI](../../../../VisionCLI/README.md) owns optional probabilistic screenshot review. A successful PNG render or read is not a Gemini verdict or proof that the model saw it.
 
-## Recorded evidence, not checks performed here
+## Selected isolation verification
+
+- The 2026-10-14 selected fix passed 10 offline lifecycle tests and the 57-test unit/contract/service selection with standalone Swift 6.4 and default Swift Build.
+- `test-package` and standalone Build/Run each ran once, sequentially. Both produced actual started/passed markers. Test verified both targets, expected failures, recovery, foreign scope, private-home compiler access and scratch/source preservation. Build/Run verified private child inheritance and the exact-binary release handshake.
+- Both services and the development child reached exact-owned reaping before fixture removal. Recorded host/home paths were absent afterward. Uncertain/error retention and cancellation ordering were exercised offline, not through additional failing signed launches.
+- The cancellation unit passed in this selection. Its earlier intermittent failures remain unresolved; this scenario fix is not their repair.
+- Disposable commands, timings, hashes and cleanup evidence are indexed at `.tmp/devtools-fix-harness/report.md`. This checkpoint does not cover Plan/Preview migration, arbitrary generated code, service restart recovery or request draining.
+
+## Earlier recorded evidence
 
 - **Native capture checkpoint:** the original root README and [learnings](../../../../.pi/LEARNINGS.yaml) record an ImageRenderer placeholder regression followed by passing owned NSHostingView capture/per-label ink checks, 55 affected DevTools tests and selected signed-XPC render/size/failure-recovery/scope/path-content cases on arm64 macOS 26.6.2, Swift 6.4 and CLT SDK 26.2. Report locator: `/private/tmp/mac-apper-native-preview.L0Wz8N/report.md`. This is fixture evidence, not universal fidelity or async readiness.
 - **Path-only checkpoint:** `/private/tmp/mac-apper-preview-path.CD9vlV/report.md` records selected real-XPC/installed-read checks and recovery of three newly missed services after `/var` versus `/private/var` path mismatch. Initial teardown did not automatically succeed; the final selected Preview cases did.
