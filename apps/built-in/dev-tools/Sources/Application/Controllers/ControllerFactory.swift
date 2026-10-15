@@ -1,5 +1,5 @@
 // @frontmatter:start
-// Creates five scoped controllers with shared project resolution and operation serialization.
+// Creates six scoped controllers with shared project resolution and operation serialization.
 // @frontmatter:end
 import Foundation
 
@@ -24,6 +24,7 @@ struct ControllerFactory: Sendable {
 	let run: RunController
 	let preview: PreviewController
 	let plan: PlanController
+	let set_app_name: SetAppNameController
 
 	init(
 		projectsRoot: URL,
@@ -43,9 +44,11 @@ struct ControllerFactory: Sendable {
 		preview = PreviewController(
 			projects: projects, gate: gate, xcrunURL: xcrunURL, environment: environment)
 		plan = PlanController(projects: projects, gate: gate)
+		set_app_name = SetAppNameController(projects: projects, gate: gate)
 	}
 
 	func controllers() -> OpenXPCGeneratedService.Controllers {
-		.init(build: build, test: test, run: run, preview: preview, plan: plan)
+		.init(
+			set_app_name: set_app_name, build: build, test: test, run: run, preview: preview, plan: plan)
 	}
 }

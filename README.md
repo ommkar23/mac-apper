@@ -110,6 +110,7 @@ swift64="$HOME/Library/Developer/Toolchains/swift-6.4.0-RELEASE.xctoolchain/usr/
 - **Create:** select New App, describe it and submit with Command-Return. Projects/sessions are created after the first message. Further messages steer work; Plan expands task progress and Activity shows tool details/diagnostics.
 - **Chat:** use the separate chat-only workspace; it creates no app scaffold and disables app launching and external-editor opening.
 - **Navigate:** the sidebar opens apps and saved conversations, attaching to active sessions without restarting Pi. Navigation/closing detaches; use Stop when work should end. The pencil beside a built app renames/repackages it; the pencil-in-square starts another conversation in the selected workspace.
+- **Naming:** Create calls DevTools' generated `set_app_name` for project metadata only. It remains available on later/resumed Create requests, never Chat. Native rename remains an Agent command that rebuilds/repackages the production app and sends `MAC_APPER_RENAMED` after success.
 - **Host actions:** Optional editor integration opens the project directory when its supported editor is installed. Launch App opens a valid production bundle. Development Build/Run does not itself create a production bundle. Preview images are not displayed in the workspace.
 - **Local storage:**
   - Projects: `~/.mac-apper/<project-uuid>/`; Pi conversations: project `.pi/sessions/`; separate Agent events: `.pi/agent-events/<session-id>.jsonl`.
@@ -124,7 +125,7 @@ swift64="$HOME/Library/Developer/Toolchains/swift-6.4.0-RELEASE.xctoolchain/usr/
 The native client owns presentation; Agent owns workspaces, Pi RPC and durable events. Typed generated XPC separates clients from services; provider filesystem validation and process ownership remain service behavior, not generator policy.
 
 - [Agent](Agent/README.md): native UI/client model, Agent XPC, Pi sessions, workspace/scaffold and Agent scenario runbooks.
-- [DevTools](apps/built-in/dev-tools/README.md): scoped Build, Test, Run, Preview and Plan service plus generated Pi client.
+- [DevTools](apps/built-in/dev-tools/README.md): scoped naming, Build, Test, Run, Preview and Plan service plus generated Pi client.
 - [OpenXPCGenerator](OpenXPCGenerator/README.md): strict contracts and self-contained generated service/client/tool code.
 - [Scenario](Scenario/README.md): reusable minimal signed hosts, isolated homes, process/compiler safety primitives.
 - [Plugins](Plugins/README.md): root-package bundle, formatting/lint, clean-test and source-line commands.

@@ -1,5 +1,5 @@
 // @frontmatter:start
-// Exercises both authored naming entry points and later production branding with offline Node process and filesystem doubles.
+// Verifies command-only rename registration and production branding with offline Node process and filesystem doubles.
 // @frontmatter:end
 import Foundation
 import Testing
@@ -71,24 +71,26 @@ private let nameAndRenameNodeRegression = #"""
 	for (const name of ["mkdir", "rm", "chmod", "copyFile"]) fs[name] = async () => {};
 	fs.writeFile = async (path, contents) => { writes.push({ path, contents }); };
 	syncBuiltinESMExports();
-	const isolated = stripTypeScriptTypes(source.replace('import { Type } from "typebox";',
-	  'const Type = { Object: x => x, String: x => x };') + '\nexport { packageProduction };');
+	const isolated = stripTypeScriptTypes(source + '\nexport { packageProduction };');
 	const { default: extension, packageProduction } = await import(
 	  `data:text/javascript;base64,${Buffer.from(isolated).toString("base64")}`);
 	const commands = new Map(), tools = new Map(), notices = [];
 	extension({ registerCommand: (name, spec) => commands.set(name, spec),
 	  registerTool: spec => tools.set(spec.name, spec) });
 	process.env.MAC_APPER_OUTPUT_ROOT = "/fixture/output";
-	const tool = tools.get("set_app_name");
+	assert.deepEqual([...tools.keys()], [], "Agent must not register a standalone naming tool");
+	assert.deepEqual([...commands.keys()].sort(), ["mac-apper-rename", "mac-apper-tools"]);
 	const rename = commands.get("mac-apper-rename");
 	const ctx = { cwd, ui: { notify: value => notices.push(value) } };
+	await commands.get("mac-apper-tools").handler("", ctx);
+	assert.equal(notices.at(-1), "Mac Apper tools loaded");
 	function verifyRoot(name) {
 	  assert.equal(root.CFBundleDisplayName, name, "canonical display name must persist");
 	  assert.equal(root.CFBundleName, name, "canonical bundle name must persist");
 	  for (const [key, value] of Object.entries(identity)) assert.equal(root[key], value);
 	}
 	const long = "A".repeat(64);
-	assert.equal((await tool.execute("id", { name: long })).isError, undefined);
+	await rename.handler(Buffer.from(long).toString("base64"), ctx);
 	verifyRoot(long);
 	await packageProduction(cwd);
 	assert.ok(writes.at(-1).path.endsWith(`/${long}.app/Contents/Info.plist`), "64-character name must not be truncated");
@@ -110,7 +112,6 @@ private let nameAndRenameNodeRegression = #"""
 	verifyRoot(canonical);
 	for (const invalid of ["", " / : ", ".", "..", ".hidden", "B".repeat(65)]) {
 	  const before = JSON.stringify(root), count = calls.length;
-	  assert.equal((await tool.execute("id", { name: invalid })).isError, true);
 	  await assert.rejects(() => rename.handler(Buffer.from(invalid).toString("base64"), ctx));
 	  assert.equal(JSON.stringify(root), before);
 	  assert.equal(calls.length, count, "invalid names must not invoke subprocesses");
@@ -132,5 +133,5 @@ private let nameAndRenameNodeRegression = #"""
 	      || writes.length !== beforeWrites) typedFailures.push(label);
 	}
 	assert.deepEqual(typedFailures, [], "non-string or missing canonical branding must fail before build or writes");
-	console.log("Both naming entry points, later packaging, invalid names, typed metadata and identity preservation passed.");
+	console.log("Command-only registration, rename, later packaging, invalid names, typed metadata and identity preservation passed.");
 	"""#

@@ -21,6 +21,24 @@ Commands below run from the repository root and require authorization for their 
 - Root `swift test` is not a substitute for this package. Underlying runtime/library changes require focused tests and the affected package suite; scenario-only changes use selected cases rather than unrelated units.
 - The [Plugins guide](../../../../Plugins/README.md) owns optional clean-test/private-scratch mechanics. A custom build-product directory must be passed via `DEV_TOOLS_SCENARIO_PRODUCTS`; retained default caches are not proof of a fresh build. Never pass an empty scratch path or delete unrelated retained artifacts.
 
+## Naming unit verification
+
+- The focused pre-implementation routing regression compiled against the old contract and failed because `set_app_name` had no successful route.
+- `SetAppNameControllerTests` exercises the generated in-process service router and factory. It does not start a signed host or Pi.
+- Coverage includes canonical names, Unicode code points, both branding keys, unrelated values, binary/XML format, private permissions, missing/malformed/linked/nonregular/oversized metadata, bounded replacement output, invalid scope and busy-gate rejection without mutation.
+- `OpenXPCSpecTests` checks the six-operation contract, generated controller routing and sole generated declaration. It checks 4096-byte injected scope, 256-byte name records, 1024-byte summary and the Pi 1–64-character schema.
+- Authorized unit-only commands exclude `DevToolsScenarioTests` execution:
+
+  ```sh
+  "$swift64" test --package-path apps/built-in/dev-tools \
+    --filter 'setAppName|devToolsOpenXPCSpecDefinesBoundedPreviewPathTool'
+  "$swift64" test --package-path apps/built-in/dev-tools \
+    --filter 'DevTools(ContractTests|Tests|XPCServiceTests)'
+  ```
+
+- SwiftPM may compile scenario targets even with these execution filters. Compilation is not signed-host or scenario execution.
+- Source and unit verification do not establish deployed registration or native rename/repackaging behavior. Signed-host scenarios and final app bundle recreation require separate authorization.
+
 ## Preview phase diagnostics checks
 
 - Run focused offline checks with scenario gates unset, validated private scratch and repository-local `TMPDIR`:
@@ -40,9 +58,9 @@ Commands below run from the repository root and require authorization for their 
 - [Scenario](../../../../Scenario/README.md) owns reusable signed-host preparation, compiler helpers and lifecycle APIs. DevTools tests own prompts/assertions, fixtures and provider selections; no full Mac Apper.app build/copy or retired Scenario runner/plugin is required.
 - Load [scenario-run](../../../../.pi/skills/scenario-run/SKILL.md) for authorized execution/monitoring and [scenario-write](../../../../.pi/skills/scenario-write/SKILL.md) for authoring.
 - Each selected collection stages the generated terminal client and real DevTools service in a disposable signed `DevToolsScenario.app`.
-- Test, standalone Build/Run, Plan and Preview use explicit UUID fixture roots beneath private repository `.tmp/` homes. Both client and service receive `HOME` and `CFFIXED_USER_HOME` before startup. Only the installed compiler is linked into those homes. Each Preview case owns an independent home, host and lifecycle.
+- Naming, Test, standalone Build/Run, Plan and Preview use explicit UUID fixture roots beneath private repository `.tmp/` homes. Both client and service receive `HOME` and `CFFIXED_USER_HOME` before startup. Only the installed compiler is linked into those homes. Each Preview case owns an independent home, host and lifecycle.
 - No Pi session or model/MCP/Gemini calls are required. No-model does not mean air-gapped dependency resolution. Build/Run still executes generated native code.
-- `DEV_TOOLS_SCENARIO_CASE` selects one case within the chosen Plan/Test/Preview entry point; omit it for that entry point's collection. Unset it before selecting the entire `DevToolsScenarioTests` target, since a name from one collection is not valid in another.
+- `DEV_TOOLS_SCENARIO_CASE` selects one case within the chosen naming/Plan/Test/Preview entry point; omit it for that entry point's collection. Unset it before selecting the entire `DevToolsScenarioTests` target, since a name from one collection is not valid in another.
 
   ```sh
   # Complete provider scenario target (includes the production read prerequisite below).
@@ -58,6 +76,43 @@ Commands below run from the repository root and require authorization for their 
   # Compiler selection plus owned development launch (no case selector).
   "$swift64" test --package-path apps/built-in/dev-tools --filter devToolsToolchainBuildRunScenario
   ```
+
+### Metadata-only naming scenarios
+
+- `devToolsSetAppNameScenarios` owns two cases. Each uses `DevToolsScenarioLifecycle`, generic Scenario hosting and the actual signed generated `DevToolsTerminalClient`.
+- `set-app-name-canonical` checks sanitation to `Pebble Counter`, both branding keys, unrelated nested plist values and unchanged manifest/package bytes. It roundtrips 64 emoji (256 UTF-8 bytes), U+0085 and decomposed Unicode scalars without assertion-side normalization.
+- `set-app-name-rejections` checks invalid names and a different registered project's root with the original project ID. Every rejection requires an identified `operationFailed` envelope and byte-identical metadata in both fixtures.
+- Exact project/root inventories exclude development staging, build scratch and production output. These checks do not establish library labels, model tool selection, native titles or packaging behavior. Provider Unicode acceptance does not establish consistency with Agent/development sanitation.
+- Build current prerequisite `DevToolsApplication` and `DevToolsTerminalClient` products before an authorized run. No Preview resource bundle, installed Pi read module, credentials, Pi or live calls are needed. Compilation and offline helper tests do not execute these scenarios.
+- After integrated acceptance and separate execution authorization, run selected cases sequentially. Stop after the first failure. Do not select the whole provider target:
+
+  ```sh
+  # First check both explicit standalone executables and their required 6.4.0 versions.
+  toolchain="$HOME/Library/Developer/Toolchains/swift-6.4.0-RELEASE.xctoolchain/usr/bin"
+  test -x "$toolchain/swift" && test -x "$toolchain/swiftc" || exit 1
+  "$toolchain/swift" --version
+  "$toolchain/swiftc" --version
+  swift64="$toolchain/swift"
+  export TMPDIR="$PWD/.tmp/"
+  # Use a validated, private, nonempty scratch path beneath repository-root .tmp/.
+  "$swift64" build --package-path apps/built-in/dev-tools --scratch-path "$scratch" \
+    --product DevToolsApplication
+  "$swift64" build --package-path apps/built-in/dev-tools --scratch-path "$scratch" \
+    --product DevToolsTerminalClient
+  products=$("$swift64" build --package-path apps/built-in/dev-tools \
+    --scratch-path "$scratch" --show-bin-path) || exit 1
+  DEV_TOOLS_SCENARIO_PRODUCTS="$products" DEV_TOOLS_SCENARIO_CASE=set-app-name-canonical \
+    "$swift64" test --package-path apps/built-in/dev-tools --scratch-path "$scratch" \
+    --filter devToolsSetAppNameScenarios
+  # Only after the canonical case passes and cleanup is confirmed:
+  DEV_TOOLS_SCENARIO_PRODUCTS="$products" DEV_TOOLS_SCENARIO_CASE=set-app-name-rejections \
+    "$swift64" test --package-path apps/built-in/dev-tools --scratch-path "$scratch" \
+    --filter devToolsSetAppNameScenarios
+  ```
+
+- Omit `DEV_TOOLS_SCENARIO_CASE` only when the entire naming collection is authorized. The generic collection does not stop after a case failure. Direct Swift test selection works independently of the developer helper allowlist.
+- Requests must be confirmed before exact service reaping. No development child is started. Successful assertions and confirmed service exit gate registered-project, signed-host and private-home removal. Partial setup remains registered. Unknown transport/completion, capture/reaping failure or failed assertions retain fixtures through the shared lifecycle.
+- Offline-only regression selection is `--filter 'SetAppNameScenarioHelperTests|DevToolsScenarioLifecycleTests'`. It checks allocation-free registration and fail-closed request classification plus the existing cleanup seams. Signed naming cases remain **NOT RUN** in this implementation wave.
 
 ### Plan and Test coverage
 
@@ -112,7 +167,7 @@ Commands below run from the repository root and require authorization for their 
 
 ### Cleanup boundaries and source-inspected limit
 
-- Selected Test, standalone Build/Run, Plan and Preview own partial setup through `DevToolsScenarioLifecycle`. Typed or independently correlated request completion establishes quiescence only for these controlled fixtures. Unexpected thrown transport/operation calls leave quiescence unconfirmed. There is no invented drain API.
+- Selected naming, Test, standalone Build/Run, Plan and Preview own partial setup through `DevToolsScenarioLifecycle`. Typed or independently correlated request completion establishes quiescence only for these controlled fixtures. Unexpected thrown transport/operation calls leave quiescence unconfirmed. There is no invented drain API.
 - All Preview retention-critical assertions throw. A final step marks success only after every assertion succeeds. Controlled expected rendering/rejection errors are functional assertions, not case failures.
 - Preview strictly reads returned archive paths through no-follow descriptors. It compares existing parent directory device/inode identity rather than reconstructing a canonical pathname. It preserves byte equality after gated selective project deletion while the home and host remain alive. Successful final teardown removes those disposable archives with the private home. Failed assertions retain fixtures. These checks are point-in-time, not a filesystem lease.
 - Cleanup confirms the captured development child first, while its service can reap it. It then captures/revalidates and reaps the exact service while the signed host exists. Host, registered projects and home are removed only after successful assertions and cleanup. Failed assertions retain safely stopped fixtures.

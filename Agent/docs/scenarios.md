@@ -58,11 +58,16 @@ AGENT_SCENARIO_LIVE=1 "$swift64" test --package-path Agent --filter agentCreateH
 
 - **Shared workflow**
   - `agentCreateCounterScenario` and `agentCreatePlanScenario` stage the existing tests plus production Agent/DevTools/authored extensions/VisionCLI in a minimal signed host and drive the production client model/native adapter.
-  - The feature-only counter prompt requests behavior and launch without Preview mechanics, which come from system/tool instructions rather than scenario-supplied implementation guidance.
+  - The shared counter prompt requests the exact user-visible name `Pebble Counter`, behavior and launch. It supplies no naming or Preview tool recipe. Both Counter and Plan use this changed context.
+  - First-request naming requires exactly one matched `set_app_name` invocation with a successful canonical typed result. Its completion must precede every attempted implementation write/edit and Build/Run start, including failed attempts. Successful implementation work must leave a nonempty regular file. Reads and plan work may precede naming.
+  - Root `Info.plist`, the exact successful Run result's development plist and the refreshed production-path library title must equal `Pebble Counter`. Direct root plist edits cannot substitute for naming. Provider argv exposure and completed activity are secondary checks.
+  - Metadata naming must emit no native `MAC_APPER_RENAMED` notification and create no production output. The normal development Run remains required. These checks do not observe native window or application-menu titles.
+  - `CreateNamingEvidenceTests` covers direct/nested positives and missing, duplicate, failed, wrong-result, ancestry, premature edit/build/run, script-only and mismatched final metadata controls offline. `ToolEvidenceTests` checks complete multi-level ancestry for naming as well as Test.
+  - Focused offline selection: `"$swift64" test --package-path Agent --filter 'AgentScenarioTests\.(createNaming|toolEvidence)'`. Live selectors remain `agentCreateCounterScenario` and `agentCreatePlanScenario`. The naming changes require fresh authorized live verification; offline fixtures are not runtime evidence.
   - Both cases audit runtime/scope/Preview availability and independently require actual successful Test, Preview, Build and Run without prescribing cross-tool order, source filename, count or canvas.
   - Preview checks independently decoded PNG/dimensions, chosen/default canvas, complete envelope, source/scratch scope and artifact/archive identity without OCR, read or image-forwarding requirements.
   - Generated source review, generated-plus-independent tests, development liveness and removed Preview workspaces are separate checks, with Parallel MCP calls rejected for this offline app request.
-  - Production output is reported separately because development Build/Run does not create `~/.mac-apper/output/<project-id>/` bundles, and the app name remains service-owned scaffold metadata.
+  - Production output absence is asserted separately because development Build/Run does not create `~/.mac-apper/output/<project-id>/` bundles. Naming metadata remains service-owned.
 - **Authored Test evidence**
   - Before harness assertions are injected, CreateCounterTestEvidence requires saved matched successful Test status passed/exitCode 0 following successful scoped agent write/edit revisions under `Tests/AppModelTests/*.swift` with no later edit invalidating that pass.
   - Passing untouched starter tests before authoring new tests is insufficient, while bounded nonlinked compiler `-dump-parse` output must show import Testing, annotated @Test functions with #expect and count/increment/decrement/reset references inside those functions rather than comments/string decoys.

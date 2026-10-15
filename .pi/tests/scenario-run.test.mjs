@@ -27,6 +27,20 @@ test('single case and whole collection map to swift test without execution', () 
   assert.match(result.stdout, /--filter devToolsPlanScenarios/);
   assert.match(result.stdout, /CHECK ONLY/);
 });
+test('naming cases and collection map only to their provider entry point', () => {
+  const naming = { package: 'apps/built-in/dev-tools', filter: 'devToolsSetAppNameScenarios' };
+  for (const caseName of ['set-app-name-canonical', 'set-app-name-rejections']) {
+    const result = check([{ ...naming, caseName }]);
+    assert.equal(result.status, 0, result.stderr);
+    assert.match(result.stdout, new RegExp(`DEV_TOOLS_SCENARIO_CASE=${caseName}`));
+    assert.match(result.stdout, /--filter devToolsSetAppNameScenarios/);
+    assert.match(result.stdout, /CHECK ONLY/);
+    assert.doesNotMatch(result.stdout, /AGENT_SCENARIO_LIVE=1/);
+  }
+  assert.equal(check([naming]).status, 0);
+  assert.notEqual(check([{ ...naming, caseName: 'plan-initial-tasks' }]).status, 0);
+  assert.notEqual(check([{ ...preview, caseName: 'set-app-name-canonical' }]).status, 0);
+});
 test('mixed sequential plan requires explicit live authorization', () => {
   assert.notEqual(check([preview, counter]).status, 0);
   const result = check([preview, counter], ['--authorize-live']);

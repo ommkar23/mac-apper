@@ -35,7 +35,9 @@
 ## App naming and window titles
 
 - The project's `Info.plist` owns app branding.
-- `set_app_name` and rename update both `CFBundleDisplayName` and `CFBundleName` through the same validated path.
+- DevTools' generated `set_app_name` updates `CFBundleDisplayName` and `CFBundleName` as metadata only. Its project root is extension-injected and service-validated.
+- Agent retains the native rename command. It validates and updates both branding keys before rebuilding, repackaging, signing, verifying and registering the production app.
+- Metadata-only naming does not repackage an existing app or emit the native `MAC_APPER_RENAMED` completion notification.
 - Production packaging reads the canonical display name before building.
 - Names retain the existing 1–64-character policy without silent truncation.
 - Packaging preserves its own executable, identifier and version fields.
@@ -48,7 +50,7 @@
 - Naming does not change app UUIDs or persistence paths.
 - Naming relies on correct bundle metadata and SwiftUI API wiring.
 - [Source-wiring tests](../Tests/AgentApplicationTests/ScaffoldNamingTests.swift) retain checks for protected title composition and supported overrides.
-- [AppName tests](../Tests/AgentApplicationTests/AppNameTests.swift) and [name/rename extension tests](../Tests/AgentApplicationTests/NameAndRenameExtensionTests.swift) retain project-owned naming logic coverage.
+- [AppName tests](../Tests/AgentApplicationTests/AppNameTests.swift) and [rename extension tests](../Tests/AgentApplicationTests/NameAndRenameExtensionTests.swift) retain command validation, branding and packaging coverage. Agent's command extension must register no naming tool.
 - [DevTools branding tests](../../apps/built-in/dev-tools/Tests/DevToolsXPCServiceTests/RunControllerTests.swift) retain shared validation and staging coverage.
 - Scene compiler probes, synthetic Bundle execution and CoreGraphics window observation are retired naming checks.
 - App-name rendering and actual native-window titles are not independently verified.

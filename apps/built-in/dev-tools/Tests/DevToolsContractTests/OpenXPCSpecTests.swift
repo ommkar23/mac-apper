@@ -35,14 +35,15 @@ private let packageRoot = URL(fileURLWithPath: #filePath).deletingLastPathCompon
 	#expect(specification.service.maxPayloadBytes == 65_536)
 	#expect(specification.service.timeoutSeconds >= 300)
 	let operations = specification.dataSchema.operations
-	#expect(Set(operations.map(\.name)) == ["build", "test", "run", "preview", "plan"])
+	#expect(
+		Set(operations.map(\.name)) == ["build", "test", "run", "preview", "plan", "set_app_name"])
 	for operation in operations {
 		#expect(operation.tool != nil)
 	}
 	#expect(specification.clients.count == 1)
 	let agent = try #require(specification.clients.first { $0.target == "DevToolsTerminalClient" })
 	#expect(agent.generation == .agentClient)
-	#expect(Set(agent.operations) == ["build", "test", "run", "preview", "plan"])
+	#expect(Set(agent.operations) == ["build", "test", "run", "preview", "plan", "set_app_name"])
 	let schema = specification.dataSchema
 	let runResult = try #require(schema.types.first { $0.name == "RunResult" })
 	#expect(Set(runResult.fields.map(\.name)) == ["summary", "target", "relativePath"])
@@ -56,7 +57,10 @@ private let packageRoot = URL(fileURLWithPath: #filePath).deletingLastPathCompon
 	#expect(planRequest.fields.first { $0.name == "action" }?.maxLength == 32)
 	#expect(planRequest.fields.first { $0.name == "tasks" }?.maxItems == 100)
 	#expect(planRequest.fields.first { $0.name == "ids" }?.maxItems == 100)
-	for name in ["BuildRequest", "TestRequest", "RunRequest", "PreviewRequest", "PlanRequest"] {
+	for name in [
+		"BuildRequest", "TestRequest", "RunRequest", "PreviewRequest", "PlanRequest",
+		"SetAppNameRequest",
+	] {
 		let request = try #require(schema.types.first { $0.name == name })
 		#expect(request.fields.first { $0.name == "projectRoot" }?.injected == "projectRoot")
 	}
@@ -85,7 +89,9 @@ private let packageRoot = URL(fileURLWithPath: #filePath).deletingLastPathCompon
 		spec: specification, target: "DevToolsApplication", serviceDispatch: .controllers)
 	#expect(service.swift.contains("public struct Controllers: Sendable"))
 	#expect(!service.swift.contains("public struct Handlers: Sendable"))
-	for name in ["BuildResult", "TestResult", "RunResult", "PreviewResult", "PlanResult"] {
+	for name in [
+		"BuildResult", "TestResult", "RunResult", "PreviewResult", "PlanResult", "SetAppNameResult",
+	] {
 		#expect(service.swift.contains("public struct \(name):"))
 	}
 	let client = try OpenXPCSourceGenerator.generate(
@@ -118,4 +124,24 @@ private let packageRoot = URL(fileURLWithPath: #filePath).deletingLastPathCompon
 	#expect(client.piExtension?.contains("public func apperPreview_Example() -> some View") == true)
 	#expect(previewTool.parametersJSON?.contains("screenSize") == true)
 	#expect(client.piExtension?.contains("OPENXPC_PROJECT_ROOT") == true)
+	let namingRequest = try #require(schema.types.first { $0.name == "SetAppNameRequest" })
+	#expect(namingRequest.fields.first { $0.name == "projectRoot" }?.maxLength == 4096)
+	#expect(namingRequest.fields.first { $0.name == "name" }?.maxLength == 256)
+	let namingResult = try #require(schema.types.first { $0.name == "SetAppNameResult" })
+	#expect(namingResult.fields.first { $0.name == "name" }?.maxLength == 256)
+	#expect(namingResult.fields.first { $0.name == "summary" }?.maxLength == 1024)
+	let namingTool = try #require(operations.first { $0.name == "set_app_name" }?.tool)
+	let namingJSON = try #require(namingTool.parametersJSON)
+	let namingSchema = try #require(
+		JSONSerialization.jsonObject(with: Data(namingJSON.utf8)) as? [String: Any])
+	#expect(namingSchema["required"] as? [String] == ["name"])
+	#expect(namingSchema["additionalProperties"] as? Bool == false)
+	let namingProperties = try #require(namingSchema["properties"] as? [String: [String: Any]])
+	#expect(Set(namingProperties.keys) == ["name"])
+	#expect(namingProperties["name"]?["minLength"] as? Int == 1)
+	#expect(namingProperties["name"]?["maxLength"] as? Int == 64)
+	#expect(namingTool.description.contains("Does not build, repackage"))
+	#expect(service.swift.contains("public protocol OpenXPCSet_app_nameController"))
+	#expect(service.swift.contains("controllers.set_app_name.handle"))
+	#expect(client.piExtension?.components(separatedBy: "name: \"set_app_name\"").count == 2)
 }

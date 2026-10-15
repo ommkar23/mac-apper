@@ -2,6 +2,14 @@ service:
   identifier: com.macapper.dev-tools.xpc
   maxPayloadBytes: 65536
 types:
+  - name: SetAppNameRequest
+    fields:
+      - { name: projectRoot, type: string, maxLength: 4096, injected: projectRoot }
+      - { name: name, type: string, maxLength: 256 }
+  - name: SetAppNameResult
+    fields:
+      - { name: summary, type: string, maxLength: 1024 }
+      - { name: name, type: string, maxLength: 256 }
   - name: BuildRequest
     fields:
       - { name: projectRoot, type: string, maxLength: 4096, injected: projectRoot }
@@ -64,6 +72,18 @@ types:
       - { name: summary, type: string, maxLength: 4096 }
       - { name: tasks, type: PlanTask, array: true, maxItems: 100 }
 operations:
+  - name: set_app_name
+    request: SetAppNameRequest
+    response: SetAppNameResult
+    tool:
+      label: Set App Name
+      description: Set the concise user-facing app name inferred from the user's request. Call once before implementation for a new app. Updates only the existing project's Info.plist branding and returns the canonical name. Does not build, repackage, sign, register, or launch an app. Names use 1-64 Unicode code points after sanitation; path/control characters and trailing .app suffixes are cleaned. Native rename and production packaging are separate actions.
+      parameters:
+        type: object
+        additionalProperties: false
+        required: [name]
+        properties:
+          name: { type: string, minLength: 1, maxLength: 64 }
   - name: build
     request: BuildRequest
     response: BuildResult

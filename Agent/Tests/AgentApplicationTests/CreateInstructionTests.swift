@@ -52,6 +52,10 @@ import Testing
 	#expect(result["again"] == later)
 	#expect(result["first"]?.hasPrefix(later + "\n\n") == true)
 	#expect(result["first"]?.contains("call set_app_name exactly once") == true)
+	#expect(result["first"]?.contains("generated DevTools") == true)
+	#expect(result["first"]?.contains("metadata only") == true)
+	#expect(result["first"]?.contains("native rename") == true)
+	#expect(result["first"]?.contains("repackages") == true)
 	#expect(!later.contains("This is the first request"))
 	for requirement in [
 		"Model–View", "@Observable", "@Bindable", "business logic out of views",

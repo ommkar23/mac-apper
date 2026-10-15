@@ -294,16 +294,25 @@ private func evidenceFixture(nested: Bool, mutation: String = "") throws
 	return (try evidenceJSONL(session), try evidenceJSONL(journal))
 }
 
-@Test func toolEvidenceChecksCompleteMultiLevelAncestryOffline() throws {
+@Test(arguments: ["test", "set_app_name"])
+func toolEvidenceChecksCompleteMultiLevelAncestryOffline(toolName: String) throws {
 	for mutation in ["", "failedParent", "missingParent", "collidingChild", "outsideIntermediate"] {
-		let fixture = try evidenceFixture(nested: true)
+		let original = try evidenceFixture(nested: true)
+		let fixture = (
+			session: Data(
+				String(decoding: original.session, as: UTF8.self)
+					.replacingOccurrences(of: "\"test\"", with: "\"\(toolName)\"").utf8),
+			journal: Data(
+				String(decoding: original.journal, as: UTF8.self)
+					.replacingOccurrences(of: "\"test\"", with: "\"\(toolName)\"").utf8)
+		)
 		var records = try fixture.session.split(separator: 10).map {
 			try #require(JSONSerialization.jsonObject(with: Data($0)) as? [String: Any])
 		}
 		var message = try #require(records[1]["message"] as? [String: Any])
 		let arguments: [String: Any] = ["code": "nested fixture"]
 		let child: [String: Any] = [
-			"id": "outer/1/1", "name": "test", "arguments": [:], "status": "ok",
+			"id": "outer/1/1", "name": toolName, "arguments": [:], "status": "ok",
 		]
 		let parent: [String: Any] = [
 			"id": "outer/1", "name": "codemode", "arguments": arguments,
@@ -347,7 +356,7 @@ private func evidenceFixture(nested: Bool, mutation: String = "") throws
 			}
 		} else {
 			let evidence = try ScenarioToolEvidence(session: session, journal: data)
-			let call = try #require(evidence.calls.first { $0.name == "test" })
+			let call = try #require(evidence.calls.first { $0.name == toolName })
 			#expect(call.succeeded == (mutation != "failedParent"))
 			#expect((call.typedResult != nil) == (mutation != "failedParent"))
 		}

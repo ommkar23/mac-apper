@@ -12,6 +12,19 @@
 - The shared operation gate excludes concurrent operations and returns busy rather than queueing a second request. Source/generated-code execution remains under user permissions, not in a sandbox.
 - XPC/terminal success means a response arrived. Typed Test or Preview errors can still arrive in a successful tool call. Invalid scope/request and thrown controller failures instead produce operation/transport failure. Never infer a passing workflow from a completed Activity entry.
 
+## Set App Name
+
+- `set_app_name` accepts only `name`. Its Pi schema requires 1–64 Unicode code points. The injected `projectRoot` uses the same scope validation as the other tools.
+- [SetAppNameController](../Sources/Application/Controllers/SetAppNameController.swift) resolves the project and uses the shared operation gate. Naming cannot overlap another DevTools operation.
+- Sanitation matches the former TypeScript tool: replace ASCII controls, DEL and `/`, `\\`, `:` with spaces. Collapse ECMAScript whitespace, including the byte-order mark. Remove repeated trailing `.app` suffixes case-insensitively. Reject empty, dot-prefixed or over-64-code-point canonical names.
+- Unicode code points are not UTF-8 bytes or grapheme clusters. A combining accent counts separately. Sixty-four emoji are accepted. U+0085 is preserved, matching JavaScript rather than Foundation's broader whitespace set.
+- Wire `name` is bounded to 256 UTF-8 bytes. The response returns canonical `name` (256 bytes) and `summary` (1024 bytes). It does not silently impose a 64-byte limit.
+- The existing root `Info.plist` must be a regular, nonlinked dictionary of at most 16 KiB. Missing, malformed, linked, nonregular and oversized files fail without mutation. A valid dictionary may acquire missing branding keys.
+- Both `CFBundleDisplayName` and `CFBundleName` are replaced in one atomic rename. Unrelated plist values and XML/binary format are preserved. The new file is private mode 0600. Serialized output must also fit 16 KiB before writing.
+- Reads use bounded no-follow descriptors. Replacement uses an exclusive same-directory temporary file and descriptor-relative rename. Observed inode/size/modification-time changes reject replacement. These point-in-time checks are not an atomic compare-and-swap or a sandbox against hostile concurrent writers.
+- Success changes project metadata only. It does not build, repackage, sign, register, launch or update an already staged bundle. App UUIDs and persistence paths are unchanged.
+- Agent's native rename command still owns rebuilding and production packaging. It remains outside the DevTools gate; this tool does not establish cross-runtime serialization.
+
 ## Build
 
 - Pi arguments are an empty object; arbitrary shell commands, targets and filters are not accepted. The validated manifest selects `executableTarget`.

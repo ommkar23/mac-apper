@@ -83,7 +83,8 @@ private func makeFixtureIntegration(at root: URL) throws -> FixtureIntegration {
 				"dev-tools", "DevTools.app", "DevToolsMacosClient", true,
 				[
 					[
-						"path": "PiExtension/Extension.ts", "agents": ["create"], "tools": ["build", "test"],
+						"path": "PiExtension/Extension.ts", "agents": ["create"],
+						"tools": ["build", "test", "set_app_name"],
 						"firstRequestOnly": false,
 					]
 				]),
@@ -193,6 +194,50 @@ private func makeFixtureIntegration(at root: URL) throws -> FixtureIntegration {
 	#expect(!subsequentArguments.contains(integration.webExtension.path))
 	#expect(subsequentArguments.contains(integration.parallelExtension.path))
 	#expect(await runtime.stop())
+}
+
+@MainActor @Test(arguments: ["first", "later", "resume"])
+func createRuntimeKeepsGeneratedNamingAvailable(mode: String) async throws {
+	let root = try ProjectTemporaryDirectory.appending("naming-\(UUID().uuidString)")
+	defer { try? FileManager.default.removeItem(at: root) }
+	let project = root.appendingPathComponent(UUID().uuidString.lowercased(), isDirectory: true)
+	let integration = try makeFixtureIntegration(at: root.appendingPathComponent("integration"))
+	try FileManager.default.createDirectory(at: project, withIntermediateDirectories: true)
+	let executable = root.appendingPathComponent("fixture-pi")
+	try "#!/bin/sh\nprintf '%s\\n' \"$@\" > arguments.txt\nwhile IFS= read -r line; do :; done\n"
+		.write(to: executable, atomically: true, encoding: .utf8)
+	try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: executable.path)
+	let session = project.appendingPathComponent(".pi/sessions/\(UUID().uuidString).jsonl")
+	if mode == "resume" {
+		try FileManager.default.createDirectory(
+			at: session.deletingLastPathComponent(), withIntermediateDirectories: true)
+		let record: [String: Any] = [
+			"type": "session", "version": 3, "id": session.deletingPathExtension().lastPathComponent,
+			"cwd": project.path,
+		]
+		try (JSONSerialization.data(withJSONObject: record) + Data("\n".utf8)).write(to: session)
+	}
+	let runtime = PiRPCProcess(
+		configuration: .init(
+			executable: executable, inheritsParentEnvironment: false, offline: true,
+			startsProviderServices: false),
+		integrationCatalog: integration.catalog, integrationRootURL: integration.root)
+	_ = try await runtime.start(
+		agentID: "create", in: project, sessionFile: session, title: nil, firstRequest: mode == "first")
+	let captured = project.appendingPathComponent("arguments.txt")
+	for _ in 0..<100 where !FileManager.default.fileExists(atPath: captured.path) {
+		try await Task.sleep(for: .milliseconds(10))
+	}
+	let stopped = await runtime.stop()
+	#expect(stopped)
+	let arguments = try String(contentsOf: captured, encoding: .utf8).split(separator: "\n").map(
+		String.init)
+	let toolsIndex = try #require(arguments.firstIndex(of: "--tools"))
+	#expect(arguments[toolsIndex + 1].split(separator: ",").filter { $0 == "set_app_name" }.count == 1)
+	#expect(arguments.contains(integration.devToolsExtension.path))
+	#expect(arguments.contains(integration.nameExtension.path))
+	#expect(arguments.contains(integration.createExtension.path) == (mode == "first"))
+	#expect(arguments.contains(session.path))
 }
 
 @MainActor @Test func chatDoesNotStartBundledWebService() async throws {
@@ -402,7 +447,7 @@ func chatAuthoredExtensionResolvesWithoutWebOnFirstAndLaterRequests(directory: S
 	#expect(!chat.extensionURLs.map(\.lastPathComponent).contains("create-instructions.ts"))
 }
 
-@Test func createNameHooksBelongToAgentRatherThanDevTools() throws {
+@Test func createNamingToolBelongsOnlyToGeneratedProviderWhileAgentRetainsCommands() throws {
 	let package = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
 		.deletingLastPathComponent().deletingLastPathComponent()
 	#expect(
@@ -414,10 +459,31 @@ func chatAuthoredExtensionResolvesWithoutWebOnFirstAndLaterRequests(directory: S
 	let root = try ProjectTemporaryDirectory.root().appendingPathComponent(UUID().uuidString)
 	defer { try? FileManager.default.removeItem(at: root) }
 	let catalog = try makeFixtureIntegration(at: root).catalog
-	let create = try catalog.configuration(agentID: "create", firstRequest: true, root: root)
-	#expect(create.extensionURLs.map(\.lastPathComponent).contains("name-and-rename.ts"))
-	let later = try catalog.configuration(agentID: "create", firstRequest: false, root: root)
-	#expect(!later.extensionURLs.map(\.lastPathComponent).contains("create-app.ts"))
+	let hook = try #require(AgentCatalog.createExtensions.first { $0.name == "name-and-rename.ts" })
+	#expect(hook.tools.isEmpty)
+	#expect(!hook.firstRequestOnly)
+	#expect(!AgentCatalog.createExtensions.flatMap(\.tools).contains("set_app_name"))
+	// Later requests and resumes both use firstRequest: false.
+	for first in [true, false] {
+		let create = try catalog.configuration(agentID: "create", firstRequest: first, root: root)
+		#expect(create.extensionURLs.map(\.lastPathComponent).contains("name-and-rename.ts"))
+		#expect(create.extensionURLs.map(\.lastPathComponent).contains("create-app.ts") == first)
+		#expect(create.tools.filter { $0 == "set_app_name" }.count == 1)
+		let chat = try catalog.configuration(agentID: "chat", firstRequest: first, root: root)
+		#expect(!chat.tools.contains("set_app_name"))
+		#expect(!chat.extensionURLs.map(\.lastPathComponent).contains("name-and-rename.ts"))
+	}
+	// Remove provider metadata to prove Agent cannot supply the naming tool itself.
+	let catalogURL = root.appendingPathComponent("IntegrationCatalog.json")
+	let metadata = try String(contentsOf: catalogURL, encoding: .utf8)
+	try metadata.replacingOccurrences(of: "\"set_app_name\"", with: "\"provider_only_sentinel\"")
+		.write(to: catalogURL, atomically: true, encoding: .utf8)
+	let withoutNaming = try AgentIntegrationCatalog.load(from: catalogURL)
+	for first in [true, false] {
+		#expect(
+			try !withoutNaming.configuration(agentID: "create", firstRequest: first, root: root)
+				.tools.contains("set_app_name"))
+	}
 }
 
 @Test func catalogUsesBundledProviderExtensionsAndNeverAGeneratedSourceFallback() throws {
@@ -468,6 +534,7 @@ func chatAuthoredExtensionResolvesWithoutWebOnFirstAndLaterRequests(directory: S
 
 	let laterCreate = try catalog.configuration(agentID: "create", firstRequest: false, root: root)
 	#expect(!laterCreate.extensionURLs.map(\.lastPathComponent).contains("create-app.ts"))
+	#expect(laterCreate.tools.contains("set_app_name"))
 }
 
 @Test func agentConfigurationsAreDeclaredInApplicationWithoutSpecGeneration() {

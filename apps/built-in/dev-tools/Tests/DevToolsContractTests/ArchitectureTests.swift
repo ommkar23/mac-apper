@@ -37,6 +37,7 @@ private let packageRoot = URL(fileURLWithPath: #filePath).deletingLastPathCompon
 		"Controllers/BuildController.swift", "Controllers/TestController.swift",
 		"Controllers/RunController.swift",
 		"Controllers/PreviewController.swift", "Controllers/PlanController.swift",
+		"Controllers/SetAppNameController.swift",
 		"PlanStore.swift",
 		"ProjectManifest.swift", "ProjectScope.swift", "ProjectResolver.swift",
 		"Controllers/ControllerFactory.swift", "main.swift", "OwnedProcess.swift",
@@ -66,6 +67,7 @@ private let packageRoot = URL(fileURLWithPath: #filePath).deletingLastPathCompon
 	#expect(assembly.contains("func controllers() -> OpenXPCGeneratedService.Controllers"))
 	for controller in [
 		"BuildController", "TestController", "RunController", "PreviewController", "PlanController",
+		"SetAppNameController",
 	] {
 		#expect(assembly.contains(controller))
 	}

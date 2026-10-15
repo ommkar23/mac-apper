@@ -95,7 +95,9 @@ struct ScenarioToolEvidence {
 				ancestorID = ancestor.parentID
 			}
 			var typed: [String: Any]?
-			if succeeded && ["test", "preview", "build", "run", "plan"].contains(recorded.name) {
+			if succeeded
+				&& ["test", "preview", "build", "run", "plan", "set_app_name"].contains(recorded.name)
+			{
 				guard
 					let json = text.data(using: .utf8),
 					let value = try? Self.object(json)

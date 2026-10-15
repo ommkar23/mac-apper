@@ -82,7 +82,18 @@ node --test .pi/tests/scenario-run.test.mjs
 - Naming relies on correct bundle metadata and SwiftUI API wiring, not independent platform naming checks.
 - [ScaffoldNamingTests](../Tests/AgentApplicationTests/ScaffoldNamingTests.swift) retains protected source-wiring checks.
 - [AppNameTests](../Tests/AgentApplicationTests/AppNameTests.swift) retains validation and rename-command logic checks.
-- [NameAndRenameExtensionTests](../Tests/AgentApplicationTests/NameAndRenameExtensionTests.swift) retains authored naming and packaging logic checks.
+- [NameAndRenameExtensionTests](../Tests/AgentApplicationTests/NameAndRenameExtensionTests.swift) checks command-only registration, rename branding, packaging, validation and `MAC_APPER_RENAMED` notification with offline process/filesystem doubles.
+- [PiExtensionTests](../Tests/AgentApplicationTests/PiExtensionTests.swift) checks sole provider naming-tool ownership and first/later/resume Create availability, with Chat excluded. Removing provider naming metadata must remove the tool; Agent must not supply a fallback.
+- [CreateInstructionTests](../Tests/AgentApplicationTests/CreateInstructionTests.swift) checks first-request naming guidance and the metadata-only versus native rename/repackage distinction.
+- Root [BundleCommandsTests](../../Tests/IntegrationTests/BundleCommandsTests.swift) checks generated catalog naming ownership and retained command-extension packaging. It does not build a bundle or host XPC.
+
+```sh
+# Unit targets only: no AgentScenarioTests, signed hosts or opt-in resource/scaffold cases.
+"$swift64" test --package-path Agent --filter '^(AgentApplicationTests|AgentMacosClientModelTests|AgentMacosClientTests|AgentTests)[./]'
+"$swift64" test --filter '^(IntegrationTests|SwiftLinesPluginTests)[./]'
+```
+
+- Inspect selected suites before execution. Keep live/resource/scaffold gates unset. Unit targets use local doubles and may compile fresh disposable scaffold fixtures; this is not packaged XPC, rendered-window naming evidence or live model verification.
 - [DevTools RunControllerTests](../../apps/built-in/dev-tools/Tests/DevToolsXPCServiceTests/RunControllerTests.swift) retains shared branding validation and staging checks.
 - Scene compiler probes, synthetic Bundle execution and CoreGraphics window observation are retired naming checks.
 - HTView still requests its app name and main window title.
@@ -127,13 +138,25 @@ node --test .pi/tests/scenario-run.test.mjs
   ```
 
   - The case prepares a real v9 project through Agent's production model/native client and separately drives generated DevTools client/service in signed hosts without Web, Pi, VisionCLI or Mac Apper.app.
-  - Private HOME/CFFIXED_USER_HOME scopes projects/SQLite, only the installed compiler is linked into the owned home, and AGENT_SCENARIO_PRODUCTS/DEV_TOOLS_SCENARIO_PRODUCTS support existing custom product directories.
+  - Private HOME/CFFIXED_USER_HOME scopes clients, services, development children and SQLite. Only the installed compiler is linked into the owned home. AGENT_SCENARIO_PRODUCTS/DEV_TOOLS_SCENARIO_PRODUCTS support existing custom product directories.
+  - Signed-host execution needs matching Agent test-loader/service/resources and freshly generated DevTools client/service/resources with `set_app_name`. It also needs local ad-hoc signing and authorization for compiler work and the development launch. It needs no credentials, Pi, MCP or full product bundle.
+  - The naming additions are compile/offline verification work until the coordinator authorizes the exact scaffold selector above. They do not establish a new signed-host pass.
 - **Assertions and cleanup**
+  - Before Test, Build or Run, the signed production generated DevTools client calls `set_app_name` with `  Pebble / Counter: .app.APP  `. Its typed string result must be exactly `Pebble Counter` with the expected summary.
+  - Both project branding keys must equal that result. All other plist values and the complete fixture source/manifest/lockfile snapshot stay unchanged. Naming creates no Build/Test/Preview/DevBuild scratch, project `.build`, dist output or production package.
+  - A production `WorkspaceSession.refreshLibrary()` through the native Agent adapter must expose exactly the matching project's canonical title without a built-app entry.
+  - The existing matched Run response selects the exact staged development plist. Bounded descriptor-relative no-follow reads require both branding keys to equal the canonical result. ProductionApp executable, UUID-derived development identifier and request-derived version remain service-owned.
+  - These are metadata and model-presentation assertions. They do not observe rendered windows or application menus. The scaffold has no status-item surface.
+  - `scaffoldNamingLocalReadsOffline` checks binary plist/unrelated metadata reads and rejection of linked ancestors, traversal and oversized files. `scaffoldNamingFIFOOffline` requires nonblocking leaf-open flags and rejects a writerless FIFO before reading. `scaffoldServiceGenerationOffline` rejects changed PID/path/start, uncertain capture and replacement after cached ESRCH. It also accepts unchanged generations and checks that rejection blocks cleanup continuation.
+  - The offline selector is `"$swift64" test --package-path Agent --filter 'scaffoldNamingLocalReadsOffline|scaffoldNamingFIFOOffline|scaffoldServiceGenerationOffline'`. These tests do not prepare hosts or launch apps.
   - Editable fixture sources register typed entities/model actions while protected composition remains byte-identical, with Test requiring passed/exitCode 0 and the named save/validation-rollback/reopen passing diagnostic.
   - Preview validates PNG dimensions and injected memory-record pixels, while Build/Run use protected ProductionApp and Run checks executable PID/path/start and SIGTERM reaping rather than readiness or saved data.
   - Four helper processes prove explicit fixture-home SQLite write/check/delete/absence at the stable UUID path, without treating that as production-home relaunch.
   - Tools preserve source/manifest/lockfile, remove request Test/Preview scratch and create no project `.build`.
-  - Exact service identity is revalidated before bounded TERM/KILL after requests/development-child completion and before host removal, with successful roots removed, failed homes/hosts retained and new PNG/helper logs preserved externally.
+  - Only matched successful request envelopes confirm completion. A thrown request leaves cleanup uncertain. Run sets the child gate before invocation and clears it only after exact PID/path/start reaping.
+  - DevTools service identity is captured immediately after naming. Every subsequent request attributes the unique exact-host live service before dispatch and after its matched response. PID, kernel path and start identity must equal the cached generation before request confirmation. Attribution also precedes development-child termination and the first service cleanup.
+  - First service cleanup requires current exact-host attribution before bounded TERM/KILL, even if the cached PID has reached ESRCH. Replacement or uncertain attribution throws before host removal or the inner cleanup marker. Confirmed requests and child reaping gate service/host removal. The resulting inner cleanup marker gates outer Agent service/host cleanup. Cleanup is attempted once. Uncertain cleanup retains owned fixtures.
+  - New staged-plist assertions run after the development child is reaped. Successful roots are removed only after DevTools service cleanup. Failed homes/projects remain retained, while confirmed cleanup may remove their hosts. New PNG/helper logs remain preserved externally.
   - No-model/API integration is not an air-gapped dependency-resolution guarantee, final product smoke or visual review.
 
 ## Authorization

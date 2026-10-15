@@ -31,7 +31,7 @@ public enum AgentCatalog {
 	static let createExtensions: [(name: String, tools: [String], firstRequestOnly: Bool)] = [
 		(name: "parallel-codemode.ts", tools: ["codemode"], firstRequestOnly: false),
 		(name: "create-instructions.ts", tools: [], firstRequestOnly: false),
-		(name: "name-and-rename.ts", tools: ["set_app_name"], firstRequestOnly: false),
+		(name: "name-and-rename.ts", tools: [], firstRequestOnly: false),
 		(name: "create-app.ts", tools: [], firstRequestOnly: true),
 	]
 

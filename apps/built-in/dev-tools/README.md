@@ -1,10 +1,10 @@
 # DevTools
 
-DevTools is Mac Apper's built-in Create provider for building, testing, launching, previewing and planning generated Swift packages. It is a native XPC service plus a generated Pi terminal client, not a shell tool or a standalone GUI editor.
+DevTools is Mac Apper's built-in Create provider for naming, building, testing, launching, previewing and planning generated Swift packages. It is a native XPC service plus a generated Pi terminal client, not a shell tool or a standalone GUI editor.
 
 ## Start here
 
-- [Tool execution and results](docs/tools.md): Build, Test, Run and Plan inputs, scoping, limits and success criteria.
+- [Tool execution and results](docs/tools.md): Naming, Build, Test, Run and Plan inputs, scoping, limits and success criteria.
 - [SwiftUI Preview](docs/preview.md): factory discovery, isolated compilation, native capture and retained PNG paths.
 - [Verification](docs/verification.md): package commands, provider scenarios, recorded evidence and remaining limits.
 - [Mac Apper overview](../../../README.md): product setup, authorization and final app delivery.
@@ -33,15 +33,16 @@ DevTools is Mac Apper's built-in Create provider for building, testing, launchin
 
 ## Generated boundary and ownership
 
-- [OpenXPC.yaml](OpenXPC.yaml) owns bounded request/response records and Pi tool descriptions/schemas. [OpenXPCGen.yaml](OpenXPCGen.yaml) selects the service and the five generated terminal operations.
+- [OpenXPC.yaml](OpenXPC.yaml) owns bounded request/response records and Pi tool descriptions/schemas. [OpenXPCGen.yaml](OpenXPCGen.yaml) selects the service and the six generated terminal operations.
 - [Package.swift](Package.swift) declares `DevToolsApplication` and `DevToolsTerminalClient`, attaching OpenXPCBuildPlugin to each. Generated Swift/TypeScript remains in SwiftPM plugin output; [ClientTarget.swift](Sources/AgentClient/ClientTarget.swift) is only the authored target anchor.
 - Pi's generated extension injects the selected project root and calls the generated terminal client, which crosses native XPC to the generated listener. Authored [controllers](Sources/Application/Controllers/ControllerFactory.swift) retain project validation, filesystem/process ownership and a shared gate that rejects overlapping operations as busy.
 - There is no shared XPC runtime target, native DevTools UI client, authored provider Pi extension or provider-specific client implementation inside Agent. Agent's integration generation assigns DevTools to Create; Chat does not select it.
 - Built-in metadata comes from the two OpenXPC files and [bundle plists](Resources/Info.plist), not an AppManifest.yaml. Product packaging places `DevTools.app` under Mac Apper's `Contents/Applications/`, with its owned XPC service, terminal client and generated extension.
 - Preview's renderer resource belongs to the service's `Contents/Resources/DevTools_DevToolsApplication.bundle`; deployed lookup must not fall back to source-tree files.
 
-## Five tools
+## Six tools
 
+- **Set App Name** (`set_app_name`): update both branding keys in the existing project plist and return the canonical name. This is metadata-only. Native rename and production packaging remain separate.
 - **Build** (`build`): debug-build the manifest-selected production executable; does not stage, sign, launch or create a production bundle.
 - **Test** (`test`): run all package test targets in disposable scratch; require `status: passed` and `exitCode: 0`, not just tool/transport completion.
 - **Run** (`run`): build, stage and launch one development instance per project; launch is not a readiness handshake or production delivery.

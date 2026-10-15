@@ -1,5 +1,5 @@
 // @frontmatter:start
-// Verifies fresh service-prepared v9 scaffolds through signed DevTools Test, Preview, Build, Run and isolated persistence probes without models.
+// Verifies fresh v9 scaffold naming, library metadata, signed DevTools Test/Preview/Build/Run and isolated persistence without models.
 // @frontmatter:end
 import AgentMacosClient
 import AgentMacosClientModel
@@ -31,6 +31,7 @@ import Testing
 			withDestinationURL: installed)
 		var completed = false
 		var serviceCleaned = false
+		var innerCleanupConfirmed = false
 		defer {
 			if completed && serviceCleaned {
 				try? FileManager.default.removeItem(at: home)
@@ -41,6 +42,7 @@ import Testing
 		let host = try AgentResourceScenarioInputs.prepareHost(home: home)
 		defer {
 			do {
+				try #require(innerCleanupConfirmed, "Unconfirmed inner cleanup; retain Agent host/home")
 				try stopScaffoldService(
 					host.app, relative: "AgentXPCService.xpc/Contents/MacOS/AgentApplication")
 				try host.remove()
@@ -58,6 +60,8 @@ import Testing
 			],
 			timeoutSeconds: 1200)
 		print(result.output)
+		innerCleanupConfirmed = result.output.contains("CORE_DATA_INNER_CLEANUP_CONFIRMED")
+		try #require(innerCleanupConfirmed)
 		try #require(result.output.contains("Test agentScaffoldDevToolsScenario() started."))
 		try #require(result.status == 0, "Offline packaged scaffold integration failed")
 		completed = true
@@ -104,47 +108,95 @@ import Testing
 	for (path, bytes) in original where !editable.contains(path) {
 		try #require(modified[path] == bytes, "Protected/original source changed: \(path)")
 	}
+	let beforeNaming = try scaffoldNamingPlist(root, relative: "Info.plist")
 	let host = try scaffoldDevToolsHost(home: home)
-	defer {
-		do {
-			try stopScaffoldService(
-				host.app, relative: "DevToolsApplication.xpc/Contents/MacOS/DevToolsApplication")
-			try host.remove()
-		} catch {
-			Issue.record("Owned DevTools service cleanup failed: \(error)")
+	var requestsConfirmed = true
+	var childConfirmed = true
+	var service: OwnedProcessIdentity?
+	var cleanupAttempted = false
+	func captureService() throws -> OwnedProcessIdentity {
+		let binary = try #require(host.app).appendingPathComponent(
+			"Contents/XPCServices/DevToolsApplication.xpc/Contents/MacOS/DevToolsApplication")
+		let current = try OwnedExecutableProcess.capture(executable: binary)
+		if let service {
+			return try scaffoldReattributeService(service, capture: { current })
 		}
+		service = current
+		print("CORE_DATA_DEVTOOLS_SERVICE_IDENTITY: \(current.pid) \(current.start) \(current.path)")
+		return current
+	}
+	func finishHost() throws {
+		cleanupAttempted = true
+		try #require(requestsConfirmed && childConfirmed, "Uncertain request/child; retain fixtures")
+		if service != nil {
+			// A stale cached PID reaching ESRCH cannot exclude a live replacement in this host.
+			let attributed = try captureService()
+			try attributed.reap()
+			try attributed.requireReaped()
+			print(
+				"CORE_DATA_DEVTOOLS_SERVICE_REAPED: \(attributed.pid) \(attributed.start) \(attributed.path)"
+			)
+		}
+		try host.remove()
+		print("CORE_DATA_INNER_CLEANUP_CONFIRMED")
+	}
+	defer {
+		if !cleanupAttempted {
+			do { try finishHost() } catch {
+				Issue.record("Owned DevTools cleanup unconfirmed; retain host/home: \(error)")
+			}
+		}
+	}
+	let session = UUID()
+	func request(_ command: String, payload: [String: Any]) throws -> [String: Any] {
+		requestsConfirmed = false
+		if service != nil { _ = try captureService() }
+		let result = try host.request(command, payload: payload, projectID: id, sessionID: session)
+		// Confirm only a matched successful envelope from the same exact-host service generation.
+		_ = try captureService()
+		requestsConfirmed = true
+		return result
 	}
 	print(
 		"CORE_DATA_DEVTOOLS_SIGNED_HOST: \(try #require(host.app).path); production DevToolsTerminalClient/DevToolsApplication"
 	)
-	let session = UUID()
-	let tested = try host.request(
-		"test", payload: ["projectRoot": root.path], projectID: id, sessionID: session)
+	try scaffoldNamingHasNoBuildOutput(root: root, home: home)
+	let named = try request(
+		"set_app_name",
+		payload: ["projectRoot": root.path, "name": "  Pebble / Counter: .app.APP  "])
+	let canonical = try #require(named["name"] as? String)
+	try #require(canonical == "Pebble Counter")
+	try #require(named["summary"] as? String == "App name set to Pebble Counter.")
+	let afterNaming = try scaffoldNamingPlist(root, relative: "Info.plist")
+	var expected = beforeNaming
+	expected["CFBundleDisplayName"] = canonical
+	expected["CFBundleName"] = canonical
+	try #require(NSDictionary(dictionary: afterNaming).isEqual(to: expected))
+	try #require(try scaffoldSourceSnapshot(root) == modified)
+	try scaffoldNamingHasNoBuildOutput(root: root, home: home)
+	await model.refreshLibrary()
+	let groups = model.library.filter { $0.project == root && !$0.isChatOnly }
+	try #require(groups.count == 1 && groups.first?.title == canonical && groups.first?.app == nil)
+	print("CORE_DATA_NAMING: matched signed result/project/library = \(canonical); metadata only")
+	let tested = try request("test", payload: ["projectRoot": root.path])
 	print("CORE_DATA_TEST_RESULT: \(tested)")
 	try #require(tested["status"] as? String == "passed" && tested["exitCode"] as? Int == 0)
-	let serviceBinary = try #require(host.app).appendingPathComponent(
-		"Contents/XPCServices/DevToolsApplication.xpc/Contents/MacOS/DevToolsApplication")
-	let serviceProcess = try await ownedScaffoldProcess(serviceBinary)
-	print(
-		"CORE_DATA_DEVTOOLS_SERVICE_IDENTITY: \(serviceProcess.pid) \(serviceProcess.start) \(serviceBinary.path)"
-	)
 	let diagnostics = try #require(tested["diagnostics"] as? String)
 	try #require(diagnostics.utf8.count <= 4096)
 	try #require(diagnostics.contains("packagedTypedCoreDataSaveRollbackReopen() passed"))
-	let preview = try host.request(
+	let preview = try request(
 		"preview",
 		payload: [
 			"projectRoot": root.path, "viewPath": "Sources/AppViews/PersistencePreview.swift",
 			"screenSize": ["width": 320, "height": 240],
-		], projectID: id, sessionID: session)
+		])
 	try validateScaffoldPreview(preview, root: root, home: home, id: id, session: session)
-	let built = try host.request(
-		"build", payload: ["projectRoot": root.path], projectID: id, sessionID: session)
+	let built = try request("build", payload: ["projectRoot": root.path])
 	try #require(built["target"] as? String == "ProductionApp")
 	print("CORE_DATA_BUILD_RESULT: \(built)")
 	try scaffoldFreshProcesses(root: root, home: home)
-	let launched = try host.request(
-		"run", payload: ["projectRoot": root.path], projectID: id, sessionID: session)
+	childConfirmed = false
+	let launched = try request("run", payload: ["projectRoot": root.path])
 	try #require(launched["target"] as? String == "ProductionApp")
 	let relative = try #require(launched["relativePath"] as? String)
 	try #require(
@@ -154,7 +206,23 @@ import Testing
 	let binary = root.appendingPathComponent(relative + "/Contents/MacOS/ProductionApp")
 	let process = try await ownedScaffoldProcess(binary)
 	print("CORE_DATA_RUN_IDENTITY: \(process.pid) \(process.start) \(binary.path)")
+	_ = try captureService()
 	try await stopScaffoldProcess(process, binary: binary)
+	childConfirmed = true
+	let staged = try scaffoldNamingPlist(root, relative: relative + "/Contents/Info.plist")
+	try #require(staged["CFBundleDisplayName"] as? String == canonical)
+	try #require(staged["CFBundleName"] as? String == canonical)
+	try #require(staged["CFBundleExecutable"] as? String == "ProductionApp")
+	try #require(staged["CFBundleVersion"] as? String == String(relative.split(separator: "/")[2]))
+	try #require(staged["CFBundleShortVersionString"] as? String == "0")
+	try #require(
+		staged["CFBundleIdentifier"] as? String == "com.macapper.dev.\(root.lastPathComponent)")
+	try #require(
+		try scaffoldNamingPlist(root, relative: "Info.plist") as NSDictionary == afterNaming
+			as NSDictionary)
+	print(
+		"CORE_DATA_NAMING_STAGE: \(relative)/Contents/Info.plist = \(canonical); no rendered title/menu observation"
+	)
 	try #require(try scaffoldSourceSnapshot(root) == modified)
 	for path in [".mac-apper/TestBuild", ".mac-apper/PreviewBuild"] {
 		let url = root.appendingPathComponent(path)
@@ -163,6 +231,7 @@ import Testing
 		}
 	}
 	try #require(!FileManager.default.fileExists(atPath: root.appendingPathComponent(".build").path))
+	try finishHost()
 	try FileManager.default.removeItem(at: root)
 	print(
 		"CORE_DATA_CLEANUP: owned development PID exited; sources preserved, Test/Preview scratch empty, project removed"
@@ -200,11 +269,141 @@ import Testing
 					TestHostResource(
 						source: products.appendingPathComponent("DevTools_DevToolsApplication.bundle"),
 						relativePath: "DevTools_DevToolsApplication.bundle")
-				]))
+				], clientEnvironment: ["HOME": home.path, "CFFIXED_USER_HOME": home.path]))
 		// Input directory lifetime ends here; preparation consumes its scoped plist synchronously.
 		try host.prepare()
 		return host
 	}
+}
+
+// Discovery-free seam: production callers supply exact-host live service capture.
+private func scaffoldReattributeService(
+	_ cached: OwnedProcessIdentity, capture: () throws -> OwnedProcessIdentity
+) throws -> OwnedProcessIdentity {
+	let current = try capture()
+	guard
+		current.pid == cached.pid,
+		current.path == cached.path,
+		current.start == cached.start
+	else { throw ScenarioFailure.message("unexpected scaffold service generation; retain fixtures") }
+	return current
+}
+
+@Test func scaffoldServiceGenerationOffline() throws {
+	let cached = OwnedProcessIdentity(pid: 123, start: 456, path: "/owned/DevToolsApplication")
+	for replacement in [
+		OwnedProcessIdentity(pid: 124, start: cached.start, path: cached.path),
+		OwnedProcessIdentity(pid: cached.pid, start: 457, path: cached.path),
+		OwnedProcessIdentity(
+			pid: cached.pid, start: cached.start, path: "/foreign/DevToolsApplication"),
+	] {
+		var cleanupContinued = false
+		#expect(throws: ScenarioFailure.self) {
+			_ = try scaffoldReattributeService(cached, capture: { replacement })
+			cleanupContinued = true
+		}
+		#expect(!cleanupContinued, "Replacement cannot reach host removal or inner cleanup marker")
+	}
+	let unchanged = try scaffoldReattributeService(cached, capture: { cached })
+	#expect(
+		unchanged.pid == cached.pid && unchanged.path == cached.path && unchanged.start == cached.start)
+	#expect(throws: ScenarioFailure.self) {
+		try scaffoldReattributeService(
+			cached, capture: { throw ScenarioFailure.message("uncertain capture") })
+	}
+	// ESRCH for an obsolete PID is not proof that this host has no replacement generation.
+	let stale = OwnedProcessIdentity(pid: Int32.max, start: 1, path: cached.path)
+	try stale.requireReaped()
+	var staleCleanupContinued = false
+	#expect(throws: ScenarioFailure.self) {
+		_ = try scaffoldReattributeService(stale, capture: { cached })
+		staleCleanupContinued = true
+	}
+	#expect(!staleCleanupContinued, "Cached ESRCH cannot authorize fixture removal")
+}
+
+private let scaffoldNamingLeafFlags = O_RDONLY | O_NOFOLLOW | O_CLOEXEC | O_NONBLOCK
+
+@Test func scaffoldNamingFIFOOffline() throws {
+	// Guard before touching the FIFO so the red regression cannot itself block indefinitely.
+	try #require(scaffoldNamingLeafFlags & O_NONBLOCK != 0)
+	let root = try ProjectTemporaryDirectory.appending("scaffold-naming-fifo-\(UUID().uuidString)")
+	try FileManager.default.createDirectory(at: root, withIntermediateDirectories: false)
+	defer { try? FileManager.default.removeItem(at: root) }
+	try #require(mkfifo(root.appendingPathComponent("Info.plist").path, 0o600) == 0)
+	let start = ContinuousClock.now
+	withKnownIssue { _ = try? scaffoldNamingPlist(root, relative: "Info.plist") }
+	#expect(start.duration(to: .now) < .seconds(2))
+}
+
+// Local deterministic reads deliberately do not depend on the shared Create naming-evidence API.
+private func scaffoldNamingPlist(_ root: URL, relative: String) throws -> [String: Any] {
+	let components = relative.split(separator: "/", omittingEmptySubsequences: false)
+	try #require(components.allSatisfy { !$0.isEmpty && $0 != "." && $0 != ".." })
+	try #require(!relative.contains("\\") && relative.utf8.count <= 1024)
+	var descriptor = open(root.path, O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC)
+	try #require(descriptor >= 0)
+	defer { close(descriptor) }
+	for (index, component) in components.enumerated() {
+		let flags =
+			index == components.count - 1
+			? scaffoldNamingLeafFlags : O_RDONLY | O_NOFOLLOW | O_CLOEXEC | O_DIRECTORY
+		let next = openat(descriptor, String(component), flags)
+		try #require(next >= 0, "Missing/linked naming metadata: \(relative)")
+		close(descriptor)
+		descriptor = next
+	}
+	var info = stat()
+	try #require(fstat(descriptor, &info) == 0 && info.st_mode & S_IFMT == S_IFREG)
+	try #require(info.st_size > 0 && info.st_size <= 16384)
+	let handle = FileHandle(fileDescriptor: descriptor, closeOnDealloc: false)
+	var bytes = Data()
+	while let chunk = try handle.read(upToCount: 16385 - bytes.count), !chunk.isEmpty {
+		bytes.append(chunk)
+		try #require(bytes.count <= 16384)
+	}
+	return try #require(
+		PropertyListSerialization.propertyList(from: bytes, format: nil) as? [String: Any])
+}
+
+private func scaffoldNamingHasNoBuildOutput(root: URL, home: URL) throws {
+	for path in [
+		".build", ".mac-apper/Build", ".mac-apper/DevBuild", ".mac-apper/TestBuild",
+		".mac-apper/PreviewBuild",
+	] {
+		try #require(!FileManager.default.fileExists(atPath: root.appendingPathComponent(path).path))
+	}
+	try #require(
+		FileManager.default.contentsOfDirectory(atPath: root.appendingPathComponent("dist").path)
+			.isEmpty)
+	try #require(
+		!FileManager.default.fileExists(atPath: home.appendingPathComponent(".mac-apper/output").path))
+}
+
+@Test func scaffoldNamingLocalReadsOffline() throws {
+	let root = try ProjectTemporaryDirectory.appending("scaffold-naming-reads-\(UUID().uuidString)")
+	try FileManager.default.createDirectory(at: root, withIntermediateDirectories: false)
+	defer { try? FileManager.default.removeItem(at: root) }
+	let contents = root.appendingPathComponent("Stage.app/Contents")
+	try FileManager.default.createDirectory(at: contents, withIntermediateDirectories: true)
+	let plist = contents.appendingPathComponent("Info.plist")
+	try PropertyListSerialization.data(
+		fromPropertyList: ["CFBundleName": "Pebble Counter", "Unrelated": ["keep": 7]],
+		format: .binary, options: 0
+	).write(to: plist)
+	let read = try scaffoldNamingPlist(root, relative: "Stage.app/Contents/Info.plist")
+	#expect(read["CFBundleName"] as? String == "Pebble Counter")
+	#expect((read["Unrelated"] as? [String: Int])?["keep"] == 7)
+	try FileManager.default.createSymbolicLink(
+		at: root.appendingPathComponent("Linked.app"),
+		withDestinationURL: root.appendingPathComponent("Stage.app"))
+	// Validation failures are expected issues from #require, not successful metadata reads.
+	withKnownIssue { _ = try? scaffoldNamingPlist(root, relative: "Linked.app/Contents/Info.plist") }
+	withKnownIssue {
+		_ = try? scaffoldNamingPlist(root, relative: "../Stage.app/Contents/Info.plist")
+	}
+	try Data(repeating: 32, count: 16385).write(to: plist)
+	withKnownIssue { _ = try? scaffoldNamingPlist(root, relative: "Stage.app/Contents/Info.plist") }
 }
 
 private func scaffoldSourceSnapshot(_ root: URL) throws -> [String: Data] {

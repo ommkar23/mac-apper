@@ -44,7 +44,17 @@ private let root = URL(fileURLWithPath: #filePath)
 	#expect(application["executableProduct"] as? String == "DevToolsTerminalClient")
 	#expect(application["serviceProduct"] as? String == "DevToolsApplication")
 	let entries = try #require(devTools["piExtensions"] as? [[String: Any]])
-	#expect(entries.first?["tools"] as? [String] == ["build", "test", "run", "preview", "plan"])
+	#expect(
+		entries.first?["tools"] as? [String]
+			== ["build", "test", "run", "preview", "plan", "set_app_name"])
+	#expect(entries.first?["agents"] as? [String] == ["create"])
+	#expect(entries.first?["firstRequestOnly"] as? Bool == false)
+	let namingOwners = apps.flatMap { app in
+		(app["piExtensions"] as? [[String: Any]] ?? []).filter {
+			($0["tools"] as? [String] ?? []).contains("set_app_name")
+		}.map { _ in app["id"] as? String }
+	}
+	#expect(namingOwners == ["dev-tools"])
 	#expect(Set(entries.compactMap { $0["path"] as? String }) == ["PiExtension/Extension.ts"])
 	#expect(
 		!FileManager.default.fileExists(
@@ -79,6 +89,12 @@ private let root = URL(fileURLWithPath: #filePath)
 			"Plugins/BundlePlugin/plugin.swift"), encoding: .utf8)
 	#expect(plugin.contains("root.appendingPathComponent(\"Agent/Extensions\")"))
 	#expect(plugin.contains("resources.appendingPathComponent(\"AgentExtensions\")"))
+	let rename = try String(
+		contentsOf: root.appendingPathComponent("Agent/Extensions/name-and-rename.ts"), encoding: .utf8)
+	#expect(!rename.contains("registerTool"))
+	#expect(rename.contains("registerCommand(\"mac-apper-tools\""))
+	#expect(rename.contains("registerCommand(\"mac-apper-rename\""))
+	#expect(rename.contains("MAC_APPER_RENAMED:"))
 	#expect(
 		!FileManager.default.fileExists(
 			atPath: root.appendingPathComponent(

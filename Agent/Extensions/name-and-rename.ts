@@ -1,5 +1,4 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import { Type } from "typebox";
 import { execFile as execFileCallback } from "node:child_process";
 import { promisify } from "node:util";
 import { mkdir, rm, writeFile, chmod, copyFile } from "node:fs/promises";
@@ -9,10 +8,6 @@ import { randomUUID } from "node:crypto";
 const execFile = promisify(execFileCallback);
 const maxOutput = 8000;
 const launchServices = "/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister";
-
-function result(text: string, details: Record<string, unknown> = {}) {
-  return { content: [{ type: "text" as const, text }], details };
-}
 
 function bounded(value: string): string {
   return value.length <= maxOutput ? value : value.slice(value.length - maxOutput);
@@ -113,19 +108,4 @@ export default function macApper(pi: ExtensionAPI) {
       ctx.ui.notify(`MAC_APPER_RENAMED:${Buffer.from(appName, "utf8").toString("base64")}`, "info");
     },
   });
-
-  pi.registerTool({
-    name: "set_app_name",
-    label: "Set App Name",
-    description: "Set the concise user-facing app name inferred from the user's request. Call once before implementation for a new app.",
-    parameters: Type.Object({ name: Type.String({ minLength: 1, maxLength: 64 }) }),
-    async execute(_id, params) {
-      try {
-        const appName = await updateAppName(process.cwd(), params.name);
-        return result(`App name set to ${appName}.`);
-      } catch (error) { return { ...result(`Could not set app name: ${String(error)}`), isError: true }; }
-    },
-  });
-
-
 }

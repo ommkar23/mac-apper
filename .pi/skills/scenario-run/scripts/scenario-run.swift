@@ -51,7 +51,7 @@ let agentFilters = [
 ]
 let providerFilters = [
 	"devToolsPlanScenarios", "devToolsPreviewScenarios", "devToolsTestScenarios",
-	"devToolsToolchainBuildRunScenario",
+	"devToolsToolchainBuildRunScenario", "devToolsSetAppNameScenarios",
 ]
 let selectors: [String: Set<String>] = [
 	"agentChatScenarios": [
@@ -66,6 +66,7 @@ let selectors: [String: Set<String>] = [
 		"preview-scope", "preview-path-content",
 	],
 	"devToolsTestScenarios": ["test-package"],
+	"devToolsSetAppNameScenarios": ["set-app-name-canonical", "set-app-name-rejections"],
 ]
 func read<T: Decodable>(_ type: T.Type, _ url: URL) throws -> T {
 	let values = try url.resourceValues(forKeys: [

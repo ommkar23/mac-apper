@@ -27,7 +27,8 @@ description: Run and monitor Mac Apper package-local Swift XPC scenario cases, c
   - The launch helper clears that retention override.
 - Agent no-model resource: `Agent`, filter `agentBundledResourceScenario`, gate `AGENT_RESOURCE_SCENARIO=1`.
 - Agent no-model scaffold/DevTools: `Agent`, filter `agentScaffoldDevToolsScenario`, gate `AGENT_SCAFFOLD_DEVTOOLS_SCENARIO=1`; build DevTools products first as documented in Agent/README.md.
-- DevTools: `apps/built-in/dev-tools`, filters `devToolsPlanScenarios`, `devToolsTestScenarios`, `devToolsPreviewScenarios`; optional `DEV_TOOLS_SCENARIO_CASE` selects one case, omission runs that collection.
+- DevTools: `apps/built-in/dev-tools`, filters `devToolsPlanScenarios`, `devToolsTestScenarios`, `devToolsPreviewScenarios`, `devToolsSetAppNameScenarios`; optional `DEV_TOOLS_SCENARIO_CASE` selects one case, omission runs that collection.
+  - Naming cases are `set-app-name-canonical` and `set-app-name-rejections`; they verify scoped metadata through signed generated-client XPC without Pi, build, packaging or app launch.
 - DevTools standalone Build/Run: filter `devToolsToolchainBuildRunScenario`, no case selector.
 - Arbitrary supported combinations use separate sequential selections in a plan, not a broad Swift test regex that may run cases concurrently.
 - Current names, prerequisites and environment overrides belong to Agent/README.md, apps/built-in/dev-tools/README.md and the owning Swift test sources; recorded historical evidence is indexed in docs/verification-archive.md. Update the helper allowlist when entry points change.

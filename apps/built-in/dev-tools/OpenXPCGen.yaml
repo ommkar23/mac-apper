@@ -5,4 +5,4 @@ service:
 clients:
   - target: DevToolsTerminalClient
     generate: agentClient
-    operations: [build, test, run, preview, plan]
+    operations: [build, test, run, preview, plan, set_app_name]
