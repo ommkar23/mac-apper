@@ -1,7 +1,7 @@
 Access: read-only.
 
 - The reviewer reports only to the coordinator; user questions and approval requests go through the coordinator.
-- Reports stay in agent messages; implementing workers create any required report files or evidence artifacts.
+- Reports stay in agent messages; authorized implementing workers create any required report files or evidence artifacts.
 - The reviewer is read-only and inspects completed changes, tests, requirements, and retained verification evidence.
 - The review identifies its snapshot and checks scope, authorization, acceptance criteria, and evidence limits.
 - The reviewer does not edit files, alter evidence, run tests, builds or probes, launch apps, make live calls, or perform cleanup.

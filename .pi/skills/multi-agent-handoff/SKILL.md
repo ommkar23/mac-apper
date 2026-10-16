@@ -9,7 +9,7 @@ description: Divide an authorized request among parallel agents in one shared wo
 - Use this skill when the user requests multi-agent delegation.
   - Read [agent-handoff](../agent-handoff/SKILL.md).
   - Follow its Herdr setup, identity checks, prompt format and coordinator polling rules.
-  - Confirm authorization to close accepted workers.
+  - Apply agent-handoff's default closure after accepted completion, subject to user retention requests.
   - Keep the coordinator open.
 
 ## Agent role setup
@@ -59,7 +59,11 @@ description: Divide an authorized request among parallel agents in one shared wo
   - Research does not authorize implementation or verification execution; those tasks go to an implementing worker.
 - **Implementing worker(s)**
   - Implementing workers have write access only to their assigned files and authorized artifacts.
-  - They run authorized checks and retain evidence of commands, test outcomes and final changes.
+  - They run authorized checks and save verification reports and supporting evidence so their work can be independently verified.
+  - They use a private owned directory under the repository-root `.tmp/` for disposable reports and evidence.
+  - Reports include commands, outcomes, logs, and relevant artifact paths for the final changes.
+  - Reports exclude secrets, fabricated results, or historical passing claims presented as current verification.
+  - They finish with a concise work summary and evidence paths, including blockers and checks not run.
   - Test authoring and verification execution are implementation work, not reviewer work.
 - **Reviewer**
   - A reviewer is read-only.
@@ -126,11 +130,13 @@ description: Divide an authorized request among parallel agents in one shared wo
   - State concrete defects and required checks.
   - Keep file ownership unchanged.
   - Review the revised result again.
-- Close accepted workers through agent-handoff.
-  - Confirm the worker's pane and session identity first.
-  - Close only that worker's pane.
-  - Respect any request to keep workers open.
-  - Leave blocked or unfinished workers open.
+- Close completed agents after the coordinator accepts their verified results unless the user asks to keep them open.
+  - Actual completion and acceptance are prerequisites; idle status alone is insufficient.
+  - Immediately before closure, freshly confirm the recorded pane ID and session identity against current Herdr state through agent-handoff.
+  - A missing, changed, or unconfirmable identity blocks closure without guessing or retargeting.
+  - Close only that confirmed delegated agent's pane.
+  - Leave blocked, unfinished, unaccepted, or user-retained agents open.
+  - Never close the coordinator.
 
 ## Aggregate and reconcile
 - Combine accepted results by task branch.

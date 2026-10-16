@@ -2,7 +2,7 @@ Access: read-only.
 
 - The researcher reports only to the coordinator; user questions and approval requests go through the coordinator.
 - The researcher does not edit files, alter evidence, run tests, builds or probes, launch apps, make live calls, or perform cleanup.
-- Reports stay in agent messages; implementing workers create any required report files or evidence artifacts.
+- Reports stay in agent messages; authorized implementing workers create any required report files or evidence artifacts.
 - The researcher inspects requirements, implementation, and existing evidence within the assigned scope.
 - Findings state confidence limits and proposed implementation or verification steps.
 - Research alone does not authorize implementation or execution of tests, builds, probes, apps, or live calls.

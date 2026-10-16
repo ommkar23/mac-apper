@@ -79,11 +79,25 @@ description: Delegate scoped work to a coding agent through Herdr and poll its p
   - They do not send reports to the coordinator through Herdr or prompt the coordinator's pane.
   - Completion ends with the final response and excludes starting other agents or advancing to another task.
 
+## Verification evidence
+- Implementing agents save verification reports and supporting evidence so their work can be independently verified.
+  - Use a private owned directory under the repository-root `.tmp/` for disposable reports and evidence.
+  - Include commands, outcomes, logs, and relevant artifact paths for the final changes.
+  - Exclude secrets, fabricated results, or historical passing claims presented as current verification.
+  - Finish with a concise work summary and evidence paths, including blockers and checks not run.
+- Read-only agents keep reports in their own responses; an authorized worker creates any saved report artifacts.
+
 ## Check and close
 - Check with `herdr agent get <name>` and `herdr agent read <name> --source recent-unwrapped --lines 120`.
   - Idle status or successful prompt submission alone does not prove completion.
   - Verify the report against relevant files/logs before accepting it.
-  - If output is unavailable, ask for a temporary Markdown report and read it.
+  - If output is unavailable, report the blocker; any saved report artifact requires an authorized worker rather than a read-only agent write.
   - Inspect blocked prompts; do not grant approvals on the user's behalf.
-- Close only when requested, using the confirmed pane ID: `herdr pane close <id>`.
+- Close completed agents after the coordinator accepts their verified results unless the user asks to keep them open.
+  - Actual completion and acceptance are prerequisites; idle status alone is insufficient.
+  - Immediately before closure, freshly confirm the recorded pane ID and session identity against current Herdr state.
+  - A missing, changed, or unconfirmable identity blocks closure without guessing or retargeting.
+  - Use only the confirmed delegated pane ID: `herdr pane close <id>`.
+  - Leave blocked, unfinished, unaccepted, or user-retained agents open.
+  - Never close the coordinator.
   - Preserve unrelated panes, processes, and user focus.

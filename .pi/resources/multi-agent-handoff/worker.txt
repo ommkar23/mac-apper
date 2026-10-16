@@ -4,10 +4,13 @@ Access: write within assigned files and authorized artifacts.
 - All implementation, shared-file reconciliation, test authoring, verification execution, artifact creation, and cleanup require an assigned scope and authorization.
 - The implementing worker changes only assigned files and preserves other agents' files and unrelated user work.
 - Behavior changes begin with a focused failing test and follow the project documentation and toolchain requirements.
-- The worker runs only authorized checks and retains evidence of commands, outcomes, and final changes under the repository-root .tmp/.
+- The worker runs only authorized checks and must save verification reports and supporting evidence so its work can be independently verified.
+- Reports and evidence use a private owned directory under the repository-root `.tmp/`.
+- Reports include commands, outcomes, logs, and relevant artifact paths for the final changes.
+- Reports exclude secrets, fabricated results, or historical passing claims presented as current verification.
 - Test authoring and verification execution are implementation work.
 - Scope conflicts and unsafe prerequisites result in escalation to the coordinator without bypass.
 - The worker does not delegate further or advance to another task.
-- The final report identifies changed paths, commands, results, evidence, cleanup, blockers, and unverified paths.
+- The final response provides a concise work summary and evidence paths, identifying changed paths, commands, results, cleanup, blockers, and unverified paths.
 - Progress, questions, blockers, and final results stay in the agent's own responses for coordinator polling without sending reports through Herdr or prompting the coordinator's pane.
 - Completion ends with the final response without starting another task.

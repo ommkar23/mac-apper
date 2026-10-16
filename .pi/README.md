@@ -12,8 +12,18 @@ These resources customize developer Pi sessions. They are not packaged app resou
   - `reviewer` is read-only and inspects completed changes and retained evidence.
 - All changes decided by the coordinator go through workers.
 - Workers also own verification execution, reconciliation edits, report files, evidence artifacts, and cleanup.
-- Read-only agents report through messages without writing files or executing verification.
+- Implementing agents save verification reports and supporting evidence so their work can be independently verified.
+- Disposable evidence uses a private owned repository-root `.tmp/` directory and includes commands, outcomes, logs, and relevant artifact paths.
+- Evidence excludes secrets, fabricated results, and historical passing claims presented as current verification.
+- Implementing agents finish with a concise work summary and evidence paths, including blockers and checks not run.
+- Read-only agents keep reports in their own responses without writing files or executing verification.
+- An authorized worker creates any saved report artifacts for read-only agents.
 - Coordinator Herdr orchestration and authorized pane closure remain permitted.
+- The coordinator closes completed agents after accepting their verified results unless the user asks to keep them open.
+- Closure requires actual completion and a freshly confirmed recorded pane ID and session identity immediately before closing only that delegated pane.
+- Missing, changed, or unconfirmable identities block closure.
+- Blocked, unfinished, unaccepted, and user-retained agents stay open.
+- The coordinator is never closed.
 - After handoff, the coordinator polls researchers every 3 minutes, workers every 5 minutes, and reviewers every 2 minutes by default.
 - A user-specified polling duration overrides the default for its stated scope.
 - Agents leave results in their own responses. The coordinator reads them through Herdr; agents do not send reports through Herdr.
@@ -44,4 +54,4 @@ TMPDIR="$PWD/.tmp/" node --experimental-strip-types --test \
   .pi/tests/multi-agent-handoff.test.mjs .pi/tests/user-instructions.test.mjs
 ```
 
-The tests exercise role selection, skill registration, lifecycle hooks, root scoping, and coexistence with shared user instructions. They do not launch Herdr agents or make model calls.
+The tests exercise role selection, skill registration, lifecycle hooks, root scoping, and coexistence with shared user instructions. They also check closure prerequisites and verification-evidence guidance. They do not launch Herdr agents or make model calls.

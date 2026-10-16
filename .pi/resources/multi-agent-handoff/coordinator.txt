@@ -3,7 +3,8 @@ Access: read-only.
 - The user interacts only with the coordinator; other agents report questions, blockers, and results through it.
 - All file changes and authorized verification execution go through implementing workers, including shared-file reconciliation, reports, evidence artifacts, and cleanup.
 - The coordinator does not edit files, alter evidence, run tests, builds or probes, launch apps, make live calls, or perform filesystem/process cleanup.
-- Reports stay in agent messages; workers create any required report files or evidence artifacts.
+- Reports stay in agent messages; authorized implementing workers create any required report files or evidence artifacts.
+- Implementing workers save verification reports and supporting evidence for independent review and finish with a concise work summary and evidence paths.
 - Herdr orchestration, target-shell role setup, handoff messages, and authorized pane closure remain permitted.
 - An unavailable worker results in a reported blocker rather than direct edits or a role change to bypass the boundary.
 - The coordinator owns scope, authorization, delegation, sequencing, reconciliation, and the final report.
@@ -18,5 +19,10 @@ Access: read-only.
 - Polling stops after established completion or a surfaced blocker and does not impose a task timeout.
 - Review findings return to implementation owners for corrections and authorized verification.
 - Worker acceptance and integrated verification are reported separately with blockers and unverified paths.
-- Worker closure requires user authorization and confirmed pane and session identities.
+- The coordinator closes completed agents after it accepts their verified results unless the user asks to keep them open.
+- Actual completion and acceptance are prerequisites; idle status or successful prompt submission alone is insufficient.
+- Immediately before closure, freshly confirm the recorded pane ID and session identity against current Herdr state.
+- A missing, changed, or unconfirmable identity blocks closure without guessing or retargeting.
+- Leave blocked, unfinished, unaccepted, or user-retained agents open.
+- Never close the coordinator.
 - The coordinator remains open and preserves unrelated work and user focus.

@@ -104,6 +104,48 @@ test("handoff skills use coordinator polling rather than agent callbacks", async
     assert.match(source, /reviewer.*2 minutes/);
     assert.match(source, /user.*explicit.*duration/i);
     assert.match(source, /own.*response/);
+    assert.match(source, /do not send reports.*through Herdr/);
+    assert.doesNotMatch(source, /herdr agent prompt.*(?:report|results).*coordinator/i);
+  }
+});
+
+test("handoff closure requires accepted completion and fresh recorded identities", async () => {
+  for (const skill of ["agent-handoff", "multi-agent-handoff"]) {
+    const source = await readFile(new URL(`../skills/${skill}/SKILL.md`, import.meta.url), "utf8");
+    assert.match(source, /Close completed agents after the coordinator accepts their verified results unless the user asks to keep them open/);
+    assert.match(source, /Immediately before closure, freshly confirm the recorded pane ID and session identity/);
+    assert.match(source, /Leave blocked, unfinished, unaccepted, or user-retained agents open/);
+    assert.match(source, /Never close the coordinator/);
+    assert.match(source, /Actual completion and acceptance are prerequisites; idle status alone is insufficient/);
+    assert.match(source, /missing, changed, or unconfirmable identity blocks closure without guessing or retargeting/);
+    assert.doesNotMatch(source, /Close only when requested|Confirm authorization to close accepted workers/);
+  }
+  const coordinator = await readFile(new URL("../resources/multi-agent-handoff/coordinator.txt", import.meta.url), "utf8");
+  assert.match(coordinator, /completed agents.*accepts their verified results.*unless the user asks to keep them open/);
+  assert.match(coordinator, /freshly confirm the recorded pane ID and session identity/);
+  assert.match(coordinator, /blocked, unfinished, unaccepted, or user-retained agents open/);
+  assert.match(coordinator, /Never close the coordinator/);
+});
+
+test("implementing workers save independently reviewable evidence without read-only report writes", async () => {
+  for (const path of ["skills/agent-handoff/SKILL.md", "skills/multi-agent-handoff/SKILL.md", "resources/multi-agent-handoff/worker.txt"]) {
+    const source = await readFile(new URL(`../${path}`, import.meta.url), "utf8");
+    assert.match(source, /save verification reports and supporting evidence.*independently verified/);
+    assert.match(source, /private owned directory under the repository-root `.tmp\/`/);
+    assert.match(source, /commands, outcomes, logs, and relevant artifact paths/);
+    assert.match(source, /secrets, fabricated results, or historical passing claims/);
+    assert.match(source, /concise work summary and evidence paths/);
+  }
+  const single = await readFile(new URL("../skills/agent-handoff/SKILL.md", import.meta.url), "utf8");
+  assert.match(single, /Read-only agents keep reports in their own responses/);
+  assert.match(single, /authorized worker creates any saved report artifacts/);
+  assert.doesNotMatch(single, /ask for a temporary Markdown report/);
+  assert.match(single, /A \*\*task message\*\*/);
+  assert.match(single, /A \*\*follow-up message\*\*/);
+  for (const role of ["researcher", "reviewer", "coordinator"]) {
+    const source = await readFile(new URL(`../resources/multi-agent-handoff/${role}.txt`, import.meta.url), "utf8");
+    assert.match(source, /Reports stay in agent messages/);
+    assert.match(source, /authorized.*workers create any required report files/);
   }
 });
 
