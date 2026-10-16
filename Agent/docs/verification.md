@@ -47,6 +47,23 @@ test -n "$scratch" && test -d "$scratch" || exit 1
 # Remove only this exact validated owned scratch after its work exits.
 ```
 
+### Chat declaration and lifecycle regressions
+
+Keep live/resource/scaffold gates unset. Use exact owning-package filters rather than a broad scenario-target sweep:
+
+```sh
+"$swift64" test --package-path Agent --scratch-path "$scratch" \
+  --filter 'AgentScenarioTests[./](ChatContractTests|ChatLifecycleTests|ChatCaseContractTests)'
+"$swift64" test --package-path Agent --scratch-path "$scratch" \
+  --filter 'AgentScenarioTests[./](chatCapabilitiesPromptRequiresFetchedContentOffline|chatCleanup|countryNews|piProcessSnapshot|sessionAudit|toolEvidence)'
+```
+
+- The second selection includes the exact-owned local child cleanup test. It launches owned offline child processes, not Pi or a signed host.
+- Require positive selected-test counts and passed markers. Skipped live cases and zero-test results are not passes.
+- Chat contract checks inspect the actual eight-case collection, lightweight discovery and selector rejection.
+- Lifecycle fixtures exercise observed assertion gating, one shared deadline, timeout/cancellation, awaited uncancelled cleanup, partial acquisition, reverse-order aggregate release and collection confirmation suppression.
+- These checks do not authorize or establish signed hosting, Pi/MCP calls, real session lifecycle behaviour or live cleanup after the declaration change. See [Chat limits](scenarios.md#production-path-and-chat-collection).
+
 ### Counter offline checkout override
 
 - `counterBehaviorOfflineRegression` defaults to `Agent/.build/checkouts/swift-testing`.

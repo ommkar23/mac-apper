@@ -51,6 +51,7 @@ let package = Package(
 			dependencies: [
 				"AgentScenarioSupport", "AgentMacosClient", "AgentMacosClientModel",
 				.product(name: "Scenario", package: "Scenario"),
+				.product(name: "ScenarioTesting", package: "Scenario"),
 				.product(name: "Testing", package: "swift-testing"),
 			],
 			exclude: ["HTView/README.md"]

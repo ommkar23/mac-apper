@@ -37,6 +37,10 @@ AGENT_SCENARIO_LIVE=1 "$swift64" test --package-path Agent --filter agentCreateH
   - PackagedTestHost stages the existing test Mach-O bundle with the matching SwiftPM loader, real Agent service/catalog/extensions/resources and isolated signed identities, then runs only the filtered test and removes owned packaging after confirmed cleanup.
   - AGENT_SCENARIO_PRODUCTS overrides Agent debug products for custom scratch builds.
 - **Chat collection**
+  - [ChatTests.swift](../Tests/AgentScenarioTests/ChatTests.swift) owns `agentChatScenarios` and the `agent-chat` collection.
+  - Conversation, session, capabilities and replay test files declare named setup and behaviour phases.
+  - Lightweight discovery does not acquire sessions. Unknown selectors fail before host preparation.
+  - Hosted and outer host phases use `ScenarioTestingObserver` and require successful reports. Observed nonthrowing assertions block later behaviour.
   - `AGENT_SCENARIO_CASE` selects one of the following eight cases, otherwise all run sequentially in one host with prompts/assertions/deadlines/fixtures owned by tests.
   - Every case audits Pi and assistant metadata for `openai-codex/gpt-6.1-sol/medium` and completed Chat model presentation.
   - `chat-model-greeting` verifies greeting through the production model.
@@ -49,10 +53,15 @@ AGENT_SCENARIO_LIVE=1 "$swift64" test --package-path Agent --filter agentCreateH
   - `chat-capabilities` checks actual codemode-only launch argv, successful nested tools and no scaffold/UUID project creation, with the clarified prompt requiring search followed by fetch and a fetched-page-derived summary rather than snippets/memory.
   - Startup captures argv before Pi can rewrite it, while later process checks use captured PID/start identity.
 - **Chat bounds and teardown**
-  - Each case has a 220-second deadline with cleanup outside the canceled body, and the hosted collection has a 2100-second bound.
+  - Each case starts one absolute 220-second deadline before acquisition. Every awaited setup/behaviour phase uses only the remaining budget and awaits cancellation of losing work.
+  - Cleanup runs uncancelled outside that budget. The hosted collection retains its 2100-second bound.
+  - Case ownership is registered before acquisition. Auxiliary replay releases run in reverse order before owned-session cleanup. All applicable attempts run and errors aggregate.
   - Teardown stops owned Pi, closes subscriptions, confirms exact kernel-path/PID/start reaping and archives only owned histories before fixture session/journal deletion.
+  - Individual cases do not emit the cleanup marker. Collection cleanup emits it only after every constructed context confirms release and no cleanup issue was observed. Earlier case success cannot authorize removal after a later failure.
   - Outer service/host cleanup requires inner confirmation, failed hosts retain evidence and unrelated conversations/dist artifacts are preserved, while abrupt external termination can prevent cleanup.
-  - Live coverage includes current-session subscription/disconnect/replay and persisted resume rather than service-restart journal replay or retroactive histories.
+  - Historical live coverage includes current-session subscription/disconnect/replay and persisted resume rather than service-restart journal replay or retroactive histories. This declaration-only migration has no new live verification.
+  - Chat still does not pass a private service home to `prepareHost()`. Unique signed identities do not establish service-home isolation. This limit is not repaired here.
+  - The historical capabilities missing-fetch failure remains unresolved live. Offline prompt/declaration checks do not prove model compliance.
 
 ## Create counter and plan contracts
 

@@ -292,7 +292,7 @@ private enum ChatModelFailure: Error {
 		try await session.submit(prompt)
 		return session
 	}
-	func cleanup() async throws {
+	func cleanup(emitConfirmation: Bool = true) async throws {
 		var failures: [String] = []
 		for session in owned.reversed() {
 			do {
@@ -305,6 +305,6 @@ private enum ChatModelFailure: Error {
 		guard
 			failures.isEmpty
 		else { throw ScenarioFailure.message("Chat cleanup failed; retain host/evidence: \(failures)") }
-		print(ChatScenarioCleanup.confirmation)
+		if emitConfirmation { print(ChatScenarioCleanup.confirmation) }
 	}
 }
