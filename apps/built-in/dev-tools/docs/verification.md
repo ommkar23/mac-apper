@@ -77,6 +77,25 @@ Commands below run from the repository root and require authorization for their 
   "$swift64" test --package-path apps/built-in/dev-tools --filter devToolsToolchainBuildRunScenario
   ```
 
+### Declarative Plan rejection pilot
+
+- `plan-rejections` declares named `setup: [Step]`, `behaviour: [Step]` and `cleanup: [CleanupChain]` sections. Declaration and name inspection allocate no home, host or project.
+- Setup prepares the private home, signed host and primary project. Behaviour preserves missing-plan, duplicate-plan and duplicate/absent-task rejection checks through the production generated client.
+- The final success marker is its own behaviour step. `devToolsPlanScenarios` imports `ScenarioTesting` and executes through `ScenarioTestingObserver()` with `executeCase(_:observer:)` or `executeCollection(_:observer:)`. It calls the returned report's `requireSuccess()`.
+- An observed nonthrowing assertion failure must skip that marker. Cleanup still calls the existing lifecycle helper. Request quiescence, exact service identity/reaping and fixture retention remain downstream responsibilities. A cleanup chain is ordering, not permission to delete fixtures or proof that a request drained.
+- Other Plan cases keep their legacy closure setup, `steps:` and teardown declarations. The report-based entry point supports this mixed collection without changing names or `DEV_TOOLS_SCENARIO_CASE` selectors.
+- The observer covers unexpected issues recorded within the awaited step scope. It uses pinned Testing 6.2.3 Experimental `Issue.isFailure` SPI, not public-only Testing APIs. Known issues do not fail the step. Testing system issues bypass issue handlers. Swift Testing remains authoritative for overall test success.
+- Observation cannot prove detached work finished, infer transport success, or replace explicit typed assertions and cleanup gates.
+- `DevToolsPlanIsolationTests` exercises declaration allocation and observed-failure retention without preparing a signed host. Offline tests do not establish a packaged `plan-rejections` pass. Signed-XPC execution requires separate authorization.
+
+```sh
+# Offline Plan regressions only. This does not execute devToolsPlanScenarios.
+"$swift64" test --package-path apps/built-in/dev-tools --filter DevToolsPlanIsolationTests
+# Only after separate signed-XPC authorization:
+DEV_TOOLS_SCENARIO_CASE=plan-rejections "$swift64" test \
+  --package-path apps/built-in/dev-tools --filter devToolsPlanScenarios
+```
+
 ### Metadata-only naming scenarios
 
 - `devToolsSetAppNameScenarios` owns two cases. Each uses `DevToolsScenarioLifecycle`, generic Scenario hosting and the actual signed generated `DevToolsTerminalClient`.

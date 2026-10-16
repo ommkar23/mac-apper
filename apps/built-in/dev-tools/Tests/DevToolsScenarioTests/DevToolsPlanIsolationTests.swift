@@ -3,7 +3,12 @@
 // @frontmatter:end
 import Foundation
 import Scenario
-import Testing
+import ScenarioTesting
+@_spi(Experimental) import Testing
+
+@MainActor private final class PlanObservationReport {
+	var report: ScenarioReport?
+}
 
 @Suite @MainActor struct DevToolsPlanIsolationTests {
 	@Test func configurationAndContextsAllocateNoFixtures() throws {
@@ -18,6 +23,76 @@ import Testing
 		#expect(first.lifecycle.home == nil && second.lifecycle.home == nil)
 		#expect(first.lifecycle.host == nil && second.lifecycle.host == nil)
 		#expect(first.lifecycle.projects == nil && second.lifecycle.projects == nil)
+	}
+
+	@Test func observedFailureSkipsSuccessMarkerAndRetainsStoppedFixtures() async throws {
+		let context = DevToolsPlanCase(DevToolsPlanCollection())
+		var cleanupRan = false
+		let collection = ScenarioCollection(
+			"offline-plan-observation", context: DevToolsPlanCollection.init,
+			cases: [
+				ScenarioCase(
+					"offline-plan-failure", context: { _ in context },
+					setup: [
+						Step("prepare private fixtures without starting a host") { context in
+							// Stop before host preparation; only private test-owned fixtures exist.
+							#expect(throws: (any Error).self) {
+								try context.lifecycle.setup(beforeHost: { throw ScenarioFailure.message("offline") }
+								)
+							}
+							context.primary = try context.projects.create()
+						}
+					],
+					behaviour: [
+						Step("observe a nonthrowing assertion failure") { _ in
+							let actual = "rejected"
+							#expect(actual == "accepted", "intentional Plan observation fixture")
+						},
+						Step("confirm all assertions passed") { $0.lifecycle.passed = true },
+					],
+					cleanup: [
+						CleanupChain(
+							"release through existing lifecycle gates",
+							steps: [
+								Step("stop and retain failed fixtures") {
+									cleanupRan = true
+									try $0.lifecycle.teardown()
+								}
+							])
+					])
+			])
+		let registry = try ScenarioRegistry([collection])
+		let test = try #require(Test.current)
+		// Suppress only the deliberate negative fixture after the inner observer sees it.
+		let outer = IssueHandlingTrait.compactMapIssues { issue in
+			issue.comments.contains { $0.rawValue == "intentional Plan observation fixture" }
+				? nil : issue
+		}
+		let result = PlanObservationReport()
+		try await outer.provideScope(for: test, testCase: Test.Case.current) { @MainActor in
+			result.report = try await registry.executeCase(
+				"offline-plan-failure", observer: ScenarioTestingObserver())
+		}
+		let report = try #require(result.report)
+		#expect(throws: ScenarioExecutionFailure.self) { try report.requireSuccess() }
+		#expect(report.bodyProblems.contains { $0.origin == .assertion })
+		#expect(report.cleanupProblems.isEmpty)
+		#expect(
+			report.steps.contains {
+				$0.identity.step == "confirm all assertions passed"
+					&& $0.skipReason == .priorBehaviourFailure
+			})
+		#expect(cleanupRan)
+		#expect(!context.lifecycle.passed)
+		#expect(context.lifecycle.serviceStopped)
+		let home = try #require(context.lifecycle.home)
+		let project = try #require(context.primary)
+		#expect(FileManager.default.fileExists(atPath: home.directory.path))
+		#expect(FileManager.default.fileExists(atPath: project.url.path))
+		// Remove only this stopped regression fixture after checking failure retention.
+		context.lifecycle.passed = true
+		try context.lifecycle.teardown()
+		#expect(!FileManager.default.fileExists(atPath: home.directory.path))
 	}
 
 	@Test func failedCaseCannotDeleteLaterCaseFixtures() throws {

@@ -8,11 +8,50 @@
   - Project-owned reference types conform to `CollectionContext` and `CaseContext`. A shared collection context is passed to case-context factories; each case has its own local context.
   - Registry names match `^[a-z][a-z0-9-]{0,63}$`. There must be 1–64 collections, at most 100 cases per collection, unique collection names and globally unique case names.
   - `collectionNames` and `caseNames` list registrations without constructing contexts or executing hooks. `runCollection` runs all its cases; `runCase` runs one case with the surrounding collection hooks. Unknown names throw.
-- Steps run in order. A failed setup/step skips the remaining steps of that case, but applicable case/collection teardown still runs and failures are combined.
-  - A failed case does not prevent later collection cases. The library is not a stop-on-first-case-failure runner.
-  - If context construction itself throws, no context exists for its teardown. Hooks must account for partially completed setup.
-  - Abrupt external termination can prevent teardown; lifecycle hooks are not a guarantee of cleanup.
+- New cases declare `setup: [Step]`, `behaviour: [Step]` and `cleanup: [CleanupChain]`. Each phase has a distinct purpose.
+  - Setup prepares owned fixtures. Behaviour exercises operations and asserts their outcomes. Cleanup releases resources.
+  - Collections also accept named `setup` steps and `cleanup` chains: `ScenarioCollection(name, context: factory, setup: steps, cases: cases, cleanup: chains)`.
+  - All factories stay lightweight. Acquire resources in setup and record ownership before a later operation can fail.
+- Execution order is collection context, collection setup, each selected case's context/setup/behaviour/cleanup, then collection cleanup.
+  - Setup failure skips remaining setup and all behaviour in that scope. Behaviour failure skips remaining behaviour.
+  - Ordinary case failure does not prevent later cases. Collection setup failure skips all selected cases.
+  - A throwing context factory records a context problem. No unavailable context can be cleaned up.
+  - Partial setup still receives cleanup. Eligibility inspects actual ownership, not setup success.
+- Each `CleanupChain(name, eligibility: check, steps: steps)` is ordered and fail-fast.
+  - Eligibility defaults to `.run`. Return `.notAcquired` only for demonstrably absent resources. Throw for uncertain ownership.
+  - Failed eligibility or a failed cleanup step skips the remaining chain. Explicitly independent chains continue in declaration order.
+  - Keep dependent release and deletion in the same chain or existing gated helper. Cross-chain dependency graphs are not supported.
+  - `CleanupState.report` snapshots completed operations, earlier chains and inner cases. A synchronized relay includes caller cancellation received during earlier cleanup chains without cancelling cleanup. Snapshots are point-in-time evidence, not deletion authorization.
+- Cancellation stops starting normal work and subsequent cases. Each available scope's cleanup runs in a fresh main-actor unstructured task and is awaited.
+  - Cleanup inherits task locals, including Testing context, but not caller cancellation. Caller cancellation is still reported.
+  - Cancellation errors and failed cleanup remain failures. Independent cleanup chains still receive an opportunity.
+  - Cleanup can wait indefinitely if downstream code does. Bodies must cooperate with cancellation and own their deadlines.
+  - Blocked actors, forced process termination and escaped work can defeat cleanup. No automatic timeout abandons it.
+- Legacy setup/steps/teardown initializers adapt hooks to synthetic named operations. `runCase` and `runCollection` still throw after applicable cleanup.
+  - Legacy unnamed steps retain execution-time failure. New blank declaration names fail registration before acquisition.
+  - No deprecation or automatic consumer migration is imposed.
 - CLI parsing and product-specific selection remain outside the library. The developer [scenario-run helper](../../.pi/skills/scenario-run/SKILL.md) has separate stop-on-failure/no-retry orchestration and does not own fixture cleanup.
+
+## Reports and assertion observation
+
+- `executeCase(name, observer:)` and `executeCollection(name, observer:)` return `ScenarioReport` after cleanup.
+  - Invalid selection or unavailable observer context throws before acquisition.
+  - Runtime problems are returned. Call `report.requireSuccess()` to throw `ScenarioExecutionFailure`, which retains the report.
+  - Thrown diagnostics retain each problem's collection, optional case, phase, optional cleanup chain and step identity. Legacy synthetic setup/teardown labels remain visible.
+  - `steps` preserve order, collection/case identity, phase, optional chain, status, elapsed duration and problems.
+  - `bodyProblems` and `cleanupProblems` remain separate. `cancelled` also includes caller cancellation even when a closure returns normally.
+  - Unselected cases are absent. A disabled outer Swift test produces no Scenario report.
+- Status is `completed` for normally returning unobserved operations. It is not an assertion pass.
+  - `passed` means the installed observer covered the operation and saw no unexpected issue. It does not prove that assertions were present.
+  - `failed` preserves thrown errors or observed assertion problems. `skipped` carries a structured `ScenarioSkipReason`.
+  - Reasons include prior setup/behaviour failure, collection setup failure, unavailable context, cancellation, failed cleanup prerequisite and unacquired resource.
+- Optional `ScenarioTestingObserver()` observes nonthrowing issues inside active Swift Testing tests. It returns issues unchanged.
+  - Unexpected `#expect` failures stop subsequent body steps. `#require` throws and is also observed. Known issues and warnings do not become failures.
+  - The adapter depends on pinned Testing 6.2.3 and Experimental `Issue.isFailure` SPI. Core Scenario does not import Testing.
+  - Testing system issues bypass issue-handling scopes. Swift Testing remains authoritative for overall test success.
+  - Detached work can lose test context. Background work that outlives its step escapes attribution. Await assertion-producing work before returning.
+  - A missing active test is rejected before factories run. Concurrent observations use independent task-local scopes and synchronized counters.
+- Reports are in-memory records, not a stable persistence schema. Assertion summaries omit assertion payloads. Thrown diagnostics are bounded but can still contain caller data; keep reports private.
 
 ## Choose a host
 

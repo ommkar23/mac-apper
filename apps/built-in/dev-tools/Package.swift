@@ -47,6 +47,7 @@ let package = Package(
 			name: "DevToolsScenarioTests",
 			dependencies: [
 				"DevToolsApplication", "DevToolsTerminalClient", "Scenario",
+				.product(name: "ScenarioTesting", package: "Scenario"),
 				.product(name: "Testing", package: "swift-testing"),
 			],
 			path: "Tests/DevToolsScenarioTests",

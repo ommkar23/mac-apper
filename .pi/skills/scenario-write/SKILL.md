@@ -18,9 +18,15 @@ description: Write and update Mac Apper package-local Swift Testing XPC scenario
 
 ## Collections, cases and Swift Testing
 
-- Use Scenario/Sources/Scenario/Scenario.swift for CollectionContext, CaseContext, ScenarioCollection, ScenarioCase, ordered Step closures, setup and teardown.
-- Collection setup runs shared work once for the selected collection invocation; case setup creates each owned fixture and performs per-case checks.
-- `ScenarioRegistry.runCollection(_:)` runs a collection and `runCase(_:)` selects one case while retaining collection hooks.
+- Use Scenario for CollectionContext, CaseContext, ScenarioCollection, ScenarioCase and named Step closures. New declarative cases separate `setup: [Step]`, `behaviour: [Step]` and `cleanup: [CleanupChain]` for human review.
+- Name each CleanupChain and its ordered `steps: [Step]`. Keep dependency-sensitive release in one chain. Ordering does not confirm request completion or authorize filesystem removal; downstream lifecycle gates still own safety.
+- Import the test-only ScenarioTesting product and use `ScenarioTestingObserver()` with report-based execution to observe unexpected nonthrowing Swift Testing issues within awaited steps. Known issues handled inside a step are not unexpected failures. Call `requireSuccess()` on the report. Do not infer completion of detached work or external processes from observation.
+- ScenarioTesting depends on pinned Testing 6.2.3 Experimental `Issue.isFailure` SPI. It is not a public-only adapter. Core Scenario stays independent of Testing. Testing system issues bypass issue handlers; Swift Testing remains authoritative for overall test success.
+- Keep success markers in separate final behaviour steps so an observed assertion failure skips them. Cleanup must still handle partial preparation and observed failure.
+- Legacy closure `setup`, `steps:` and `teardown` declarations remain compatible. Migrate only the authorized cases; mixed collections need not be rewritten wholesale.
+- Collection setup runs shared work once for the selected collection invocation; case setup creates each owned fixture and performs per-case checks. Named collection phases use `ScenarioCollection(name, context: factory, setup: [Step], cases: cases, cleanup: [CleanupChain])`.
+- Context factories stay lightweight. Record acquisition during setup before later operations can fail. Optional cleanup `eligibility:` returns `.notAcquired` only for proven absence and throws for uncertainty. Failed chain steps skip dependent steps; independent chains still run in order.
+- `ScenarioRegistry.executeCollection(_:observer:)` runs a collection and `executeCase(_:observer:)` selects one case while retaining collection hooks. Both return reports. Legacy `runCollection(_:)` and `runCase(_:)` remain available; they are not a replacement for Swift Testing observation.
 - Inspect collectionNames/caseNames without running hooks; selectors belong in test entry points, not library CLI parsing.
 - Name cases uniquely and make test selectors reject unknown names before paid work.
 - Related cases may share a collection; current Create counter/plan entry points each construct a one-case collection, so separate Swift tests do not share collection setup.
@@ -29,13 +35,20 @@ description: Write and update Mac Apper package-local Swift Testing XPC scenario
 Follow the actual generic initializer signatures in Scenario.swift and neighboring package tests; a typical entry point is:
 
 ```swift
+import Scenario
+import ScenarioTesting
+import Testing
+
 @Test @MainActor func providerScenarios() async throws {
     let collection = makeProviderCollection()
-    let registry = ScenarioRegistry([collection])
+    let registry = try ScenarioRegistry([collection])
+    let observer = ScenarioTestingObserver()
     if let selected = ProcessInfo.processInfo.environment["PROVIDER_SCENARIO_CASE"] {
-        try await registry.runCase(selected)
+        let report = try await registry.executeCase(selected, observer: observer)
+        try report.requireSuccess()
     } else {
-        try await registry.runCollection("provider")
+        let report = try await registry.executeCollection("provider", observer: observer)
+        try report.requireSuccess()
     }
 }
 ```

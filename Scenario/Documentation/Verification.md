@@ -17,7 +17,7 @@ swift64="$HOME/Library/Developer/Toolchains/swift-6.4.0-RELEASE.xctoolchain/usr/
 "$swift64" test --package-path Scenario --filter ownedExitRacesRequireFreshESRCH
 ```
 
-- [Package.swift](../Package.swift) declares the library and its tests, with no Scenario executable or command plugin. Root `swift test` does not run this package's suite.
+- [Package.swift](../Package.swift) declares core `Scenario`, optional `ScenarioTesting` and their separate test targets, with no Scenario executable or command plugin. Root `swift test` does not run this package's suite.
 - Full Scenario tests include signing/staging, child process cleanup, real SDK compilation and a matching-loader smoke. They do not select Agent's paid scenario collections, but are not purely text checks or an air-gapped dependency-resolution guarantee.
 - Underlying library behavior changes require focused red/green tests and this affected package suite, plus relevant consuming packaged paths when authorized. Scenario-only case changes use the selected consuming tests rather than unrelated units.
 - For stale SwiftPM diagnostics or a fresh build, the root optional command is:
@@ -31,6 +31,12 @@ swift64="$HOME/Library/Developer/Toolchains/swift-6.4.0-RELEASE.xctoolchain/usr/
 
 ## Test map
 
+- [ScenarioLifecycleTests](../Tests/ScenarioTests/ScenarioLifecycleTests.swift): selected phase execution, separate body/cleanup failures, partial acquisition, independent cleanup and prerequisite skips.
+- [ScenarioPhaseTests](../Tests/ScenarioTests/ScenarioPhaseTests.swift): successful phase order, cleanup snapshots, collection setup/factory failures, uncertain eligibility and allocation-free validation.
+- [ScenarioCancellationTests](../Tests/ScenarioTests/ScenarioCancellationTests.swift): actual task cancellation before acquisition, after a normal body return and during awaited cleanup; legacy unnamed-step compatibility.
+- [ScenarioReviewRegressionTests](../Tests/ScenarioTests/ScenarioReviewRegressionTests.swift): cancellation received during one cleanup chain reaches later eligibility snapshots without cancelling cleanup; thrown multi-case body/cleanup diagnostics retain complete identities.
+- [ScenarioTestingTests](../Tests/ScenarioTestingTests/ScenarioTestingTests.swift): nonthrowing assertions, issue forwarding, `#require`, known issues, absent test context and concurrent observation isolation.
+
 - [ScenarioTests](../Tests/ScenarioTests/ScenarioTests.swift): shared/local contexts, selection/discovery, unknown/duplicate names, partial-setup teardown, continued cases after failure and package retirement boundaries.
 - [PackagedTestHostTests](../Tests/ScenarioTests/PackagedTestHostTests.swift): declared inputs, nested resources, isolated identities, pre-signing service environments and partial staging rejection.
 - [PackagedXPCHostTests](../Tests/ScenarioTests/PackagedXPCHostTests.swift) and [PackagedApplicationHostTests](../Tests/ScenarioTests/PackagedApplicationHostTests.swift): resource and deployed-input boundaries, rejection and owned removal.
@@ -38,6 +44,27 @@ swift64="$HOME/Library/Developer/Toolchains/swift-6.4.0-RELEASE.xctoolchain/usr/
 - [OwnedProcessIdentityTests](../Tests/ScenarioTests/OwnedProcessIdentityTests.swift) and [OwnedProcessExitRaceTests](../Tests/ScenarioTests/OwnedProcessExitRaceTests.swift): real captured-child/already-exited reaping, unrelated-process preservation, deterministic exit/identity/signal races and fail-closed states.
 - [SwiftToolchainTests](../Tests/ScenarioTests/SwiftToolchainTests.swift) and [SDKCompilerTests](../Tests/ScenarioTests/SDKCompilerTests.swift): preparation environments, both tool redirects, matching loader, explicit SDK/imports and pre-startup failure gates.
 - Directory-identity regression tests live in Agent test support/AgentScenarioTests, not the Scenario suite. This source ownership distinction is documented in [directory identity](Isolation-and-cleanup.md#directory-identity).
+
+## Named lifecycle milestone verification
+
+- Standalone Swift 6.4 release tools were checked at the required `swift-6.4.0-RELEASE.xctoolchain` path. Default Swift Build and repository-local `TMPDIR` were used.
+- Focused red/green checks covered missing declaration/report APIs, actual cancellation reporting, cancellation snapshots and legacy unnamed-step compatibility.
+- Initial milestone focused execution passed 12 core lifecycle tests and 7 observer tests. Its full package passed 56 core tests and 7 observer tests. Review corrections and their subsequent verification are recorded separately below.
+  - The observer suite intentionally records one known issue. It is not an unexpected failure or suppressed by the adapter.
+  - Existing real SDK/compiler checks, owned-child tests and `packagedStandaloneLoaderSmoke` executed and passed.
+  - Changed-file swift-format, guard checks, strict pinned SwiftLint and whitespace checks passed.
+- Disposable command logs and the detailed report are in `.tmp/scenario-lifecycle-worker/`. This is not durable evidence storage.
+- No consuming DevTools/Agent scenarios, product bundles, GUI, credentials or remote/model calls were exercised by this package verification.
+- Forced termination, blocked cleanup, escaped background assertions and Testing system-issue attribution remain outside the lifecycle guarantee. See [observation limits](Hosting.md#reports-and-assertion-observation).
+
+## Independent-review corrections
+
+- Two focused regressions failed before correction. Later cleanup eligibility did not see caller cancellation received during an earlier chain. Thrown diagnostics omitted operation identities.
+- A synchronized cancellation relay now updates later eligibility snapshots without cancelling the isolated cleanup task.
+- Failure descriptions now preserve collection/case/phase/chain/step identity, including legacy synthetic teardown labels.
+- Final focused verification passed 14 core lifecycle tests and 7 observer tests. The complete package passed 58 core tests and 7 observer tests.
+- Scoped format, guard, strict lint and whitespace checks passed. Explicit exit statuses are saved in `.tmp/scenario-lifecycle-worker/review-statuses.log`; supporting red/green and final logs share that directory.
+- Authorization and cleanup limits remain unchanged. No consuming scenario or live path was exercised.
 
 ## Recorded evidence, not new verification
 
@@ -61,7 +88,7 @@ These checkpoints are preserved from the original root documentation and [learni
   - Later passing new fixtures did not inspect, signal, scrub or remove that retained historical fixture. Historical PID observations are not current liveness or immutable-identity reaping confirmation.
   - Agent owns the full live workflow/evidence chronology; it is not a normative Scenario runbook.
 
-## This documentation rewrite
+## Earlier documentation rewrite
 
 - Performed static review of repository policy, the original root/Agent snapshots, Scenario documentation/manifest/source contracts and relevant consuming-package contracts.
 - Verification is limited to Markdown destinations/anchors, relative paths, package/plugin command agreement, documentation ownership and stale YAML README references within authored Scenario scope.

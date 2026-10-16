@@ -3,6 +3,7 @@
 // @frontmatter:end
 import Foundation
 import Scenario
+import ScenarioTesting
 import Testing
 
 // Collection construction allocates no host, home or project root.
@@ -188,8 +189,10 @@ import Testing
 				], teardown: { try $0.lifecycle.teardown() }),
 			ScenarioCase(
 				"plan-rejections", context: DevToolsPlanCase.init,
-				setup: { try $0.setup() },
-				steps: [
+				setup: [
+					Step("prepare private home, signed host and primary project") { try $0.setup() }
+				],
+				behaviour: [
 					Step("reject missing plan") { try $0.reject(["action": "get_tasks"]) },
 					Step("reject duplicate plan") { context in
 						_ = try context.tasks(["action": "add_plan"])
@@ -216,7 +219,16 @@ import Testing
 						try #require(tasks.first?["status"] as? String == "pending")
 					},
 					Step("confirm all assertions passed") { $0.lifecycle.passed = true },
-				], teardown: { try $0.lifecycle.teardown() }),
+				],
+				cleanup: [
+					CleanupChain(
+						"release only after confirmed request and service cleanup",
+						steps: [
+							Step("stop owned service and apply fixture retention gates") {
+								try $0.lifecycle.teardown()
+							}
+						])
+				]),
 			ScenarioCase(
 				"plan-project-isolation", context: DevToolsPlanCase.init,
 				setup: { try $0.setup() },
@@ -250,9 +262,12 @@ private let initialPlanTasks = [
 
 @Test @MainActor func devToolsPlanScenarios() async throws {
 	let registry = try ScenarioRegistry([devToolsPlanCollection()])
+	let observer = ScenarioTestingObserver()
 	if let selected = ProcessInfo.processInfo.environment["DEV_TOOLS_SCENARIO_CASE"] {
-		try await registry.runCase(selected)
+		let report = try await registry.executeCase(selected, observer: observer)
+		try report.requireSuccess()
 	} else {
-		try await registry.runCollection("dev-tools-plan")
+		let report = try await registry.executeCollection("dev-tools-plan", observer: observer)
+		try report.requireSuccess()
 	}
 }

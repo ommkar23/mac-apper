@@ -55,6 +55,11 @@
 
 ## Cleanup order
 
+- Named lifecycle cleanup preserves these safety gates. `CleanupChain` only controls execution order; generic phase success never authorizes deletion.
+  - Keep prerequisite operations in one chain. Failure blocks dependent steps, while unrelated chains continue.
+  - Ownership eligibility must account for partial setup. Unknown ownership throws; `.notAcquired` is not a fallback for failed attribution.
+  - Collection cleanup must enforce existing inner-case confirmation before removing shared resources. Its `CleanupState.report` is diagnostic evidence only.
+  - Cleanup is awaited in a cancellation-isolated task. Cooperative completion and downstream deadlines remain required. See [lifecycle semantics](Hosting.md#lifecycle-and-selection).
 - Consuming tests own the dependency-aware sequence:
   1. Finish/cancel owned requests and stop the runtime.
   2. Confirm exact-owned inner processes (including Pi/development children where applicable) are reaped; stop/detach subscriptions and archive only owned evidence before fixture file removal.

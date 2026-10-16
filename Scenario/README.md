@@ -23,9 +23,10 @@ Scenario is a reusable macOS support library for package-local Swift tests. It p
 ## Setup
 
 - Use macOS 14+, Command Line Tools with an installed SDK, standalone Swift 6.4.0 and default Swift Build; Xcode itself is not required.
-- [Package.swift](Package.swift) exports only the `Scenario` library and `ScenarioTests`.
-  - The library has no external target dependencies and imports Foundation/Darwin.
-  - Tests use exact `swift-testing` 6.2.3. SwiftPM resolves dependencies automatically; no separate Testing installation or manual SwiftSyntax dependency is needed.
+- [Package.swift](Package.swift) exports `Scenario` and optional test-only `ScenarioTesting` libraries.
+  - Core `Scenario` has no external target dependencies and imports Foundation/Darwin.
+  - `ScenarioTesting` and tests use exact `swift-testing` 6.2.3. SwiftPM resolves dependencies automatically.
+  - The adapter uses public issue-handling scopes and pinned Experimental `Issue.isFailure` SPI. Revalidate it before changing Testing versions.
 - Callers supply executables, plists and resources. Signing uses installed `codesign`; Scenario does not install tools, discover product fixtures or authorize credential/live operations.
 
 ## Temporary storage
@@ -39,18 +40,21 @@ Scenario is a reusable macOS support library for package-local Swift tests. It p
 
 ## Practical usage
 
-- Add a local SwiftPM dependency pointing to this directory and `.product(name: "Scenario", package: "Scenario")` to the consuming test target, then `import Scenario`.
-- A small in-process lifecycle example, based on the [library tests](Tests/ScenarioTests/ScenarioTests.swift):
+- Add a local SwiftPM dependency pointing to this directory. Add `.product(name: "Scenario", package: "Scenario")` to the consuming test target.
+- For Swift Testing issue observation, also add `.product(name: "ScenarioTesting", package: "Scenario")`.
+- Keep factories lightweight. Separate preparation, exercised assertions and resource release:
+  - [Lifecycle tests](Tests/ScenarioTests/ScenarioPhaseTests.swift) cover named phases.
+  - [Observer tests](Tests/ScenarioTestingTests/ScenarioTestingTests.swift) cover assertion observation.
 
 ```swift
 import Scenario
+import ScenarioTesting
 import Testing
 
-@MainActor final class Shared: CollectionContext {
-    var events: [String] = []
-}
+@MainActor final class Shared: CollectionContext {}
 @MainActor final class Local: CaseContext {
     let shared: Shared
+    var prepared = false
     init(_ shared: Shared) { self.shared = shared }
 }
 
@@ -59,16 +63,20 @@ import Testing
     let registry = try ScenarioRegistry([
         ScenarioCollection(
             "example", context: { shared },
-            teardown: { $0.events.append("collection cleanup") },
             cases: [
                 ScenarioCase(
                     "example-case", context: Local.init,
-                    steps: [Step("record") { $0.shared.events.append("step") }],
-                    teardown: { $0.shared.events.append("case cleanup") })
+                    setup: [Step("prepare") { $0.prepared = true }],
+                    behaviour: [Step("verify prepared state") { local in #expect(local.prepared) }],
+                    cleanup: [CleanupChain(
+                        "local resources",
+                        eligibility: { local, _ in local.prepared ? .run : .notAcquired },
+                        steps: [Step("release") { $0.prepared = false }])])
             ])
     ])
-    try await registry.runCase("example-case")
-    #expect(shared.events == ["step", "case cleanup", "collection cleanup"])
+    let report = try await registry.executeCase(
+        "example-case", observer: ScenarioTestingObserver())
+    try report.requireSuccess()
 }
 ```
 
@@ -85,5 +93,6 @@ swift64="$HOME/Library/Developer/Toolchains/swift-6.4.0-RELEASE.xctoolchain/usr/
 "$swift64" test --package-path Scenario
 ```
 
-- These commands build the library or run its own tests, not consuming live collections. Library tests can stage signed hosts and execute child/compiler processes.
-- See [verification scope and evidence](Documentation/Verification.md). This documentation rewrite performed static inspection only; it ran no builds, package tests, hosts, credentials or live calls.
+- These commands build the libraries or run their own tests, not consuming live collections. Tests can stage signed hosts and execute owned child/compiler processes.
+- See [verification scope and evidence](Documentation/Verification.md). Named phases do not authorize resource deletion or live work.
+- Legacy setup/steps/teardown initializers and throwing `runCase` / `runCollection` remain supported. New reports distinguish unobserved completion from observed success. See [lifecycle semantics](Documentation/Hosting.md#lifecycle-and-selection).
