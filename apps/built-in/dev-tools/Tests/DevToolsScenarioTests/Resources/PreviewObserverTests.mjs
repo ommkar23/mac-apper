@@ -2,6 +2,60 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { classifyObservation, observeSpawn } from './PreviewToolHarness.ts';
 import childProcess from 'node:child_process';
+import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { randomUUID } from 'node:crypto';
+import { projectTempRoot } from '../../../../../../.pi/tests/project-temporary-directory.mjs';
+
+const canonicalTools = ['set_app_name', 'build', 'test', 'run', 'preview', 'plan'];
+function registrationProbe(t, names) {
+  const temporaryRoot = projectTempRoot();
+  const directory = mkdtempSync(join(temporaryRoot, 'preview-registration-'));
+  t.after(() => rmSync(directory, { recursive: true }));
+  assert.equal(dirname(directory), projectTempRoot());
+  const extension = join(directory, 'Extension.mjs');
+  writeFileSync(extension, `export default function(pi) {
+    for (const name of ${JSON.stringify(names)}) pi.registerTool({ name,
+      execute() { throw Error('REGISTRATION_ACCEPTED_BEFORE_EXECUTION'); }
+    });
+  }`, { mode: 0o600 });
+  const result = childProcess.spawnSync(process.execPath,
+    ['--no-warnings', '--experimental-strip-types',
+      fileURLToPath(new URL('./PreviewToolHarness.ts', import.meta.url)), extension],
+    { input: '{}', encoding: 'utf8', timeout: 10000, maxBuffer: 131072,
+      env: { TMPDIR: temporaryRoot + '/' } });
+  assert.ifError(result.error);
+  assert.equal(result.status, 1);
+  assert.equal(result.stdout, '');
+  return result.stderr;
+}
+test('current six canonical registrations reach preview execution without spawning a client', t => {
+  const inheritedTemporaryDirectory = process.env.TMPDIR;
+  process.env.TMPDIR = join(projectTempRoot(), `missing-ambient-temp-${randomUUID()}`);
+  try {
+    assert.match(registrationProbe(t, canonicalTools), /REGISTRATION_ACCEPTED_BEFORE_EXECUTION/);
+  } finally {
+    if (inheritedTemporaryDirectory === undefined) delete process.env.TMPDIR;
+    else process.env.TMPDIR = inheritedTemporaryDirectory;
+  }
+});
+test('registration rejects the stale five-tool set missing set_app_name', t => {
+  assert.match(registrationProbe(t, canonicalTools.slice(1)), /production preview registration missing/);
+});
+test('registration rejects missing or wrong canonical tool names', t => {
+  for (const name of canonicalTools) {
+    assert.match(registrationProbe(t, canonicalTools.filter(tool => tool !== name)),
+      /production preview registration missing/);
+    assert.match(registrationProbe(t, canonicalTools.map(tool => tool === name ? 'unexpected' : tool)),
+      /production preview registration missing/);
+  }
+});
+test('registration rejects duplicate tool names even when all canonical tools are present', t => {
+  for (const name of canonicalTools) {
+    assert.match(registrationProbe(t, [...canonicalTools, name]), /production preview registration missing/);
+  }
+});
 const ids = { requestID: 'a', projectID: 'b', sessionID: 'c' };
 const request = JSON.stringify({ version: 1, ...ids, command: 'preview', payload: Buffer.from('{}').toString('base64') }) + '\n';
 const response = (fields) => JSON.stringify({ version: 1, requestID: 'a', projectID: 'b', ...fields }) + '\n';

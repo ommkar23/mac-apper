@@ -3,21 +3,22 @@
 // @frontmatter:end
 import Foundation
 import Scenario
+import ScenarioTesting
 import Testing
 
-@MainActor private final class DevToolsTestCollection: CollectionContext {
+@MainActor final class DevToolsTestCollection: CollectionContext {
 	let lifecycle = DevToolsScenarioLifecycle()
 }
 
-@MainActor private final class DevToolsTestCase: CaseContext {
+@MainActor final class DevToolsTestCase: CaseContext {
 	let collection: DevToolsTestCollection
 	var project: (id: UUID, url: URL)?
 	let sessionID = UUID()
 
 	init(_ collection: DevToolsTestCollection) { self.collection = collection }
 
-	func setup() throws {
-		let projects = try #require(collection.lifecycle.projects)
+	func registerTargets() throws {
+		let projects = try #require(collection.lifecycle.projects, "Test project registry unavailable")
 		project = try projects.create()
 		let root = try #require(project?.url)
 		try """
@@ -34,11 +35,19 @@ import Testing
 			try FileManager.default.createDirectory(
 				at: root.appendingPathComponent(path), withIntermediateDirectories: true)
 		}
+	}
+
+	func writeModel() throws {
+		let root = try #require(project?.url)
 		try
 			"#if compiler(<6.4)\n#error(\"Swift 6.4 is required\")\n#endif\npublic struct Counter { public let value = 0; public init() {} }\n"
 			.write(
 				to: root.appendingPathComponent("Sources/AppModel/Counter.swift"), atomically: true,
 				encoding: .utf8)
+	}
+
+	func writeTests() throws {
+		let root = try #require(project?.url)
 		try """
 		import Foundation
 		import Testing
@@ -114,15 +123,24 @@ import Testing
 	}
 }
 
-@Test @MainActor func devToolsTestScenarios() async throws {
-	let collection = ScenarioCollection(
-		"dev-tools-test", context: DevToolsTestCollection.init,
-		setup: { try $0.lifecycle.setup() }, teardown: { try $0.lifecycle.teardown() },
+@MainActor func devToolsTestCollection(
+	context: @escaping @MainActor () throws -> DevToolsTestCollection = DevToolsTestCollection.init,
+	setup: [Step<DevToolsTestCollection>] = [
+		Step("prepare private signed generated-client host") { try $0.lifecycle.setup() }
+	]
+) -> ScenarioCollection {
+	ScenarioCollection(
+		"dev-tools-test", context: context,
+		setup: setup,
 		cases: [
 			ScenarioCase(
 				"test-package", context: DevToolsTestCase.init,
-				setup: { try $0.setup() },
-				steps: [
+				setup: [
+					Step("register project and package targets") { try $0.registerTargets() },
+					Step("write compiler-guarded model") { try $0.writeModel() },
+					Step("write private-home compiler assertions and passing tests") { try $0.writeTests() },
+				],
+				behaviour: [
 					Step("pass real tests in both package test targets") {
 						try $0.check(status: "passed", marker: "secondaryTarget")
 					},
@@ -145,14 +163,27 @@ import Testing
 								"test", payload: ["projectRoot": fixture.url.deletingLastPathComponent().path],
 								error: "operationFailed", projectID: fixture.id, sessionID: context.sessionID)
 						}
-						context.collection.lifecycle.passed = true
 					},
+					Step("mark successful completion") { $0.collection.lifecycle.passed = true },
+				])
+		],
+		cleanup: [
+			CleanupChain(
+				"collection-owned Test lifecycle",
+				steps: [
+					Step("teardown private host and registered projects") { try $0.lifecycle.teardown() }
 				])
 		])
-	let registry = try ScenarioRegistry([collection])
+}
+
+@Test @MainActor func devToolsTestScenarios() async throws {
+	let registry = try ScenarioRegistry([devToolsTestCollection()])
+	let report: ScenarioReport
 	if let selected = ProcessInfo.processInfo.environment["DEV_TOOLS_SCENARIO_CASE"] {
-		try await registry.runCase(selected)
+		report = try await registry.executeCase(selected, observer: ScenarioTestingObserver())
 	} else {
-		try await registry.runCollection("dev-tools-test")
+		report = try await registry.executeCollection(
+			"dev-tools-test", observer: ScenarioTestingObserver())
 	}
+	try report.requireSuccess()
 }

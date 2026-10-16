@@ -16,6 +16,15 @@ description: Write and update Mac Apper package-local Swift Testing XPC scenario
 - DevTools cases use PackagedXPCHost and the production generated DevToolsTerminalClient; generated Pi extension harnesses may exercise that same transport locally without starting Pi sessions.
 - PackagedTestHost stages the existing Swift test bundle, matching standalone SwiftPM loader, declared services/resources and isolated identities; no full product app copy or dedicated Agent scenario client is needed.
 
+## Test file and suite names
+
+- Inside any folder whose name ends in `ScenarioTests`, name test files for meaningful, durable contracts or behaviours and end them in `Tests.swift`.
+- Do not repeat the folder's `Scenario` qualifier in test filenames or suite names. Do not use task-oriented names such as `MigrationTests`. Prefer `PlanTests.swift`, `PreviewContractTests.swift` and matching suite names.
+- Apply the same durable naming principle to test names, comments and test-local fixtures. Private fixture types, synthetic collection/case labels and negative-fixture message tags describe the observed contract, not the implementation task. Rename matching labels and exact message filters together without changing assertions or behaviour.
+- Keep source-relative fixture paths, current documentation links and filter commands aligned when renaming.
+- Non-test domain support files and production/shared safety-helper types keep their domain names. This exemption does not permit task vocabulary in lasting test-local fixtures. Renaming tests does not rename package modules, targets, real scenario entry functions, environment selectors, collections or cases.
+- Preserve historical evidence and temporary artifacts under their recorded names. Do not rewrite past commands or outcomes as current-name verification.
+
 ## Collections, cases and Swift Testing
 
 - Use Scenario for CollectionContext, CaseContext, ScenarioCollection, ScenarioCase and named Step closures. New declarative cases separate `setup: [Step]`, `behaviour: [Step]` and `cleanup: [CleanupChain]` for human review.

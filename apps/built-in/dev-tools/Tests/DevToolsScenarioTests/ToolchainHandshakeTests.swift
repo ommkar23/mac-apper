@@ -6,7 +6,7 @@ import Foundation
 import Scenario
 import Testing
 
-@Suite @MainActor struct ToolchainScenarioHandshakeTests {
+@Suite @MainActor struct ToolchainHandshakeTests {
 	private func fixture() throws -> URL {
 		let root = try ProjectTemporaryDirectory.appending("toolchain-handshake-\(UUID().uuidString)")
 		try FileManager.default.createDirectory(

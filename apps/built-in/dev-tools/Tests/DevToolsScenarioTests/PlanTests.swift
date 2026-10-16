@@ -18,12 +18,9 @@ import Testing
 	}
 	let sessionID = UUID()
 	var primary: Fixture?
+	var secondary: Fixture?
 
 	init(_ collection: DevToolsPlanCollection) { self.collection = collection }
-	func setup() throws {
-		try lifecycle.setup()
-		primary = try projects.create()
-	}
 
 	func request(_ fields: [String: Any], project: Fixture? = nil) throws -> [String: Any] {
 		let fixture = try #require(project ?? primary)
@@ -55,16 +52,24 @@ import Testing
 @MainActor func devToolsPlanCollection() -> ScenarioCollection {
 	ScenarioCollection(
 		"dev-tools-plan", context: DevToolsPlanCollection.init,
+		setup: [],
 		cases: [
 			ScenarioCase(
 				"plan-initial-tasks", context: DevToolsPlanCase.init,
-				setup: { try $0.setup() },
-				steps: [
-					Step("create and retrieve a plan with initial tasks") { context in
+				setup: [
+					Step("prepare private home and signed generated-client host") {
+						try $0.lifecycle.setup()
+					},
+					Step("register primary project") { $0.primary = try $0.projects.create() },
+				],
+				behaviour: [
+					Step("create seeded plan and verify returned tasks") { context in
 						let created = try context.tasks([
 							"action": "add_plan", "tasks": initialPlanTasks,
 						])
 						try #require(NSArray(array: created).isEqual(to: initialPlanTasks))
+					},
+					Step("retrieve seeded plan") { context in
 						let retrieved = try context.tasks(["action": "get_tasks"])
 						try #require(NSArray(array: retrieved).isEqual(to: initialPlanTasks))
 					},
@@ -117,11 +122,25 @@ import Testing
 						try #require(NSArray(array: primary).isEqual(to: initialPlanTasks))
 					},
 					Step("confirm all assertions passed") { $0.lifecycle.passed = true },
-				], teardown: { try $0.lifecycle.teardown() }),
+				],
+				cleanup: [
+					CleanupChain(
+						"release only after confirmed request and service cleanup",
+						steps: [
+							Step("stop owned service and apply fixture retention gates") {
+								try $0.lifecycle.teardown()
+							}
+						])
+				]),
 			ScenarioCase(
 				"plan-lifecycle", context: DevToolsPlanCase.init,
-				setup: { try $0.setup() },
-				steps: [
+				setup: [
+					Step("prepare private home and signed generated-client host") {
+						try $0.lifecycle.setup()
+					},
+					Step("register primary project") { $0.primary = try $0.projects.create() },
+				],
+				behaviour: [
 					Step("create empty plan") { context in
 						let tasks = try context.tasks(["action": "add_plan"])
 						try #require(tasks.isEmpty)
@@ -135,6 +154,8 @@ import Testing
 							],
 						])
 						try #require(tasks.map { $0["id"] as? String } == ["design", "build"])
+					},
+					Step("retrieve added tasks") { context in
 						let retrieved = try context.tasks(["action": "get_tasks"])
 						try #require(retrieved.count == 2)
 					},
@@ -171,10 +192,12 @@ import Testing
 						try #require(
 							tasks.map { $0["status"] as? String } == ["completed", "in_progress", "pending"])
 					},
-					Step("delete multiple tasks and retrieve") { context in
+					Step("delete multiple tasks") { context in
 						let tasks = try context.tasks(["action": "delete_tasks", "ids": ["design", "test"]])
 						try #require(tasks.count == 1)
 						try #require(tasks.first?["id"] as? String == "build")
+					},
+					Step("retrieve remaining task") { context in
 						let retrieved = try context.tasks(["action": "get_tasks"])
 						try #require(retrieved.count == 1)
 						try #require(retrieved.first?["id"] as? String == "build")
@@ -186,23 +209,39 @@ import Testing
 						try #require(retrieved.isEmpty)
 					},
 					Step("confirm all assertions passed") { $0.lifecycle.passed = true },
-				], teardown: { try $0.lifecycle.teardown() }),
+				],
+				cleanup: [
+					CleanupChain(
+						"release only after confirmed request and service cleanup",
+						steps: [
+							Step("stop owned service and apply fixture retention gates") {
+								try $0.lifecycle.teardown()
+							}
+						])
+				]),
 			ScenarioCase(
 				"plan-rejections", context: DevToolsPlanCase.init,
 				setup: [
-					Step("prepare private home, signed host and primary project") { try $0.setup() }
+					Step("prepare private home and signed generated-client host") {
+						try $0.lifecycle.setup()
+					},
+					Step("register primary project") { $0.primary = try $0.projects.create() },
 				],
 				behaviour: [
 					Step("reject missing plan") { try $0.reject(["action": "get_tasks"]) },
-					Step("reject duplicate plan") { context in
+					Step("create baseline plan") { context in
 						_ = try context.tasks(["action": "add_plan"])
+					},
+					Step("reject duplicate plan") { context in
 						try context.reject(["action": "add_plan"])
 					},
-					Step("reject duplicate and absent tasks without mutation") { context in
+					Step("seed baseline task") { context in
 						_ = try context.tasks([
 							"action": "add_tasks",
 							"tasks": [["id": "first", "title": "First", "status": "pending"]],
 						])
+					},
+					Step("reject duplicate and absent tasks without mutation") { context in
 						try context.reject([
 							"action": "add_tasks",
 							"tasks": [["id": "first", "title": "Duplicate", "status": "pending"]],
@@ -212,6 +251,8 @@ import Testing
 							"tasks": [["id": "missing", "title": "Missing", "status": "pending"]],
 						])
 						try context.reject(["action": "delete_tasks", "ids": ["missing"]])
+					},
+					Step("verify unchanged task snapshot") { context in
 						let tasks = try context.tasks(["action": "get_tasks"])
 						try #require(tasks.count == 1)
 						try #require(tasks.first?["id"] as? String == "first")
@@ -231,8 +272,14 @@ import Testing
 				]),
 			ScenarioCase(
 				"plan-project-isolation", context: DevToolsPlanCase.init,
-				setup: { try $0.setup() },
-				steps: [
+				setup: [
+					Step("prepare private home and signed generated-client host") {
+						try $0.lifecycle.setup()
+					},
+					Step("register primary project") { $0.primary = try $0.projects.create() },
+					Step("register secondary project") { $0.secondary = try $0.projects.create() },
+				],
+				behaviour: [
 					Step("create a plan in the first project") { context in
 						_ = try context.tasks(["action": "add_plan"])
 						_ = try context.tasks([
@@ -240,19 +287,34 @@ import Testing
 							"tasks": [["id": "first", "title": "First", "status": "pending"]],
 						])
 					},
-					Step("keep another project's plan separate") { context in
-						let other = try context.projects.create()
+					Step("reject missing secondary plan") { context in
+						let other = try #require(context.secondary)
 						try context.reject(["action": "get_tasks"], project: other)
+					},
+					Step("create empty secondary plan") { context in
+						let other = try #require(context.secondary)
 						let created = try context.tasks(["action": "add_plan"], project: other)
+						try #require(created.isEmpty)
+					},
+					Step("compare primary and secondary snapshots") { context in
+						let other = try #require(context.secondary)
 						let primary = try context.tasks(["action": "get_tasks"])
 						let isolated = try context.tasks(["action": "get_tasks"], project: other)
-						try #require(created.isEmpty)
 						try #require(primary.count == 1)
 						try #require(isolated.isEmpty)
 					},
 					Step("confirm all assertions passed") { $0.lifecycle.passed = true },
-				], teardown: { try $0.lifecycle.teardown() }),
-		])
+				],
+				cleanup: [
+					CleanupChain(
+						"release only after confirmed request and service cleanup",
+						steps: [
+							Step("stop owned service and apply fixture retention gates") {
+								try $0.lifecycle.teardown()
+							}
+						])
+				]),
+		], cleanup: [])
 }
 
 private let initialPlanTasks = [

@@ -84,9 +84,15 @@ async function main() {
     syncBuiltinESMExports();
     try {
       const extension = await import(pathToFileURL(process.argv[2]).href);
-      extension.default({ registerTool(tool: any) { tools.set(tool.name, tool); } });
+      extension.default({ registerTool(tool: any) {
+        if (tools.has(tool.name)) throw Error("production preview registration missing: duplicate tool");
+        tools.set(tool.name, tool);
+      } });
+      const canonicalTools = ["set_app_name", "build", "test", "run", "preview", "plan"];
       const tool = tools.get("preview");
-      if (!tool || tools.size !== 5 || !tools.has("test")) throw Error("production preview registration missing");
+      if (!tool || tools.size !== canonicalTools.length || canonicalTools.some(name => !tools.has(name))) {
+        throw Error("production preview registration missing");
+      }
       result = await tool.execute("scenario-preview", request.params, undefined);
       await Promise.all(records.map(record => record.done)); // Exit is not close.
       const environment: any = {};

@@ -25,11 +25,22 @@ import ScenarioTesting
 		#expect(first.lifecycle.projects == nil && second.lifecycle.projects == nil)
 	}
 
+	@Test func unknownSelectorsRejectBeforeAcquisition() async throws {
+		let registry = try ScenarioRegistry([devToolsPlanCollection()])
+		await #expect(throws: ScenarioFailure.self) {
+			try await registry.executeCase("plan-unknown", observer: ScenarioTestingObserver())
+		}
+		await #expect(throws: ScenarioFailure.self) {
+			try await registry.executeCollection("plan-unknown", observer: ScenarioTestingObserver())
+		}
+	}
+
 	@Test func observedFailureSkipsSuccessMarkerAndRetainsStoppedFixtures() async throws {
 		let context = DevToolsPlanCase(DevToolsPlanCollection())
 		var cleanupRan = false
 		let collection = ScenarioCollection(
 			"offline-plan-observation", context: DevToolsPlanCollection.init,
+			setup: [],
 			cases: [
 				ScenarioCase(
 					"offline-plan-failure", context: { _ in context },
@@ -60,7 +71,7 @@ import ScenarioTesting
 								}
 							])
 					])
-			])
+			], cleanup: [])
 		let registry = try ScenarioRegistry([collection])
 		let test = try #require(Test.current)
 		// Suppress only the deliberate negative fixture after the inner observer sees it.

@@ -6,6 +6,7 @@ import Darwin
 import Foundation
 import ImageIO
 import Scenario
+import ScenarioTesting
 import Testing
 
 private let previewSource = """
@@ -24,20 +25,26 @@ private let previewSource = """
 	#endif
 	"""
 
-@MainActor private final class PreviewCollection: CollectionContext {}
+@MainActor final class PreviewCollection: CollectionContext {}
 
-@MainActor private final class PreviewCase: CaseContext {
+@MainActor final class PreviewCase: CaseContext {
 	typealias Fixture = (id: UUID, url: URL)
 	let collection: PreviewCollection
 	let lifecycle = DevToolsScenarioLifecycle()
 	var projects: DevToolsScenarioProjects { get throws { try #require(lifecycle.projects) } }
 	let session = UUID()
 	var primary: Fixture?
+	var secondary: Fixture?
+	var originalManifest: Data?
+	var originalSource: Data?
+	var metadata: [String: Any]?
+	var imageBytes: Data?
+	var relativePath: String?
+	var reviewPath: String?
 	var reviewFiles: [URL] = []
 	init(_ collection: PreviewCollection) { self.collection = collection }
 
-	func setup() throws {
-		try lifecycle.setup(includePreviewResources: true)
+	func verifyProductionIdentity() throws {
 		let app = try #require(lifecycle.host?.app)
 		let package = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
 			.deletingLastPathComponent().deletingLastPathComponent()
@@ -82,7 +89,6 @@ private let previewSource = """
 				"PREVIEW_RESOURCE_IDENTITY \(staged.path) sha256=\(SHA256.hash(data: bytes).map { String(format: "%02x", $0) }.joined())"
 			)
 		}
-		primary = try fixture()
 	}
 	func removePrimary() throws {
 		try lifecycle.stopServiceRetainingFixtures()
@@ -303,37 +309,72 @@ private let previewSource = """
 	}
 }
 
-@MainActor private func previewCollection() -> ScenarioCollection {
+@MainActor func previewSetup() -> [Step<PreviewCase>] {
+	[
+		Step("prepare isolated signed host with Preview resources") {
+			try $0.lifecycle.setup(includePreviewResources: true)
+		},
+		Step("verify production client and extension byte identity") {
+			try $0.verifyProductionIdentity()
+		},
+		Step("register and populate primary Preview fixture") { $0.primary = try $0.fixture() },
+	]
+}
+
+@MainActor func previewCleanup() -> [CleanupChain<PreviewCase>] {
+	[
+		CleanupChain(
+			"gated Preview lifecycle release",
+			steps: [
+				Step("stop owned service and apply fixture retention gates") {
+					try $0.lifecycle.teardown()
+				}
+			])
+	]
+}
+
+@MainActor func previewCollection(
+	context: @escaping @MainActor () -> PreviewCollection = PreviewCollection.init
+) -> ScenarioCollection {
 	ScenarioCollection(
-		"dev-tools-preview", context: PreviewCollection.init,
+		"dev-tools-preview", context: context, setup: [],
 		cases: [
 			ScenarioCase(
-				"preview-render", context: PreviewCase.init, setup: { try $0.setup() },
-				steps: [
-					Step("render injected private view and preserve project source and manifest") { context in
+				"preview-render", context: PreviewCase.init, setup: previewSetup(),
+				behaviour: [
+					Step("capture original manifest and source") { context in
 						let project = try #require(context.primary)
-						let manifest = try Data(contentsOf: project.url.appendingPathComponent("Package.swift"))
-						_ = try context.image(
+						context.originalManifest = try Data(
+							contentsOf: project.url.appendingPathComponent("Package.swift"))
+						context.originalSource = try Data(
+							contentsOf: project.url.appendingPathComponent("Sources/AppViews/Example.swift"))
+					},
+					Step("render and validate injected red state, dimensions, PNG and archive") { context in
+						context.imageBytes = try context.image(
 							context.request(context.params(size: (320, 240))), size: (320, 240))
+					},
+					Step("verify original files and empty render scratch") { context in
+						let project = try #require(context.primary)
 						try #require(
-							try Data(contentsOf: project.url.appendingPathComponent("Package.swift")) == manifest)
-						try #require(
-							try String(
-								contentsOf: project.url.appendingPathComponent("Sources/AppViews/Example.swift"),
-								encoding: .utf8) == previewSource)
+							try Data(contentsOf: project.url.appendingPathComponent("Package.swift"))
+								== context.originalManifest)
+						let source = project.url.appendingPathComponent("Sources/AppViews/Example.swift")
+						try #require(try Data(contentsOf: source) == context.originalSource)
+						try #require(try String(contentsOf: source, encoding: .utf8) == previewSource)
 						try context.clean()
 					},
-					Step("review image survives project cleanup") { context in
-						let review = try #require(context.reviewFiles.first)
-						let bytes = try PreviewFixtureAudit.read(review)
+					Step("stop service and selectively remove primary project") { context in
 						try context.removePrimary()
-						try #require(PreviewFixtureAudit.read(review) == bytes)
+					},
+					Step("verify archived bytes survive project removal") { context in
+						let review = try #require(context.reviewFiles.first)
+						try #require(PreviewFixtureAudit.read(review) == context.imageBytes)
 					},
 					Step("confirm all assertions passed") { $0.lifecycle.passed = true },
-				], teardown: { try $0.lifecycle.teardown() }),
+				], cleanup: previewCleanup()),
 			ScenarioCase(
-				"preview-size", context: PreviewCase.init, setup: { try $0.setup() },
-				steps: [
+				"preview-size", context: PreviewCase.init, setup: previewSetup(),
+				behaviour: [
 					Step("use default canvas") { context in
 						_ = try context.image(context.request(), size: (640, 480)); try context.clean()
 					},
@@ -350,10 +391,10 @@ private let previewSource = """
 						try context.clean()
 					},
 					Step("confirm all assertions passed") { $0.lifecycle.passed = true },
-				], teardown: { try $0.lifecycle.teardown() }),
+				], cleanup: previewCleanup()),
 			ScenarioCase(
-				"preview-factories", context: PreviewCase.init, setup: { try $0.setup() },
-				steps: [
+				"preview-factories", context: PreviewCase.init, setup: previewSetup(),
+				behaviour: [
 					Step("reject missing and comment-only preview code") { context in
 						try context.setSource(
 							"import SwiftUI\n// @MainActor public func apperPreview_Decoy() -> some View { Color.red }\n"
@@ -377,10 +418,10 @@ private let previewSource = """
 						try context.noArtifacts(); try context.clean()
 					},
 					Step("confirm all assertions passed") { $0.lifecycle.passed = true },
-				], teardown: { try $0.lifecycle.teardown() }),
+				], cleanup: previewCleanup()),
 			ScenarioCase(
-				"preview-failure-recovery", context: PreviewCase.init, setup: { try $0.setup() },
-				steps: [
+				"preview-failure-recovery", context: PreviewCase.init, setup: previewSetup(),
+				behaviour: [
 					Step("compile error produces bounded diagnostics and cleans up") { context in
 						try context.setSource(previewSource + "\nthis is not Swift code")
 						try context.error(context.request(), reason: "processFailed")
@@ -401,62 +442,103 @@ private let previewSource = """
 						try context.clean()
 					},
 					Step("confirm all assertions passed") { $0.lifecycle.passed = true },
-				], teardown: { try $0.lifecycle.teardown() }),
+				], cleanup: previewCleanup()),
 			ScenarioCase(
-				"preview-scope", context: PreviewCase.init, setup: { try $0.setup() },
-				steps: [
-					Step("reject traversal, linked source and foreign project root") { context in
-						let project = try #require(context.primary), other = try context.fixture()
-						let linked = project.url.appendingPathComponent("Sources/AppViews/Linked.swift")
+				"preview-scope", context: PreviewCase.init,
+				setup: previewSetup() + [
+					Step("register secondary fixture and linked source") { context in
+						let project = try #require(context.primary)
+						let other = try context.fixture()
+						context.secondary = other
 						try FileManager.default.createSymbolicLink(
-							at: linked,
+							at: project.url.appendingPathComponent("Sources/AppViews/Linked.swift"),
 							withDestinationURL: other.url.appendingPathComponent("Sources/AppViews/Example.swift")
 						)
-						for payload in [
-							[
-								"projectRoot": project.url.path,
-								"viewPath": "Sources/AppViews/../AppModel/Model.swift",
-							],
-							["projectRoot": project.url.path, "viewPath": "Sources/AppViews/Linked.swift"],
-							["projectRoot": other.url.path, "viewPath": "Sources/AppViews/Example.swift"],
-						] {
-							try context.lifecycle.perform { host in
-								try host.expectRejected(
-									"preview", payload: payload, error: "operationFailed",
-									projectID: project.id, sessionID: context.session)
-							}
+					}
+				],
+				behaviour: [
+					Step("reject traversal") { context in
+						let project = try #require(context.primary)
+						try context.lifecycle.perform { host in
+							try host.expectRejected(
+								"preview",
+								payload: [
+									"projectRoot": project.url.path,
+									"viewPath": "Sources/AppViews/../AppModel/Model.swift",
+								], error: "operationFailed",
+								projectID: project.id, sessionID: context.session)
 						}
+					},
+					Step("reject linked source") { context in
+						let project = try #require(context.primary)
+						try context.lifecycle.perform { host in
+							try host.expectRejected(
+								"preview",
+								payload: [
+									"projectRoot": project.url.path, "viewPath": "Sources/AppViews/Linked.swift",
+								], error: "operationFailed",
+								projectID: project.id, sessionID: context.session)
+						}
+					},
+					Step("reject foreign root with primary project identity") { context in
+						let project = try #require(context.primary)
+						let other = try #require(context.secondary)
+						try context.lifecycle.perform { host in
+							try host.expectRejected(
+								"preview",
+								payload: [
+									"projectRoot": other.url.path, "viewPath": "Sources/AppViews/Example.swift",
+								], error: "operationFailed",
+								projectID: project.id, sessionID: context.session)
+						}
+					},
+					Step("verify both projects have no artifacts or render workers") { context in
+						let other = try #require(context.secondary)
 						try context.noArtifacts(); try context.noArtifacts(in: other)
 						try context.clean(); try context.clean(in: other)
 					},
 					Step("confirm all assertions passed") { $0.lifecycle.passed = true },
-				], teardown: { try $0.lifecycle.teardown() }),
+				], cleanup: previewCleanup()),
 			ScenarioCase(
-				"preview-path-content", context: PreviewCase.init, setup: { try $0.setup() },
-				steps: [
-					Step(
-						"generated extension returns text-only paths readable by the installed production Pi tool"
-					) {
-						context in
+				"preview-path-content", context: PreviewCase.init, setup: previewSetup(),
+				behaviour: [
+					Step("capture original source") { context in
 						let project = try #require(context.primary)
-						let source = project.url.appendingPathComponent("Sources/AppViews/Example.swift")
-						let original = try Data(contentsOf: source)
+						context.originalSource = try Data(
+							contentsOf: project.url.appendingPathComponent("Sources/AppViews/Example.swift"))
+					},
+					Step("invoke unmodified generated extension and validate text-only metadata") { context in
 						let result = try context.tool(context.params(size: (320, 240)))
 						try #require(result["isError"] as? Bool != true)
 						let content = try #require(result["content"] as? [[String: Any]])
 						try #require(content.count == 1 && content[0]["type"] as? String == "text")
 						let text = try #require(
 							content.first { $0["type"] as? String == "text" }?["text"] as? String)
-						let metadata = try #require(
+						context.metadata = try #require(
 							JSONSerialization.jsonObject(with: Data(text.utf8)) as? [String: Any])
-						let data = try context.image(metadata, size: (320, 240))
+					},
+					Step("validate PNG and archive identity and retain returned paths") { context in
+						let metadata = try #require(context.metadata)
+						context.imageBytes = try context.image(metadata, size: (320, 240))
 						let artifact = try #require(metadata["artifact"] as? [String: Any])
-						let relative = try #require(artifact["relativePath"] as? String)
+						context.relativePath = try #require(artifact["relativePath"] as? String)
 						let review = try #require(artifact["reviewPath"] as? String)
 						try #require(review.hasPrefix("/"))
-						try #require(try context.readImage(relative) == data)
-						try #require(try context.readImage(review) == data)
-						try #require(try Data(contentsOf: source) == original)
+						context.reviewPath = review
+					},
+					Step("read relative and absolute paths using installed production read") { context in
+						let relative = try #require(context.relativePath)
+						let review = try #require(context.reviewPath)
+						let bytes = try #require(context.imageBytes)
+						try #require(try context.readImage(relative) == bytes)
+						try #require(try context.readImage(review) == bytes)
+					},
+					Step("verify original source and empty render scratch") { context in
+						let project = try #require(context.primary)
+						try #require(
+							try Data(
+								contentsOf: project.url.appendingPathComponent("Sources/AppViews/Example.swift"))
+								== context.originalSource)
 						try context.clean()
 					},
 					Step("missing preview returns typed error diagnostics without an artifact or image") {
@@ -486,23 +568,30 @@ private let previewSource = """
 						try #require(content.count == 1 && content[0]["type"] as? String == "text")
 						try context.clean()
 					},
-					Step("archive remains readable by production read after project cleanup") { context in
+					Step("stop service and selectively remove primary project") { context in
 						let review = try #require(context.reviewFiles.first)
-						let bytes = try PreviewFixtureAudit.read(review)
+						try #require(PreviewFixtureAudit.read(review) == context.imageBytes)
 						try context.removePrimary()
-						try #require(try context.readImage(review.path) == bytes)
+					},
+					Step("read retained archive through production read after project deletion") { context in
+						let review = try #require(context.reviewPath)
+						let bytes = try #require(context.imageBytes)
+						try #require(try context.readImage(review) == bytes)
 					},
 					Step("confirm all assertions passed") { $0.lifecycle.passed = true },
 				],
-				teardown: { try $0.lifecycle.teardown() }),
-		])
+				cleanup: previewCleanup()),
+		], cleanup: [])
 }
 
 @Test @MainActor func devToolsPreviewScenarios() async throws {
 	let registry = try ScenarioRegistry([previewCollection()])
 	if let selected = ProcessInfo.processInfo.environment["DEV_TOOLS_SCENARIO_CASE"] {
-		try await registry.runCase(selected)
+		let report = try await registry.executeCase(selected, observer: ScenarioTestingObserver())
+		try report.requireSuccess()
 	} else {
-		try await registry.runCollection("dev-tools-preview")
+		let report = try await registry.executeCollection(
+			"dev-tools-preview", observer: ScenarioTestingObserver())
+		try report.requireSuccess()
 	}
 }

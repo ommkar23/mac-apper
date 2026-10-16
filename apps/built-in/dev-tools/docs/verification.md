@@ -77,24 +77,19 @@ Commands below run from the repository root and require authorization for their 
   "$swift64" test --package-path apps/built-in/dev-tools --filter devToolsToolchainBuildRunScenario
   ```
 
-### Declarative Plan rejection pilot
+### Declarative lifecycle contracts
 
-- `plan-rejections` declares named `setup: [Step]`, `behaviour: [Step]` and `cleanup: [CleanupChain]` sections. Declaration and name inspection allocate no home, host or project.
-- Setup prepares the private home, signed host and primary project. Behaviour preserves missing-plan, duplicate-plan and duplicate/absent-task rejection checks through the production generated client.
-- The final success marker is its own behaviour step. `devToolsPlanScenarios` imports `ScenarioTesting` and executes through `ScenarioTestingObserver()` with `executeCase(_:observer:)` or `executeCollection(_:observer:)`. It calls the returned report's `requireSuccess()`.
-- An observed nonthrowing assertion failure must skip that marker. Cleanup still calls the existing lifecycle helper. Request quiescence, exact service identity/reaping and fixture retention remain downstream responsibilities. A cleanup chain is ordering, not permission to delete fixtures or proof that a request drained.
-- Other Plan cases keep their legacy closure setup, `steps:` and teardown declarations. The report-based entry point supports this mixed collection without changing names or `DEV_TOOLS_SCENARIO_CASE` selectors.
+- All fourteen logical cases across five Swift test entries use named declarative phases. These are four Plan, two naming, six Preview, one Test and one standalone Build/Run case.
+- The owning files are `PlanTests.swift`, `SetAppNameTests.swift`, `PreviewTests.swift`, `TestTests.swift` and `ToolchainTests.swift` under `Tests/DevToolsScenarioTests/`.
+- Test files and suites use durable contract or behaviour names. The folder already supplies the scenario context. Non-test support files keep their domain names. See the [test naming convention](../../../../.pi/skills/scenario-write/SKILL.md#test-file-and-suite-names).
+- Collection and case setup use named `Step` arrays. Behaviour separates observable operations and assertions. Cleanup uses named `CleanupChain` arrays. Empty phases remain explicit where needed; case cleanup may be owned by its collection.
+- Declaration, name inspection and lightweight context construction allocate no home, host or project. Setup registers acquired fixtures before later preparation can fail. Plan, naming and Preview retain independent case-owned lifecycles. Test and Build/Run retain collection-owned lifecycles.
+- All five entries execute report-based APIs with `ScenarioTestingObserver()` and call `requireSuccess()`. Every final success marker is a separate behaviour step. An observed nonthrowing assertion failure skips that marker.
 - The observer covers unexpected issues recorded within the awaited step scope. It uses pinned Testing 6.2.3 Experimental `Issue.isFailure` SPI, not public-only Testing APIs. Known issues do not fail the step. Testing system issues bypass issue handlers. Swift Testing remains authoritative for overall test success.
+- Cleanup calls the existing lifecycle helper. Request quiescence, exact child/service identity and reaping, and fixture retention remain downstream responsibilities. A cleanup chain provides ordering, not permission to delete fixtures or proof that a request drained.
 - Observation cannot prove detached work finished, infer transport success, or replace explicit typed assertions and cleanup gates.
-- `DevToolsPlanIsolationTests` exercises declaration allocation and observed-failure retention without preparing a signed host. Offline tests do not establish a packaged `plan-rejections` pass. Signed-XPC execution requires separate authorization.
-
-```sh
-# Offline Plan regressions only. This does not execute devToolsPlanScenarios.
-"$swift64" test --package-path apps/built-in/dev-tools --filter DevToolsPlanIsolationTests
-# Only after separate signed-XPC authorization:
-DEV_TOOLS_SCENARIO_CASE=plan-rejections "$swift64" test \
-  --package-path apps/built-in/dev-tools --filter devToolsPlanScenarios
-```
+- Existing Swift test entry points and `DEV_TOOLS_SCENARIO_CASE` selections are unchanged. Build/Run internally uses collection `dev-tools-toolchain` and case `toolchain-build-run`. Its public entry remains `devToolsToolchainBuildRunScenario`, with no environment case selector.
+- Offline declaration, observation, retention and handshake regressions are listed under [restricted offline verification](#restricted-offline-verification). They do not establish signed-XPC acceptance.
 
 ### Metadata-only naming scenarios
 
@@ -131,13 +126,13 @@ DEV_TOOLS_SCENARIO_CASE=plan-rejections "$swift64" test \
 
 - Omit `DEV_TOOLS_SCENARIO_CASE` only when the entire naming collection is authorized. The generic collection does not stop after a case failure. Direct Swift test selection works independently of the developer helper allowlist.
 - Requests must be confirmed before exact service reaping. No development child is started. Successful assertions and confirmed service exit gate registered-project, signed-host and private-home removal. Partial setup remains registered. Unknown transport/completion, capture/reaping failure or failed assertions retain fixtures through the shared lifecycle.
-- Offline-only regression selection is `--filter 'SetAppNameScenarioHelperTests|DevToolsScenarioLifecycleTests'`. It checks allocation-free registration and fail-closed request classification plus the existing cleanup seams. Signed naming cases remain **NOT RUN** in this implementation wave.
+- Offline-only regression selection is `--filter 'SetAppNameHelperTests|DevToolsLifecycleTests'`. It checks allocation-free registration and fail-closed request classification plus the existing cleanup seams. Signed naming cases remain **NOT RUN** in this implementation wave.
 
 ### Plan and Test coverage
 
 - `plan-initial-tasks`: seeded creation/retrieval, duplicate-plan rejection, invalid initial tasks/IDs without consuming the creation slot, empty-plan isolation.
-- `plan-lifecycle`: repeated additions, updates and multi-delete ending in a retrievable empty plan.
-- `plan-rejections`: malformed/missing updates and second-in-progress rejection without mutation.
+- `plan-lifecycle`: repeated additions, updates, second-in-progress rejection without mutation and multi-delete ending in a retrievable empty plan.
+- `plan-rejections`: missing/duplicate plans and duplicate/absent-task rejection, followed by an unchanged task snapshot.
 - `plan-project-isolation`: separate plans per project, independent of session identity.
 - `test-package`: two real Swift Testing targets, successful execution, assertion failure, compilation failure, repaired pass, foreign-scope rejection and source/request-scratch preservation. Fixtures use pinned Testing and an explicit macOS 14 deployment target rather than XCTest. The passing model test checks inherited private-home values and access to both standalone compiler executables.
 - `devToolsToolchainBuildRunScenario`: requires compiler 6.4. It validates generated-client Build/Run metadata, complete scoped staging paths, source preservation and absence of project `.build`. The child checks private-home/compiler inheritance before writing its marker. It waits at most 60 seconds for a fixture-only release marker.
@@ -150,10 +145,10 @@ DEV_TOOLS_SCENARIO_CASE=plan-rejections "$swift64" test \
 
   ```sh
   "$swift64" test --package-path apps/built-in/dev-tools --scratch-path "$scratch" \
-    --filter 'ToolchainScenarioHandshakeTests|DevToolsScenarioLifecycleTests'
+    --filter 'ToolchainHandshakeTests|DevToolsLifecycleTests'
   ```
 
-- `ToolchainScenarioHandshakeTests` exercises the helper called by Build/Run. Controlled clock, readiness, waiting, discovery and release seams check the bounded acquisition window.
+- `ToolchainHandshakeTests` exercises the helper called by Build/Run. Controlled clock, readiness, waiting, discovery and release seams check the bounded acquisition window.
 - Acquisition captures, immediately caches and corroborates the exact child identity before release in one synchronous MainActor window. No await or actor hop occurs before release. A controlled queued actor job checks release ordering without relying on Task.yield, priorities or scheduler luck.
 - Coverage includes the missing-marker deadline, linked/oversized/malformed markers, cached identity on PID mismatch, no release on capture failure and cached identity on release failure. The marker PID is corroboration, not signaling authority.
 - A copied local executable checks kernel path/start/PID agreement and ESRCH with a parent-written marker. The separately authorized `devToolsToolchainBuildRunScenario` checks the child-written marker/release protocol, private-home/compiler inheritance and child/service cleanup through signed XPC.
@@ -195,14 +190,62 @@ DEV_TOOLS_SCENARIO_CASE=plan-rejections "$swift64" test \
 - A failed or ambiguous lifecycle stop poisons further request, stop and project-removal operations. No service is stopped beneath unknown compiler/renderer work. Earlier Test/Build/Run verification below is not new Plan/Preview acceptance evidence.
 - Reusable host removal is not itself proof of owned-service reaping. Do not bypass failed cleanup, signal unrelated processes, inspect credentials or clean historical fixtures to obtain a pass.
 
-## Restricted migration verification
+## Current signed-XPC recovery result
 
-- Offline Preview checks use `--filter DevToolsPreviewLifecycleTests`. They cover strict archive identity/link rejection, deleted-project archive bytes and known versus uncertain request completion without starting signed services.
+- Independent review accepted all fourteen migrated signed-XPC outcomes and the later observer-only fixture correction with eight refreshed offline passes. The first thirteen passed once on unchanged tested paths. After review of the focused test-resource correction, `preview-path-content` passed its single authorized corrected attempt in a fresh, non-reused fixture.
+- The corrected selection took 39.825 seconds in Swift Testing and 40.327 seconds overall. It verified three real correlated extension/client closes, text-only metadata, PNG/archive identity, relative and absolute installed production reads, typed rendering errors, scope rejection and installed archive read after project deletion. Actual selected-test start/pass markers and every required named phase are retained.
+- The new captured service identity was reaped before fixture removal. An independent immediate PID probe returned ESRCH. The new home, signed host and project were absent afterward. This successful cleanup applies only to the new fixture. The original failed fixture remains retained with unknown cleanup state.
+- Immediately before the corrected launch, the existing exact-executable helper again returned not found for the original retained client and service at 09:57:25 UTC. These observations are not historical absence or cleanup confirmation. No retained files were deleted or lifecycle state changed.
+- Signed-runtime commands, both path-content attempts, per-case ledger, tested-source fingerprints, cleanup audits and remaining limits are at `.tmp/devtools-signed-recovery-20261016T093259Z/corrected-path-content/report.md`. No Pi session, credentials, live call, full product bundle or unrelated GUI app was used.
+- A later observer-test-only correction allocates offline registration fixtures through the validated repository-root `projectTempRoot()` helper instead of inherited `TMPDIR`. The focused regression reproduced the old failure with a non-root inherited value. All eight Node regressions and scoped checks then passed. Packaged `PreviewToolHarness.ts` and signed runtime bytes are unchanged, so no signed rerun was needed. This later source snapshot and its checks are at `.tmp/devtools-signed-recovery-20261016T093259Z/observer-temp-correction/report.md`. The original failed fixture and runtime evidence remain unchanged.
+
+- The frozen current source snapshot, report hashes and preserved runtime byte identities are indexed at `.tmp/devtools-signed-recovery-20261016T093259Z/final-freeze/report.md` and `final-freeze/manifest.json`. This snapshot includes the later offline-only observer change. It does not relabel the earlier signed run as testing that offline file or resolve the original failed fixture's unknown cleanup.
+
+### Failed attempt and focused correction
+
+- The renewed 2026-10-16 run passed both standalone compiler checks and package preparation. Thirteen signed selections passed on their first actual attempt. `preview-path-content` failed before tool execution because its test-only registration harness still expected five tools instead of the current six.
+- The failed case reported unknown request completion and retained its home, host and project. Its original failure and cleanup-unconfirmed record remain unchanged. No service identity was captured. Static control-flow review and a spawn-forbidden offline replay of the exact retained resources establish the registration failure before client invocation. They do not establish historical process absence or retroactively confirm cleanup.
+- A focused offline regression reproduced rejection of six tools and incorrect acceptance of the stale five-tool set. The corrected test harness requires exactly `set_app_name`, `build`, `test`, `run`, `preview` and `plan`. It rejects duplicate registrations. All eight observer/resource tests passed, including real spawn forwarding and correlation checks. Current resource packaging was rebuilt and its harness bytes match source. Production client, service, renderer, generated extension and Swift test executable hashes remain unchanged.
+- The existing `OwnedExecutableProcess.capture(executable:timeout:)` API separately inspected only the retained client and service executable paths with timeout zero. Both returned `owned executable process not found; retain fixtures` at 2026-10-16 09:51:06 UTC. These are point-in-time diagnostics, not historical absence, ESRCH or cleanup confirmation. No identity was captured, signal sent or retained file removed. Commands and raw results are at `.tmp/devtools-signed-recovery-20261016T093259Z/resource-fix/exact-process-diagnostic/report.md`.
+- The corrected signed attempt was held until coordinator acceptance of the focused correction and retained-fixture safety assessment. The later corrected result is recorded above. The failed attempt remains a failure and its retained fixture remains unresolved.
+- Commands, timings, red-green logs, resource hashes, exact retained-path inspection and safety limits are at `.tmp/devtools-signed-recovery-20261016T093259Z/resource-fix/report.md`. The earlier per-case ledger remains at `.tmp/devtools-signed-recovery-20261016T093259Z/report.md`.
+
+### Earlier blocked preflight
+
+- The original 2026-10-16 fourteen-case execution authorization stopped during toolchain preflight, before any package build or scenario. The worker's version-validation command failed an assertion before saving captured compiler output. This establishes a preflight-recording failure, not an incompatible compiler or a scenario failure.
+- Both standalone executable paths were subsequently confirmed executable by read-only inspection. Their version outputs were not retained or successfully validated. No retry, source repair, Pi startup, credential access, live call or app launch followed.
+- All fourteen selections are **NOT RUN**: four Plan, two naming, Test, standalone Build/Run and six Preview. No current signed-XPC acceptance or cleanup result is claimed. No scenario fixtures or owned children were created.
+- All recorded source/worktree fingerprints were unchanged before this documentation update. The dirty documentation baseline, failed command, raw failure, ordered selections and limits are preserved at `.tmp/devtools-signed-execution-20261016T092820Z/report.md`. Further execution requires renewed authorization.
+
+## Restricted offline verification
+
+### Naming-only offline contract checkpoint
+
+- The naming-only implementation checkpoint was restricted to offline contract checks. Signed-XPC entry points, renderer/extension/installed-read execution, actual Test/Build/Run requests, Pi, live calls, credentials and GUI launches are **NOT RUN** for the naming-only update.
+- Confirm both explicit standalone `swift` and `swiftc` executables and versions first. Export repository-root `TMPDIR`. Validate a nonempty, private, nonlinked scratch directory owned by this run before using it. Use default Swift Build through the owning package entry point:
+
+  ```sh
+  "$swift64" test --package-path apps/built-in/dev-tools --scratch-path "$scratch" \
+    --filter 'PlanNamingContractTests|DevToolsPlanIsolationTests|SetAppNameHelperTests|PreviewContractTests|DevToolsPreviewLifecycleTests|TestToolchainContractTests|ToolchainHandshakeTests|DevToolsLifecycleTests'
+  ```
+
+- This selection excludes all five signed-XPC entry points. Compilation of those files is not their execution. Handshake regressions may start an exact-owned local child; lifecycle regressions may allocate private offline fixtures.
+- Static review covers all fourteen cases, original assertions, selectors, request checks, synchronous acquisition/release and unchanged deadlines. No legacy closure setup/`steps:`/teardown declaration or manual lifecycle wrapper remains in the five entry files. `steps:` inside a named cleanup chain is declarative cleanup, not a legacy case body.
+- The naming-only update passed 58 tests in all eight renamed selections with standalone Swift 6.4, default Swift Build, repository `TMPDIR` and fresh validated private scratch. Scoped format, guard and strict lint checks passed. Exact baseline comparison confirmed naming-only source changes and unchanged scenario behaviour. Final commands, statuses, snapshots and exact-path cleanup evidence, including the private fixture naming correction, are at `.tmp/devtools-naming-20261016T054902Z/fixture-correction/report.md`. The parent `.tmp/devtools-naming-20261016T054902Z/report.md` is an intermediate checkpoint, not final fixture-correction evidence.
+- Before the naming-only update, final integrated offline verification passed 58 tests in all eight selected suites after coordinator confirmation that source review and the exact-error unknown-selector regression correction were complete. Standalone Swift 6.4/default Swift Build, repository `TMPDIR` and independently validated private scratch were used. All authored DevTools scenario-source fingerprints were unchanged across that historical run.
+- That historical run's exact commands, group start/pass counts, statuses, final fingerprints, local links and exact owned-fixture cleanup outcomes remain at `.tmp/devtools-integrated-docs-20261016/report.md`. They are not current-name test outcomes or a signed-XPC pass.
+- Historical signed-host results below predate this declarative migration. They remain historical evidence and do not validate the migrated declarations or current signed runtime paths.
+
+### Historical restricted Preview verification
+
+- Offline Preview checks used `--filter DevToolsPreviewLifecycleTests`. They cover strict archive identity/link rejection, deleted-project archive bytes and known versus uncertain request completion without starting signed services.
 - Observer and installed-read checks use the resource fixtures with Node's `--experimental-strip-types --test`. The production-read fixture requires the deliberate absolute `DEV_TOOLS_SCENARIO_PI_READ_MODULE` setting. It imports only the installed filesystem tool and tests absolute PNG reads after project deletion.
 - Restricted affected checks select `DevTools(ContractTests|Tests|XPCServiceTests)`, OpenXPCGenerator's package suite and Agent's package suite with live/resource/scaffold gates unset. Skipped gates are not passes. Do not use a full DevTools command to silently consume extra scenario attempts.
-- Signed migration acceptance is separate from offline checks. After explicit release, run each of the four Plan and six Preview cases sequentially once. Stop at the first failure. No retries or collection sweep are implied. Later cases are NOT RUN. Bundle recreation follows successful authorized integration; it does not authorize app launch.
+- That earlier signed acceptance plan separately authorized four Plan and six Preview cases sequentially once, with a stop at the first failure. It did not authorize retries or a collection sweep. Its later execution and bundle checkpoint are preserved below. None of those permissions carry forward to the current declarative migration.
 
-### Preview migration source-check results
+### Historical Preview migration source-check results
+
+This checkpoint predates the fourteen-case declarative lifecycle migration. Its signed-host and bundle results are not current migration acceptance.
 
 - The revised lifecycle plus Preview offline selection passed 34 tests. The final Preview-only selection passed three tests. Five Node checks passed, including unchanged real spawn forwarding, bounded observation and installed production-read bytes after project deletion.
 - OpenXPCGenerator passed 27 tests. The restricted DevTools unit/contract/service selection passed 59 tests. Scoped swift-format and pinned strict SwiftLint passed for both changed Swift files.
@@ -223,6 +266,8 @@ DEV_TOOLS_SCENARIO_CASE=plan-rejections "$swift64" test \
 
 ## Selected isolation verification
 
+This historical isolation checkpoint predates the declarative migration. It does not validate the migrated Test or Build/Run entry.
+
 - The 2026-10-14 selected fix passed 10 offline lifecycle tests and the 57-test unit/contract/service selection with standalone Swift 6.4 and default Swift Build.
 - `test-package` and standalone Build/Run each ran once, sequentially. Both produced actual started/passed markers. Test verified both targets, expected failures, recovery, foreign scope, private-home compiler access and scratch/source preservation. Build/Run verified private child inheritance and the exact-binary release handshake.
 - Both services and the development child reached exact-owned reaping before fixture removal. Recorded host/home paths were absent afterward. Uncertain/error retention and cancellation ordering were exercised offline, not through additional failing signed launches.
@@ -239,8 +284,8 @@ DEV_TOOLS_SCENARIO_CASE=plan-rejections "$swift64" test \
 - **Cross-module live checkpoints:** the original root snapshot records separate counter and plan passes on 2026-10-11, but explicitly excludes production relaunch persistence, physical button clicks, calibrated vision and live nested Preview. The earlier post-lifecycle counter visual/identity-cleanup failure and retained safety state remain unresolved; new fixtures did not clean it.
 - Report paths above are historical locators preserved from reviewed documentation, not reports re-executed or artifact/credential contents inspected during this rewrite. Missing temporary reports do not authorize recreation or cleanup. The root overview and owning learnings retain the broader evidence index.
 
-## Rewrite verification scope
+## Earlier documentation rewrite scope
 
-- Static verification checked all 49 local Markdown links (including anchors): all targets exist and anchors resolve. Named selectors/commands were compared with Package.swift, OpenXPC configuration and package-local scenario declarations; schema/controller limits were read directly, not exercised.
+- The earlier static rewrite checked all 49 local Markdown links (including anchors): all targets existed and anchors resolved. Named selectors/commands were compared with Package.swift, OpenXPC configuration and package-local scenario declarations; schema/controller limits were read directly, not exercised.
 - No authored YAML-format README existed to migrate, and no stale YAML README links remain in authored DevTools documentation. Dependency documentation under `.build` is generated/vendor-owned and is neither migrated nor modified.
-- Runtime paths, compiler availability, signed-host execution, live workflows and historical cleanup are unverified by this documentation-only task.
+- That documentation-only rewrite did not verify runtime paths, compiler availability, signed-host execution, live workflows or historical cleanup. Current declarative offline checks are recorded separately above.

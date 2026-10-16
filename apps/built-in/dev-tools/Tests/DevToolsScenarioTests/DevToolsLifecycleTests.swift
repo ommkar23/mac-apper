@@ -5,7 +5,7 @@ import Foundation
 import Scenario
 import Testing
 
-@Suite @MainActor struct DevToolsScenarioLifecycleTests {
+@Suite @MainActor struct DevToolsLifecycleTests {
 	@Test func failedStopPoisonsRequestsAndAllRetries() throws {
 		for stage in ["attribution", "signaling", "requireReaped"] {
 			let state = DevToolsScenarioLifecycle.RequestState()
