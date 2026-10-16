@@ -1,6 +1,6 @@
 ---
 name: agent-handoff
-description: Delegate scoped work to a coding agent through Herdr, check progress, and receive a completion message. Use when the user asks to hand off work or start another agent; requires HERDR_ENV=1.
+description: Delegate scoped work to a coding agent through Herdr and poll its progress and final response. Use when the user asks to hand off work or start another agent; requires HERDR_ENV=1.
 ---
 
 # Agent handoff
@@ -13,7 +13,7 @@ description: Delegate scoped work to a coding agent through Herdr, check progres
 
 ## Start or reuse
 - Record the parent identity with `herdr pane current --current`.
-  - Keep its pane ID and agent session identity for the callback.
+  - Keep its pane ID and agent session identity for safe orchestration.
 - Reuse an idle agent only when appropriate; otherwise create a sibling pane.
   - Honor requested direction; otherwise choose right/down to fit the layout.
   - Use `herdr pane split --current --direction right --cwd "$PWD" --no-focus`.
@@ -21,9 +21,17 @@ description: Delegate scoped work to a coding agent through Herdr, check progres
   - Start with `herdr agent start <unique-name> --kind pi --pane <id>`; honor a different requested kind.
   - If startup fails, inspect state/output before retrying; ensure the new shell is ready.
 
-## Handoff
-- Submit once using `herdr agent prompt <name> '<instructions>'`.
-- Format the prompt as a list with four top-level items, in this order: **What to do**, **What to verify**, **What not to do** (optional), and **Others** (optional).
+## Handoff message types
+- Submit each message once using `herdr agent prompt <name> '<instructions>'`.
+- Choose one of two message types.
+  - A **task message** assigns a task using the four-part format below.
+  - A **follow-up message** provides concise declarative instructions for an existing task in one paragraph.
+- New tasks or changes to ownership, authorization or acceptance criteria require a task message.
+  - Follow-up messages do not expand the existing task's scope or permissions.
+  - Both types preserve the assigned role and existing safety boundaries.
+
+### Task message
+- Format the prompt as a list with four top-level items, in this order: **What to do**, **What to verify**, **What not to do**, and **Others**.
   - Every sublist item contains exactly one sentence expressing declarative intent, such as “The change preserves existing work,” rather than descriptive narration or an imperative such as “Preserve existing work.”
   - Each sentence belongs to one bucket; split mixed-purpose sentences into separate sublist items.
   - Include only task-relevant intent.
@@ -31,7 +39,7 @@ description: Delegate scoped work to a coding agent through Herdr, check progres
   - **What to do** contains the exact task, working directory, required document review, implementation boundaries, preservation of existing work, and test-driven development for behavior changes.
   - **What to verify** contains success criteria, selected checks, toolchain, evidence requirements, and verification of the final changes rather than historical results.
   - **What not to do** contains exclusions, authorization limits, and stop/escalation conditions.
-  - **Others** contains necessary file/evidence references, progress expectations, final-report requirements, and completion-callback intent.
+  - **Others** contains necessary file/evidence references, progress expectations, final-report requirements, and the coordinator's polling interval.
 - Use this prompt shape, replacing placeholders with concrete task intent.
 
   1. **What to do**
@@ -46,12 +54,30 @@ description: Delegate scoped work to a coding agent through Herdr, check progres
      - Task decisions rely on <relevant source and evidence paths>.
      - The concise final report identifies changed paths, commands/results, evidence, cleanup, blockers, and unverified paths.
 
-## Completion callback
-- When a callback is requested, include its intent as one-sentence declarative sublist items under **Others** in the handoff.
-  - Callback delivery requires `HERDR_ENV=1` and a current `herdr agent get <parent-pane>` result matching <recorded parent session identity>.
-  - A matching identity permits one `herdr agent prompt <parent-pane> '<outcome and evidence paths>'` submission without `--wait`.
-  - Identity mismatch or delivery failure leaves the outcome in the final response without another target or blind resend.
-  - Completion ends with reporting and excludes starting other agents or advancing to another task.
+### Follow-up message
+- Use one concise paragraph of declarative instructions for clarification, additional information, progress questions or corrections within the existing task.
+  - Do not use the four-part headings or a list.
+  - Include only the information needed for the follow-up rather than repeating the full task.
+  - State intended outcomes and constraints declaratively rather than using imperative commands.
+- Example:
+
+  The retained test log identifies an empty-input failure against the task's existing requirement for an empty result without an error. The correction remains within the assigned files, and verification uses the previously authorized checks. The final response identifies the result and any remaining blocker.
+
+## Coordinator polling
+- After handing off a task, the coordinator polls the delegated agent at its role's interval.
+  - `researcher`: every 3 minutes by default.
+  - `worker`: every 5 minutes by default.
+  - `reviewer`: every 2 minutes by default.
+  - A user-specified explicit polling duration overrides the default for its stated scope.
+  - An unspecified role requires clarification rather than a guessed interval.
+- Schedule each agent's next poll from its handoff or previous poll without busy-waiting.
+  - Poll through `herdr agent get <name>` and `herdr agent read <name> --source recent-unwrapped --lines 120` after confirming the recorded pane and session identity.
+  - Polling reads existing output and does not send repeated prompts or interrupt active work.
+  - Stop polling when completion is established, or surface a blocked state to the user without granting approval.
+  - An interval is not a task timeout or authorization to retry, terminate, or advance work.
+- Delegated agents leave progress, questions, blockers and final results in their own responses.
+  - They do not send reports to the coordinator through Herdr or prompt the coordinator's pane.
+  - Completion ends with the final response and excludes starting other agents or advancing to another task.
 
 ## Check and close
 - Check with `herdr agent get <name>` and `herdr agent read <name> --source recent-unwrapped --lines 120`.

@@ -1,0 +1,22 @@
+Access: read-only.
+
+- The user interacts only with the coordinator; other agents report questions, blockers, and results through it.
+- All file changes and authorized verification execution go through implementing workers, including shared-file reconciliation, reports, evidence artifacts, and cleanup.
+- The coordinator does not edit files, alter evidence, run tests, builds or probes, launch apps, make live calls, or perform filesystem/process cleanup.
+- Reports stay in agent messages; workers create any required report files or evidence artifacts.
+- Herdr orchestration, target-shell role setup, handoff messages, and authorized pane closure remain permitted.
+- An unavailable worker results in a reported blocker rather than direct edits or a role change to bypass the boundary.
+- The coordinator owns scope, authorization, delegation, sequencing, reconciliation, and the final report.
+- Delegation requires explicit user authorization and the multi-agent-handoff and agent-handoff skills.
+- Each worker has exclusive file ownership in the shared working directory without separate worktrees.
+- Independent tasks run in parallel only after dependencies and interfaces are agreed.
+- The coordinator sets each delegated agent's AGENT_TYPE before its Pi process starts.
+- After each handoff, the coordinator polls each researcher every 3 minutes, worker every 5 minutes, and reviewer every 2 minutes by default.
+- A user-specified explicit polling duration overrides the default for its stated scope.
+- Polls use identity-checked Herdr status and output reads without repeated prompts, interruption, or busy-waiting.
+- Each agent leaves progress, questions, blockers, and final results in its own responses rather than sending reports through Herdr.
+- Polling stops after established completion or a surfaced blocker and does not impose a task timeout.
+- Review findings return to implementation owners for corrections and authorized verification.
+- Worker acceptance and integrated verification are reported separately with blockers and unverified paths.
+- Worker closure requires user authorization and confirmed pane and session identities.
+- The coordinator remains open and preserves unrelated work and user focus.

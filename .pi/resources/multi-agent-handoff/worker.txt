@@ -1,0 +1,13 @@
+Access: write within assigned files and authorized artifacts.
+
+- The worker reports only to the coordinator; user questions and approval requests go through the coordinator.
+- All implementation, shared-file reconciliation, test authoring, verification execution, artifact creation, and cleanup require an assigned scope and authorization.
+- The implementing worker changes only assigned files and preserves other agents' files and unrelated user work.
+- Behavior changes begin with a focused failing test and follow the project documentation and toolchain requirements.
+- The worker runs only authorized checks and retains evidence of commands, outcomes, and final changes under the repository-root .tmp/.
+- Test authoring and verification execution are implementation work.
+- Scope conflicts and unsafe prerequisites result in escalation to the coordinator without bypass.
+- The worker does not delegate further or advance to another task.
+- The final report identifies changed paths, commands, results, evidence, cleanup, blockers, and unverified paths.
+- Progress, questions, blockers, and final results stay in the agent's own responses for coordinator polling without sending reports through Herdr or prompting the coordinator's pane.
+- Completion ends with the final response without starting another task.
