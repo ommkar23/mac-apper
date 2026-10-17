@@ -5,7 +5,16 @@ import Foundation
 import Scenario
 import Testing
 
-@Test func htViewPromptAndObserverContractOffline() {
+@Test func htViewPromptAndObserverContractOffline() throws {
+	let directory = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
+	for name in [
+		"CreateHTViewTests.swift", "HTViewEvidenceTests.swift", "CreateHTViewContractTests.swift",
+	] {
+		#expect(FileManager.default.fileExists(atPath: directory.appendingPathComponent(name).path))
+	}
+	let declaration = try String(
+		contentsOf: directory.appendingPathComponent("CreateHTViewTests.swift"), encoding: .utf8)
+	#expect(declaration.contains("makeCollection: createHTViewCollection"))
 	for required in [
 		"self-contained UTF-8 HTML", "openDocument(_ url: URL)", "documentURL: URL?",
 		"errorMessage: String?", "isLoading: Bool", "same document action",

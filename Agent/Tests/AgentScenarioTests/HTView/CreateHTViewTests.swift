@@ -19,24 +19,71 @@ let htViewCreatePrompt = """
 	Write meaningful Swift Testing tests for the actual local document action, observable errors and recovery. Test the real generated browser path too, including any content-rule compilation and load lifecycle; a separate bare WKWebView is not evidence for the app. Use Test, repair tool-level failures as needed within this request, then Build and Run when ready.
 	"""
 
-@MainActor private final class CreateHTViewContext: CaseContext {
+// Submission is acquisition uncertainty even when no project has been published yet.
+// This ledger is shared by polling and cleanup; it never treats missing evidence as absence.
+struct HTViewSubmissionOwnership {
+	private(set) var submissionStarted = false
+	private(set) var project: URL?
+
+	mutating func beginSubmission() { submissionStarted = true }
+
+	@discardableResult mutating func capture(_ project: URL?, root: URL) throws -> Bool {
+		guard
+			let project
+		else { return false }
+		try #require(
+			project.deletingLastPathComponent().resolvingSymlinksInPath()
+				== root.resolvingSymlinksInPath())
+		try #require(UUID(uuidString: project.lastPathComponent) != nil)
+		if let captured = self.project {
+			guard
+				captured.resolvingSymlinksInPath() == project.resolvingSymlinksInPath()
+			else {
+				throw ScenarioFailure.message(
+					"HTView project changed after ownership capture; retain host/home")
+			}
+			return false
+		}
+		self.project = project
+		return true
+	}
+
+	func requireReconciled(piCaptured: Bool) throws {
+		guard
+			!submissionStarted || (project != nil && piCaptured)
+		else {
+			throw ScenarioFailure.message(
+				"HTView submission ownership unconfirmed; retain host/home/project")
+		}
+	}
+}
+
+@MainActor private final class CreateHTViewContext: CreateCaseContext {
 	let adapter = AgentServiceXPCAdapter()
 	let runtime: AgentXPCRuntime
 	let workspace: WorkspaceSession
 	var submission: Task<Void, Never>?
-	var ownedProject: URL?
+	var ownership = HTViewSubmissionOwnership()
+	var ownedProject: URL? { ownership.project }
 	var ownedPi: OwnedProcessIdentity?
-	var runPassed = false
+	var home: URL?
+	var compiler: SDKCompiler?
+	var settlementDeadline: ContinuousClock.Instant?
+	var capturedArguments: String?
+	var binary: URL?
+	var launched: (pid: Int32, start: UInt64)?
 
-	init() {
+	override init() {
 		runtime = AgentXPCRuntime(transport: adapter)
 		workspace = WorkspaceSession(
 			runtime: runtime, workspaceStore: AgentXPCWorkspaceStore(transport: adapter))
+		super.init()
 		workspace.selectAgent("create")
 	}
 
-	func run() async throws {
+	func validateHomeAndLibrary() async throws {
 		let home = try CreateScenarioIsolation.requireHome()
+		self.home = home
 		await workspace.refreshLibrary()
 		try #require(
 			workspace.library.allSatisfy {
@@ -44,32 +91,37 @@ let htViewCreatePrompt = """
 					&& $0.project.deletingLastPathComponent().resolvingSymlinksInPath()
 						== home.appendingPathComponent(".mac-apper").resolvingSymlinksInPath()
 			})
-		workspace.idea = htViewCreatePrompt
+	}
+
+	func recheckCredentialLifetime() throws {
+		let home = try #require(home)
 		// Recheck the selective snapshot at execution time; do not refresh authentication.
 		_ = try CreateScenarioIsolation.credentialSnapshot(
 			try #require(
 				(JSONSerialization.jsonObject(
 					with: Data(contentsOf: home.appendingPathComponent(".pi/agent/auth.json")))
 					as? [String: [String: Any]])?["openai-codex"]))
+	}
+
+	func preflightCompiler() throws {
 		let compiler = try SDKCompiler.resolve()
-		submission = try SDKCompiler.beforeStartup(preflight: { try compiler.preflight() }) {
-			Task { await workspace.submit() }
-		}
-		let deadline = ContinuousClock.now.advanced(by: .seconds(780))
-		var capturedArguments: String?
+		try compiler.preflight()
+		self.compiler = compiler
+	}
+
+	func submit() {
+		ownership.beginSubmission()
+		submission = Task { await workspace.submit() }
+		settlementDeadline = ContinuousClock.now.advanced(by: .seconds(780))
+	}
+
+	func awaitSettlement() async throws {
+		let deadline = try #require(settlementDeadline)
+		try captureProject()
 		while workspace.busy || workspace.sessionFile == nil {
 			try Task.checkCancellation()
-			if let project = workspace.project {
-				if ownedProject == nil {
-					let root = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(
-						".mac-apper")
-					try #require(
-						project.deletingLastPathComponent().resolvingSymlinksInPath()
-							== root.resolvingSymlinksInPath())
-					try #require(UUID(uuidString: project.lastPathComponent) != nil)
-					ownedProject = project
-					print("CREATE_PROJECT: \(project.path)")
-				}
+			try captureProject()
+			if ownedProject != nil {
 				if capturedArguments == nil, let file = workspace.sessionFile {
 					let output = try command("/bin/ps", ["-ww", "-axo", "pid=,command="])
 					if let snapshot = try? ScenarioProcessSnapshot.find(output, sessionPath: file.path),
@@ -91,6 +143,10 @@ let htViewCreatePrompt = """
 			)
 			try await Task.sleep(for: .milliseconds(100))
 		}
+		try captureProject()
+	}
+
+	func auditCompletedCreate() throws {
 		let project = try #require(ownedProject)
 		let file = try #require(workspace.sessionFile)
 		try #require(
@@ -113,11 +169,29 @@ let htViewCreatePrompt = """
 		#expect(arguments.contains("DevTools.app/Contents/Resources/PiExtension/Extension.ts"))
 		print("CREATE_REPLY: \(workspace.messages.last(where: { !$0.isUser })?.text ?? "")")
 		print("CREATE_ACTIVITY: \(workspace.state.liveDetails.joined(separator: "\n"))")
+	}
+
+	func auditAuthoredTest() throws {
+		let project = try #require(ownedProject)
+		let file = try #require(workspace.sessionFile)
+		let compiler = try #require(compiler)
 		try verifyHTViewTesting(session: file, project: project, compiler: compiler)
+	}
+
+	func auditBuildRun() throws {
+		let project = try #require(ownedProject)
+		let file = try #require(workspace.sessionFile)
 		let evidence = try ScenarioToolEvidence(session: file)
 		try #require(!evidence.calls.contains { $0.name.hasPrefix("mcp__parallel__") })
-		let binary = try htViewLaunchBinary(evidence: evidence, project: project)
+		binary = try htViewLaunchBinary(evidence: evidence, project: project)
+	}
+
+	func auditDevelopment() async throws {
+		let project = try #require(ownedProject)
+		let home = try #require(home)
+		let binary = try #require(binary)
 		let launched = try await ownedScaffoldProcess(binary)
+		self.launched = launched
 		print("CREATE_RUN_IDENTITY: pid=\(launched.pid) start=\(launched.start) path=\(binary.path)")
 		let store = home.appendingPathComponent(
 			"Library/Application Support/MacApperGenerated/\(project.lastPathComponent)/CoreData/data.sqlite"
@@ -129,20 +203,41 @@ let htViewCreatePrompt = """
 		for tool in ["test", "build", "run"] {
 			try #require(workspace.state.liveDetails.contains { $0.hasPrefix("\(tool) · completed") })
 		}
+	}
+
+	func verifyIndependentWebKit() async throws {
+		let project = try #require(ownedProject)
+		let compiler = try #require(compiler)
 		try await verifyHTViewWebKit(project: project, compiler: compiler)
 		print("CREATE_HTVIEW_WEBKIT: passed independent HTML/CSS/JavaScript verification")
+	}
+
+	func verifyDevelopmentLiveness() throws {
+		let launched = try #require(launched)
+		let binary = try #require(binary)
 		try #require(scaffoldProcessStart(launched.pid) == launched.start)
 		try #require(
 			scaffoldProcessPath(launched.pid).map { URL(fileURLWithPath: $0).resolvingSymlinksInPath() }
 				== binary.resolvingSymlinksInPath(),
 			"Matched Run development app not alive after independent verification")
+	}
+
+	func reportProductionOutput() throws {
+		let project = try #require(ownedProject)
 		let output = project.deletingLastPathComponent().appendingPathComponent(
 			"output/\(project.lastPathComponent)")
 		print("CREATE_PRODUCTION_OUTPUT_EXISTS: \(FileManager.default.fileExists(atPath: output.path))")
-		runPassed = true
 	}
 
-	func cleanup() async throws {
+	func captureProject() throws {
+		let root = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".mac-apper")
+		if try ownership.capture(workspace.project, root: root), let project = ownedProject {
+			print("CREATE_PROJECT: \(project.path)")
+		}
+	}
+
+	override func cleanupResources() async throws {
+		try captureProject()
 		// Never delete a partial-start project if its Pi identity was not captured.
 		if ownedPi == nil, let file = workspace.sessionFile {
 			let output = try command("/bin/ps", ["-ww", "-axo", "pid=,command="])
@@ -164,6 +259,8 @@ let htViewCreatePrompt = """
 		try #require(stopped, "Pi stop failed; retain fixtures")
 		try #require(await workspace.shutdown(), "Client detach failed")
 		await submission?.value
+		try captureProject()
+		try ownership.requireReconciled(piCaptured: ownedPi != nil)
 		if let project = ownedProject {
 			let processes = try command("/bin/ps", ["-axo", "pid="])
 			let prefix =
@@ -186,7 +283,6 @@ let htViewCreatePrompt = """
 				try FileManager.default.removeItem(at: project)
 			}
 		}
-		print(CreateScenarioIsolation.confirmation)
 	}
 }
 
@@ -195,95 +291,52 @@ private func command(_ executable: String, _ arguments: [String]) throws -> Stri
 		URL(fileURLWithPath: executable), arguments, timeout: 10, logOutput: false)
 }
 
-@MainActor private final class CreateHTViewCollection: CollectionContext {}
+@MainActor func createHTViewCollection() -> ScenarioCollection {
+	ScenarioCollection(
+		"agent-create", context: CreateCollection.init, setup: [],
+		cases: [
+			CreateCases.makeCase(
+				"create-htview", context: CreateHTViewContext.init,
+				setup: [
+					CreateCases.step("validate private home and empty library") {
+						try await $0.validateHomeAndLibrary()
+					},
+					CreateCases.step("assign unchanged HTView prompt") {
+						$0.workspace.idea = htViewCreatePrompt
+					},
+					CreateCases.step("recheck staged credential lifetime") {
+						try $0.recheckCredentialLifetime()
+					},
+					CreateCases.step("preflight explicit SDK compiler") { try $0.preflightCompiler() },
+				],
+				behaviour: [
+					CreateCases.step("submit HTView request") { $0.submit() },
+					CreateCases.step("await settlement and capture owned startup evidence") {
+						try await $0.awaitSettlement()
+					},
+					CreateCases.step("audit completed Create profile and tools") {
+						try $0.auditCompletedCreate()
+					},
+					CreateCases.step("audit final-revision authored Test") { try $0.auditAuthoredTest() },
+					CreateCases.step("audit no Parallel and matched Build/Run") { try $0.auditBuildRun() },
+					CreateCases.step("capture development identity and audit private storage/activity") {
+						try await $0.auditDevelopment()
+					},
+					CreateCases.step("independently verify generated WebKit document behavior") {
+						try await $0.verifyIndependentWebKit()
+					},
+					CreateCases.step("verify development liveness") { try $0.verifyDevelopmentLiveness() },
+					CreateCases.step("report production output") { try $0.reportProductionOutput() },
+					CreateCases.step("mark HTView behavior passed") { $0.runPassed = true },
+				])
+		], cleanup: [CreateCollection.confirmationChain()])
+}
 
 @Test(.enabled(if: ProcessInfo.processInfo.environment["AGENT_SCENARIO_LIVE"] == "1"))
 @MainActor func agentCreateHTViewScenario() async throws {
-	let caseName = "create-htview"
-	let testName = "agentCreateHTViewScenario"
-	if ProcessInfo.processInfo.environment["AGENT_SCENARIO_TEST_HOST"] == "1" {
-		_ = try ChatModelCases.serviceIdentifier()
-		let collection = ScenarioCollection(
-			"agent-create", context: CreateHTViewCollection.init,
-			cases: [
-				ScenarioCase(
-					caseName, context: { _ in CreateHTViewContext() },
-					steps: [
-						Step("create, test, build, launch and independently verify HTView") { context in
-							try await withThrowingTaskGroup(of: Void.self) { group in
-								group.addTask { try await context.run() }
-								group.addTask {
-									try await Task.sleep(for: .seconds(1020))
-									throw ScenarioFailure.message("Create execution deadline exceeded")
-								}
-								defer { group.cancelAll() }
-								try await group.next()
-							}
-						}
-					], teardown: { try await $0.cleanup() })
-			])
-		try await ScenarioRegistry([collection]).runCase(caseName)
-	} else {
-		let home = try CreateScenarioIsolation.prepareHome()
-		var cleanupConfirmed = true  // No inner processes exist until runTest starts.
-		var passed = false
-		let host: PackagedTestHost
-		do {
-			host = try AgentChatScenarioInputs.prepareHost(
-				includeDevTools: true, includeVision: false, isolatedHome: home)
-		} catch {
-			try home.remove(cleanupConfirmed: true)  // No test/Pi was started.
-			throw error
-		}
-		defer {
-			do {
-				let removed = try home.finishHost(
-					cleanupConfirmed: cleanupConfirmed,
-					removeFixtures: passed
-						&& ProcessInfo.processInfo.environment["AGENT_CREATE_KEEP_PROJECT"] != "1",
-					stopServices: {
-						try stopScaffoldService(
-							host.app, relative: "AgentXPCService.xpc/Contents/MacOS/AgentApplication")
-						try stopScaffoldService(
-							host.app?.appendingPathComponent("Contents/Applications/DevTools.app"),
-							relative: "DevToolsApplication.xpc/Contents/MacOS/DevToolsApplication")
-					}, removeHost: { try host.remove() })
-				if removed {
-					print("CREATE_HOST_HOME_CLEANUP: removed after confirmed process reaping")
-				} else {
-					print(
-						"CREATE_RETAINED_HOST_HOME: host=\(host.app?.path ?? "unavailable") home=\(home.directory.path)"
-					)
-				}
-			} catch {
-				Issue.record("Owned Create cleanup failed; retain signed host/home: \(error)")
-				print(
-					"CREATE_RETAINED_HOST_HOME: host=\(host.app?.path ?? "unavailable") home=\(home.directory.path)"
-				)
-			}
-		}
-		let app = try #require(host.app)
-		print("CREATE_ISOLATED_HOST_HOME: host=\(app.path) home=\(home.directory.path)")
-		_ = try CreateScenarioIsolation.credentialSnapshot(
-			try #require(
-				(JSONSerialization.jsonObject(
-					with: Data(contentsOf: home.directory.appendingPathComponent(".pi/agent/auth.json")))
-					as? [String: [String: Any]])?["openai-codex"]))
-		cleanupConfirmed = false
-		let result = try host.runTest(
-			filter: "^AgentScenarioTests\\.\(testName)",
-			environment: [
-				"AGENT_SCENARIO_TEST_HOST": "1",
-				"AGENT_CREATE_HOME": home.directory.path,
-				"HOME": home.directory.path, "CFFIXED_USER_HOME": home.directory.path,
-
-			], timeoutSeconds: 1320)
-		print(result.output)
-		cleanupConfirmed = result.output.contains(CreateScenarioIsolation.confirmation)
-		passed = result.status == 0 && result.output.contains("Test \(testName)() passed")
-		try #require(result.output.contains("Test \(testName)() started."))
-		try #require(passed, "Packaged Create scenario failed")
-	}
+	try await runCreateScenario(
+		caseName: "create-htview", testName: "agentCreateHTViewScenario",
+		includeVision: false, makeCollection: createHTViewCollection)
 }
 
 // Internal entry points allow coordinator-owned offline evidence regressions.

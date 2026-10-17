@@ -13,17 +13,57 @@ The app chooses its visual design.
 - It does not guarantee model success or authorize external retries.
 - Live execution and credential staging need separate authorization. See [scenario runbook](../../../docs/scenarios.md).
 
-From the repository root, with live gates unset:
+From the repository root, with live/resource/scaffold/host gates unset:
 
 ```sh
 swift64="$HOME/Library/Developer/Toolchains/swift-6.4.0-RELEASE.xctoolchain/usr/bin/swift"
-"$swift64" test --package-path Agent --filter 'htViewHTMLFixture|htViewScenarioEvidence|htViewWebKitMalformedEvidenceOffline|htViewResource|htViewPromptAndObserver'
-"$swift64" test --package-path Agent --filter htViewEmbeddedWebKitOfflineRegression
+"$swift64" test --package-path Agent --filter 'AgentScenarioTests[./](CreateHTViewContractTests|htViewHTMLFixture|htViewScenarioEvidence|htViewWebKitMalformedEvidenceOffline|htViewResource|htViewPromptAndObserver)'
 ```
 
 Check executable `swift` and `swiftc` versions first. Use standalone Swift 6.4 and default Swift Build.
-The native regression needs local Aqua and WebKit. It owns sequential private host builds.
-It makes no Pi, MCP or Gemini calls.
+Export repository-root `.tmp/` as `TMPDIR` before developer commands.
+Use a validated private scratch directory for isolated builds.
+The declaration contracts inspect the actual factory without executing setup.
+Existing `htViewScenarioEvidence` function selectors remain unchanged in [HTViewEvidenceTests.swift](HTViewEvidenceTests.swift).
+
+The separate native regression requires explicit native-execution authorization:
+
+```sh
+"$swift64" test --package-path Agent --filter htViewEmbeddedWebKitOfflineRegression
+```
+
+It needs local Aqua and WebKit. It owns sequential private host builds.
+It makes no Pi, MCP or Gemini calls. It is not part of the focused offline selection above.
+
+## Declarative lifecycle
+
+[CreateHTViewTests.swift](CreateHTViewTests.swift) owns `createHTViewCollection()`.
+It retains collection `agent-create`, case `create-htview` and entry `agentCreateHTViewScenario`.
+The entry uses the common Create host lifecycle with Vision disabled.
+
+- Setup validates the private home and initially empty library.
+  - Separate phases assign the unchanged prompt, recheck staged credential lifetime and preflight the explicit SDK compiler.
+  - The shared 1020-second absolute budget starts before the first setup phase. Every setup and behaviour phase uses its remaining time.
+- Behaviour records submission uncertainty before starting the task and starts the unchanged 780-second settlement deadline immediately afterward.
+  - Settlement captures validated project ownership before polling, during polling and after settlement.
+  - Already-completed submission cannot bypass project capture by skipping the polling loop.
+  - Settlement also captures Pi launch evidence.
+  - Subsequent phases audit completed presentation/profile/tools and final-revision authored Test evidence.
+  - No-Parallel and matched Build/Run checks precede exact development identity, private storage and activity checks.
+  - Independent generated-model WebKit verification precedes development liveness and production-output reporting.
+  - Only the final behaviour phase sets `runPassed`.
+- One gated case cleanup preserves stop, exact Pi reaping, detach, submission completion, development cleanup, archive and retention order.
+  - It reconciles published project ownership on entry and after shutdown/submission completion.
+  - A submitted request with missing project or Pi ownership fails closed before development/project removal and collection confirmation.
+  - Late publication cannot replace an already captured project.
+  - Missing polling evidence is not proof of no acquisition.
+  - Collection cleanup emits common confirmation only after every constructed context confirms cleanup and no cleanup issue was observed.
+  - The common host retains the unchanged 1320-second invocation bound and outer service/home gates.
+  - Assertion observation and successful reports gate later behaviour and completion.
+
+These are cooperative deadlines. Synchronous work can delay cancellation.
+The existing independent verifier capture-gap limitation is unchanged.
+Declaration and evidence regressions do not establish live creation or native browser acceptance.
 
 ## Verification contract
 

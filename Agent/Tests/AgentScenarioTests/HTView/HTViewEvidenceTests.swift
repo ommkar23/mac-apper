@@ -9,7 +9,7 @@ import Testing
 	let compiler = try SDKCompiler.resolve()
 	for nested in [false, true] {
 		for names in [["write", "test"], ["write", "test", "edit", "test"]] {
-			let fixture = try HTViewScenarioEvidenceFixture()
+			let fixture = try HTViewEvidenceFixture()
 			defer { fixture.remove() }
 			try fixture.writeTests(htViewAuthoredTestSource)
 			let records = try orderedEvidenceFixture(
@@ -24,7 +24,7 @@ import Testing
 
 @Test func htViewScenarioEvidenceRejectsPassingTestBeforeFinalAppEditOffline() throws {
 	let compiler = try SDKCompiler.resolve()
-	let fixture = try HTViewScenarioEvidenceFixture()
+	let fixture = try HTViewEvidenceFixture()
 	defer { fixture.remove() }
 	try fixture.writeTests(htViewAuthoredTestSource)
 	let records = try orderedEvidenceFixture(
@@ -64,7 +64,7 @@ func htViewScenarioEvidenceRejectsInvalidAuthoredTestsOffline(mutation: String) 
 	let compiler = try SDKCompiler.resolve()
 	for nested in [false, true] {
 		if mutation == "failedRoot" || mutation == "failedIntermediate", !nested { continue }
-		let fixture = try HTViewScenarioEvidenceFixture()
+		let fixture = try HTViewEvidenceFixture()
 		defer { fixture.remove() }
 		var source = htViewAuthoredTestSource
 		var names = ["write", "test"]
@@ -134,7 +134,7 @@ func htViewScenarioEvidenceRejectsInvalidAuthoredTestsOffline(mutation: String) 
 
 @Test func htViewScenarioEvidenceAcceptsScopedBuildRunOffline() throws {
 	for nested in [false, true] {
-		let fixture = try HTViewScenarioEvidenceFixture()
+		let fixture = try HTViewEvidenceFixture()
 		defer { fixture.remove() }
 		// The audit does not prescribe global tool order; Run can precede a successful Build.
 		for names in [["build", "run"], ["run", "build"]] {
@@ -158,7 +158,7 @@ func htViewScenarioEvidenceRejectsInvalidAuthoredTestsOffline(mutation: String) 
 func htViewScenarioEvidenceRejectsInvalidBuildRunOffline(mutation: String) throws {
 	for nested in [false, true] {
 		if mutation == "failedRoot" || mutation == "failedIntermediate", !nested { continue }
-		let fixture = try HTViewScenarioEvidenceFixture()
+		let fixture = try HTViewEvidenceFixture()
 		defer { fixture.remove() }
 		var names = ["build", "run"]
 		var build = fixture.build, run = fixture.run
@@ -202,7 +202,7 @@ func htViewScenarioEvidenceRejectsInvalidBuildRunOffline(mutation: String) throw
 	}
 }
 
-private struct HTViewScenarioEvidenceFixture {
+private struct HTViewEvidenceFixture {
 	let root: URL
 	let project: URL
 	let buildID = UUID().uuidString.lowercased()

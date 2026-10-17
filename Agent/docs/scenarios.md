@@ -63,6 +63,51 @@ AGENT_SCENARIO_LIVE=1 "$swift64" test --package-path Agent --filter agentCreateH
   - Chat still does not pass a private service home to `prepareHost()`. Unique signed identities do not establish service-home isolation. This limit is not repaired here.
   - The historical capabilities missing-fetch failure remains unresolved live. Offline prompt/declaration checks do not prove model compliance.
 
+## Create declaration lifecycle
+
+- The three paid entry functions and selectors are unchanged.
+  - `agentCreateCounterScenario` selects `create-counter`.
+  - `agentCreatePlanScenario` selects `create-counter-plan`.
+  - `agentCreateHTViewScenario` selects `create-htview`.
+  - Each factory declares one `agent-create` collection. Discovery does not acquire a home, client, host or credential.
+- [CreateCounterTests.swift](../Tests/AgentScenarioTests/CreateCounterTests.swift) declares Counter and Plan.
+  [CreateHTViewTests.swift](../Tests/AgentScenarioTests/HTView/CreateHTViewTests.swift) declares HTView.
+  Setup, submission, settlement, evidence audits, independent verification and final success are separate named phases.
+  Authored Test evidence precedes independent harness injection.
+- [CreateCaseLifecycle.swift](../Tests/AgentScenarioTests/CreateCaseLifecycle.swift) registers each context before setup.
+  One absolute 1020-second cooperative budget starts before the first setup/acquisition phase.
+  Wrapped phases use the remaining budget. They do not reset it.
+  The 780-second settlement deadline still starts immediately after submission.
+  Losing tasks are cancelled and awaited before resource cleanup.
+  Cleanup runs outside cancelled body work.
+- Unexpected nonthrowing assertions stop later body phases and success markers.
+  Cleanup clears an optimistic behavior-pass flag after a recorded case failure or cancellation, before project-retention decisions.
+  Both inner and outer execution use `ScenarioTestingObserver()` and `report.requireSuccess()`.
+  Collection cleanup emits the existing Create confirmation once only after every constructed context confirms cleanup and no cleanup problem was observed.
+- [CreateHostLifecycle.swift](../Tests/AgentScenarioTests/CreateHostLifecycle.swift) names outer preparation, invocation, validation and cleanup.
+  It owns each returned home and signed host before later validation.
+  It rechecks staged credential lifetime and marks invocation uncertain before the 1320-second hosted call.
+  Only the exact selected test's started/passed markers plus exit zero establish hosted test success.
+  Status alone cannot establish inner cleanup confirmation.
+- Counter/Plan retain Vision selection. HTView does not enable Vision.
+  Existing product, credential-file and retention overrides remain available.
+  Partial preparation may remove a home only when no inner invocation started.
+  After invocation, missing results or confirmation retain the host/home.
+  `IsolatedScenarioHome.finishHost` still gates exact Agent then DevTools reaping, tracked credential scrubbing and fixture retention/removal.
+- **Plan remains interface-only and permanently unconfirmed.**
+  Its scoped attach, stop, shutdown and submission-completion attempts all run.
+  Their acknowledgements do not prove quiescence.
+  Plan does not inspect/reap Pi or delete its project, and cannot emit aggregate cleanup confirmation.
+  This migration does not repair that limitation or authorize a paid rerun.
+- Bounds are cooperative, not hard wall-clock guarantees.
+  Synchronous compiler/process work can delay timer scheduling.
+  The existing Counter command helper has unbounded process/pipe waiting.
+  HTView's independent verifier still has a child-start/identity-capture gap before its cleanup scope.
+  Offline contracts do not repair or exercise those live paths.
+- Resource/scaffold scenarios remain separately scoped.
+  Historical HTView staging failures and historical cleanup/security failures remain failures.
+  See [offline selections](verification.md#create-declaration-and-lifecycle-regressions) and [recorded learnings](../../.pi/LEARNINGS.yaml).
+
 ## Create counter and plan contracts
 
 - **Shared workflow**
@@ -99,7 +144,8 @@ AGENT_SCENARIO_LIVE=1 "$swift64" test --package-path Agent --filter agentCreateH
   - The reviewer uses a 120-second child deadline, bounded private temporary I/O/cancellation cleanup and CREATE_VISION logging, inside 1020-second case and 1320-second hosted bounds.
   - Only the reviewer contacts Google while the generated app remains offline, and accuracy calibration/negative-uncertain live coverage remain unverified.
 - **Project retention**
-  - Teardown stops Pi/development and removes only the UUID fixture project unless AGENT_CREATE_KEEP_PROJECT=1 retains it, leaving existing projects untouched.
+  - Counter teardown stops Pi/development and removes only a successful UUID fixture project unless AGENT_CREATE_KEEP_PROJECT=1 retains it. Failed fixtures and existing projects remain untouched.
+  - Plan's interface-only cleanup remains unconfirmed as described above. It cannot use Counter reaping or deletion.
   - Successful previews remain separately archived after project removal with CREATE_PREVIEW_RETAINED reporting their path.
 
 ## Create HTView

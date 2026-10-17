@@ -2,7 +2,7 @@
 
 [Agent introduction](../README.md) · [Scenario contracts](scenarios.md) · [Scaffold](scaffold.md) · [Recorded evidence](evidence.md)
 
-Commands below are entry points for separately authorized verification, not checks executed during this rewrite. Run from the repository root unless stated otherwise.
+Commands below require separate verification authorization. Listing a command does not mean it has been run. Run from the repository root unless stated otherwise.
 
 ## Compiler setup
 
@@ -63,6 +63,43 @@ Keep live/resource/scaffold gates unset. Use exact owning-package filters rather
 - Chat contract checks inspect the actual eight-case collection, lightweight discovery and selector rejection.
 - Lifecycle fixtures exercise observed assertion gating, one shared deadline, timeout/cancellation, awaited uncancelled cleanup, partial acquisition, reverse-order aggregate release and collection confirmation suppression.
 - These checks do not authorize or establish signed hosting, Pi/MCP calls, real session lifecycle behaviour or live cleanup after the declaration change. See [Chat limits](scenarios.md#production-path-and-chat-collection).
+
+### Create declaration and lifecycle regressions
+
+Use a private validated scratch and repository-root `TMPDIR` from the root temporary-work contract.
+Keep `AGENT_SCENARIO_LIVE`, `AGENT_RESOURCE_SCENARIO` and `AGENT_SCAFFOLD_DEVTOOLS_SCENARIO` unset.
+Also unset host-recursion gates `AGENT_SCENARIO_TEST_HOST`, `AGENT_RESOURCE_TEST_HOST` and `AGENT_SCAFFOLD_DEVTOOLS_HOST`.
+These exact offline selections do not prepare signed hosts, inspect credentials, launch Pi/WebKit or call models/MCP/Gemini:
+
+```sh
+"$swift64" test --package-path Agent --scratch-path "$scratch" \
+  --filter 'AgentScenarioTests[./](CreateContractTests|CreateLifecycleTests|CreateHostLifecycleTests|CreatePlanContractTests|CreateCounterContractTests|CreateHTViewContractTests|createPlanInterfacePolicyOffline|createPlanInterfaceScopeOffline|createPlanInterfaceCleanupOffline)'
+"$swift64" test --package-path Agent --scratch-path "$scratch" \
+  --filter 'AgentScenarioTests[./](createPlanToolAuditOffline|createPreviewToolAuditOffline|createNamingTypedResultOffline|createNamingEvidenceOffline|createNamingFinalMetadataOffline|createPreviewDefaultCanvasTextOnlyOffline|createPreviewRejectsInvalidPathEvidenceOffline|createPreviewCanonicalArchiveWithAliasClientOffline)'
+"$swift64" test --package-path Agent --scratch-path "$scratch" \
+  --filter 'AgentScenarioTests[./](htViewHTMLFixture|htViewScenarioEvidence|htViewWebKitMalformedEvidenceOffline|htViewResource|htViewPromptAndObserver)'
+"$swift64" test --package-path Agent --scratch-path "$scratch" \
+  --filter 'AgentScenarioTests[./]counterEvidenceParsesSwift64WithoutModelOrToolCalls'
+```
+
+- Require positive started/passed counts for each requested group. Zero tests and skipped tests are not passes.
+  Explicit passed-with-known-issues outcomes are positive negative-control results, even when Swift Testing prints a cross marker.
+  Count them separately. Reject failed outcomes and nonzero command statuses.
+  Aggregate runner summaries are not individual test passes.
+  Count each parameterized test once. Its case-start lines and passing-summary suffix do not add tests.
+- Contracts inspect all three real declarations without invoking their context factories or setup.
+- Synthetic lifecycle fixtures check one shared budget, awaited cancellation, uncancelled cleanup, partial setup/submission uncertainty, assertion gating and aggregate confirmation suppression.
+  Retention checks clear an optimistic pass flag after observed failure, thrown failure or cancellation.
+- Injected host fixtures check partial preparation, thrown/missing invocation results, selected-test markers, missing inner confirmation, service failure and retention policy.
+  They replace real preparation, credential, Vision and runtime operations.
+- Plan contracts and the three extracted `createPlanInterfacePolicyOffline`, `createPlanInterfaceScopeOffline` and `createPlanInterfaceCleanupOffline` guards preserve its permanently unconfirmed interface-only cleanup.
+  Acknowledgements cannot authorize Pi inspection/reaping or project deletion.
+- Do not broaden these filters to `AgentScenarioTests` for offline-only authorization.
+  `createIsolatedHostOffline` and `agentMcpHostPreparationOffline` execute real signed hosting despite their names.
+  No-model resource/scaffold entry points and `htViewEmbeddedWebKitOfflineRegression` need separate authorization.
+- These checks are not paid Create, signed-host acceptance or live cleanup recovery.
+  Cooperative timeout limits and HTView's existing child-capture gap remain documented in the [Create lifecycle contract](scenarios.md#create-declaration-lifecycle).
+  Historical failures remain in the [recorded learnings](../../.pi/LEARNINGS.yaml).
 
 ### Counter offline checkout override
 
