@@ -59,6 +59,9 @@ const exercises = {
     assert.match(template, /<selected checks and toolchain>/);
     assert.match(template, /<unsafe prerequisite or scope conflict>/);
     assert.match(template, /changed paths, commands\/results, evidence, cleanup, blockers, and unverified paths/);
+    assert.match(template, /parent and sender identities, task_id, completion and blocker notification_id/);
+    assert.match(template, /explicitly authorizes report-only queued input.*working/);
+    assert.doesNotMatch(template, /polling|assigned interval/);
     return { headings, limitation: 'Structural template check, not natural-language validation' };
   },
   'literal-prompt'() {

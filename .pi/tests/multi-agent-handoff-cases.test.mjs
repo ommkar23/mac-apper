@@ -66,7 +66,7 @@ const contracts = {
   C04: [/dependency launch gate/i, /accepted.*producer.*snapshot/i],
   C05: [/Herdr.*report-file fallback.*read-only/i],
   C06: [/worker loss.*ownership release/i, /cannot rule out.*editing.*escalate/i],
-  C07: [/blocked branch.*dependents/i, /other agents.*poll clocks/i],
+  C07: [/blocked branch.*dependents/i, /without stopping independent work/i, /validates and deduplicates.*before inspecting evidence/i, /bounded event-triggered settlement/i, /no routine fixed-interval polling/i],
   C08: [/dirty.*file hashes/i, /subsequent.*input.*change.*invalidates/i],
   C09: [/Return rejected work to the same worker/, /new four-part task message/, /Review the revised result again/],
   C10: [/remaining.*integration.*available.*worker/i, /pane closure.*evidence deletion/i],
@@ -111,15 +111,19 @@ const executable = {
     assert.match(await roleInstructions('worker'), /Access: write within assigned files and authorized artifacts/);
   },
   async C07() {
-    // Worked example arithmetic only: this is not a scheduler or simulated agent.
-    const starts = { researcher: 0, worker: 1, reviewer: 2 };
-    const intervals = {};
-    for (const role of Object.keys(starts)) {
-      intervals[role] = Number(skill.match(new RegExp('`' + role + '`: every (\\d+) minutes'))?.[1]);
+    // Actual production injection; assertions cover instructions, not agent behavior.
+    const coordinator = await roleInstructions('coordinator');
+    assert.match(coordinator, /deduplicates.*before inspecting evidence/);
+    assert.match(coordinator, /bounded event-triggered settlement/);
+    assert.match(coordinator, /timeout retains.*without restarting periodic polling/);
+    for (const role of ['researcher', 'worker', 'reviewer']) {
+      const text = await roleInstructions(role);
+      assert.match(text, /completion\/blocker notification_id/);
+      assert.match(text, /one identity-validated Herdr agent prompt.*without `--wait`/);
+      assert.match(text, /report-only queued input.*working/);
+      assert.match(text, /blocked, unknown, missing, or changed recipients receive no input/);
+      assert.doesNotMatch(text, /coordinator polling|every [235] minutes/);
     }
-    assert.deepEqual(intervals, { researcher: 3, worker: 5, reviewer: 2 });
-    assert.deepEqual(Object.entries(starts).map(([role, minute]) => [role, minute + intervals[role]]),
-      [['researcher', 3], ['worker', 6], ['reviewer', 4]]);
   },
   async C08() {
     const source = join(fixtures, 'subject.mjs');

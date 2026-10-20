@@ -68,12 +68,17 @@ test("exposes the canonical skill and isolates role instructions without replaci
         assert.match(text, /does not.*run tests/s);
       }
       if (role === "researcher") assert.match(text, /does not.*edit files/s);
-      assert.doesNotMatch(text, /callback/i);
+      assert.match(text, /recorded coordinator/);
+      assert.match(text, /notification/i);
+      assert.doesNotMatch(text, /every [235] minutes|coordinator polling|rather than sending reports through Herdr/);
       if (!role || role === "coordinator") {
-        assert.match(text, /researcher.*3 minutes/);
-        assert.match(text, /worker.*5 minutes/);
-        assert.match(text, /reviewer.*2 minutes/);
-        assert.match(text, /user.*explicit.*duration/i);
+        assert.match(text, /deduplicat/i);
+        assert.match(text, /settlement/);
+        assert.match(text, /owned children/);
+      } else {
+        assert.match(text, /report-only queued input.*working/);
+        assert.match(text, /blocked, unknown, missing, or changed/);
+        assert.match(text, /without `--wait`/);
       }
       assert.match(first.systemPromptOptions.sections.user_instructions, /Project user instructions/);
       assert.equal(first.systemPromptOptions.sections.existing, "preserve");
@@ -95,17 +100,15 @@ test("exposes the canonical skill and isolates role instructions without replaci
   }
 });
 
-test("handoff skills use coordinator polling rather than agent callbacks", async () => {
+test("handoff skills use recorded return-route notifications without routine polling", async () => {
   for (const skill of ["agent-handoff", "multi-agent-handoff"]) {
     const source = await readFile(new URL(`../skills/${skill}/SKILL.md`, import.meta.url), "utf8");
-    assert.doesNotMatch(source, /callback/i);
-    assert.match(source, /researcher.*3 minutes/);
-    assert.match(source, /worker.*5 minutes/);
-    assert.match(source, /reviewer.*2 minutes/);
-    assert.match(source, /user.*explicit.*duration/i);
-    assert.match(source, /own.*response/);
-    assert.match(source, /do not send reports.*through Herdr/);
-    assert.doesNotMatch(source, /herdr agent prompt.*(?:report|results).*coordinator/i);
+    assert.match(source, /recorded coordinator/);
+    assert.match(source, /completion.*actionable blocker/i);
+    assert.match(source, /report-only queued input.*working/);
+    assert.match(source, /bounded event-triggered/);
+    assert.match(source, /manual.*recovery/i);
+    assert.doesNotMatch(source, /every [235] minutes|next poll|poll clocks|coordinator's polling interval|do not send reports.*through Herdr/);
   }
 });
 

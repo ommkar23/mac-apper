@@ -8,7 +8,7 @@ description: Divide an authorized request among parallel agents in one shared wo
 ## Preconditions
 - Use this skill when the user requests multi-agent delegation.
   - Read [agent-handoff](../agent-handoff/SKILL.md).
-  - Follow its Herdr setup, identity checks, prompt format and coordinator polling rules.
+  - Follow its Herdr setup, identity checks, prompt format and [return-route notification protocol](../agent-handoff/SKILL.md#return-route-and-notifications).
   - Apply agent-handoff's default closure after accepted completion, subject to user retention requests.
   - Keep the coordinator open.
 
@@ -25,7 +25,9 @@ description: Divide an authorized request among parallel agents in one shared wo
   - Record the role setup against the same shell and startup pane, terminal, process/session identity and readiness evidence required by Herdr.
   - Setting the variable only on the coordinator's `herdr` command does not establish the target pane's environment.
   - Do not reuse a running agent with a different role; escalate for an authorized replacement instead.
-  - Role instructions load at session start; resource edits require `/reload`, while an environment change requires restarting Pi from the correctly configured shell.
+  - Role instructions load at session start; fresh sessions load changed resources while existing sessions retain their injected instructions until an authorized `/reload` or restart.
+  - An environment change requires restarting Pi from the correctly configured shell.
+  - Resource edits do not authorize live notification tests or reloading existing agents.
 - Include the assigned role in the handoff and track it alongside the agent identity.
   - Workers and reviewers do not become coordinators or delegate further.
   - A role assignment grants no additional implementation, execution, live-call, or pane-closure authorization.
@@ -44,6 +46,8 @@ description: Divide an authorized request among parallel agents in one shared wo
   - Their findings and reports stay in agent messages; workers create any required report files, baseline copies, hashes or other evidence artifacts.
   - Herdr's report-file fallback does not authorize read-only agents to write; an authorized worker saves recoverable response text without rerunning the original work.
   - Coordinator orchestration through Herdr, including role setup, handoff messages and authorized pane closure, remains permitted.
+  - Delegated read-only roles have a narrow exception for return-route identity reads and report delivery to their recorded coordinator.
+  - That exception grants no artifact writes, verification execution, delegation, task assignment, pane closure or approval authority.
 - All changes decided by the coordinator go through implementing workers.
   - This includes source, tests, documentation, shared-file reconciliation, retained reports and cleanup.
   - Authorized verification execution also goes through workers.
@@ -106,26 +110,31 @@ description: Divide an authorized request among parallel agents in one shared wo
   - Exclude other workers' files and reserved files.
   - Require escalation for scope conflicts.
   - Exclude further delegation by workers.
-  - State that the agent leaves results in its own responses for coordinator polling, without sending reports through Herdr.
+  - The handoff records parent and sender server/session, pane, terminal and agent-session or PID/start identity, plus `task_id` and completion/blocker `notification_id` values.
+  - It explicitly authorizes report-only queued input to the recorded coordinator when working.
+  - The agent leaves results in its own responses and attempts one notification on completion or an actionable blocker.
 - Track each worker and its task.
   - Record the agent name, pane ID, session identity and `AGENT_TYPE` role.
   - Track ownership, dependencies, status and review outcome.
   - Keep user focus unchanged.
 
-## Poll delegated tasks
-- After handing off each task, the coordinator polls the agent at the assigned role's interval.
-  - `researcher`: every 3 minutes by default.
-  - `worker`: every 5 minutes by default.
-  - `reviewer`: every 2 minutes by default.
-  - A user-specified explicit polling duration overrides the default for its stated scope.
-- Track the next poll separately for each agent from its handoff or previous poll.
-  - Use agent-handoff's identity-checked status and output reads without busy-waiting, repeated prompts or interruption.
-  - Read each agent's own responses for progress, questions, blockers and final results.
-  - Agents do not send reports through Herdr or prompt the coordinator's pane.
-  - Surface blocked approvals to the user without granting approval on their behalf.
-  - Stop polling after established completion or a surfaced blocker.
-  - A blocked branch holds its dependents without resetting other agents' poll clocks or stopping independent work.
-  - Polling intervals do not impose task timeouts or authorize retries or termination.
+## Receive delegated reports
+- Completion or an actionable blocker triggers agent-handoff's identity-validated notification to the recorded coordinator.
+  - Delivery uses one `herdr agent prompt` without `--wait`, interruption, repeated submission or an extra Enter.
+  - Blocked, unknown, missing, or changed recipients receive no input and delivery uncertainty permits no blind retry.
+  - Approval UI may prevent a sender from reporting; callbacks and acknowledgments are not guaranteed.
+  - The sender's own response discloses delivery failure and available evidence without secrets or implied instructions.
+- The coordinator validates and deduplicates task, notification and both identities before inspecting evidence.
+  - Stale, duplicate or mismatched reports authorize no review, task change or closure.
+  - Submission, actual completion, evidence acceptance and pane closure remain separate states.
+  - A completion report may precede sender idle; bounded event-triggered settlement follows agent-handoff before review or closure.
+  - A settlement timeout retains the pane without restarting periodic polling or interrupting work.
+  - A blocked branch holds its dependents without stopping independent work.
+  - Blocked approvals reach the user without an agent answering them.
+- There is no routine fixed-interval polling or scheduled progress loop.
+  - Bounded event-triggered status/output reads and explicit manual delivery recovery remain separate from periodic polling.
+  - A missing notification is disclosed rather than assumed delivered or automatically resubmitted.
+  - No report grants execution, approval, delegation or scope-expansion authority.
 
 ## Review and revise
 - Review each completion before accepting it.
@@ -148,6 +157,8 @@ description: Divide an authorized request among parallel agents in one shared wo
   - Review the revised result again.
 - Close completed agents after the coordinator accepts their verified results unless the user asks to keep them open.
   - Actual completion and acceptance are prerequisites; idle status alone is insufficient.
+  - A notification never authorizes closing a still-working sender.
+  - Unknown or mismatched agents remain open.
   - Immediately before closure, freshly confirm the recorded pane ID and session identity against current Herdr state through agent-handoff.
   - A missing, changed, or unconfirmable identity blocks closure without guessing or retargeting.
   - Close only that confirmed delegated agent's pane.
@@ -179,10 +190,11 @@ description: Divide an authorized request among parallel agents in one shared wo
   ```bash
   node --experimental-strip-types --test .pi/tests/multi-agent-handoff-cases.test.mjs
   node --experimental-strip-types --test .pi/tests/multi-agent-handoff.test.mjs
+  node --experimental-strip-types --test .pi/tests/handoff-notifications.test.mjs
   node --test .pi/tests/herdr-skill.test.mjs
   ```
 
-- The case suite checks documentation, local executable fixtures and production extension handlers in an offline harness; it does not prove actual agent decisions or live Herdr lifecycle behavior.
+- The case and notification suites check documentation, local executable fixtures and production extension handlers in an offline harness; they do not prove actual agent decisions, inter-agent delivery or live Herdr lifecycle behavior.
 - `MULTI_AGENT_SKILL_FILE` selects a retained skill snapshot for comparison; `HANDOFF_CASE_EVIDENCE_DIR` selects an existing private UUID-scoped `.tmp/multi-agent-handoff-*` directory for retained fixture evidence.
 - Save baseline/final source hashes, commands, exit statuses and logs before claiming a rerun; identify moving cross-skill inputs rather than assuming another branch has passed.
 - Cases without a safe executable fixture remain static hypothetical reviews; unavailable live paths remain unverified.

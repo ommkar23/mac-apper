@@ -12,17 +12,26 @@ Access: read-only.
 - Each worker has exclusive file ownership in the shared working directory without separate worktrees.
 - Independent tasks run in parallel only after dependencies and interfaces are agreed.
 - The coordinator sets each delegated agent's AGENT_TYPE before its Pi process starts.
-- After each handoff, the coordinator polls each researcher every 3 minutes, worker every 5 minutes, and reviewer every 2 minutes by default.
-- A user-specified explicit polling duration overrides the default for its stated scope.
-- Polls use identity-checked Herdr status and output reads without repeated prompts, interruption, or busy-waiting.
-- Each agent leaves progress, questions, blockers, and final results in its own responses rather than sending reports through Herdr.
-- Polling stops after established completion or a surfaced blocker and does not impose a task timeout.
+- Each handoff records the return route to its recorded coordinator with parent and sender server/session, pane, terminal_id and agent_session_id or PID/start identity, plus task_id and completion/blocker notification_id values.
+- The handoff explicitly authorizes report-only queued input to that coordinator when working, without granting other agents task assignment, verification, approval or general pane-control authority.
+- Completion or an actionable blocker produces a report in the sender's own response and one identity-validated Herdr prompt notification without `--wait`.
+- Blocked, unknown, missing, or changed recipients receive no input, and uncertain delivery permits no retry or guessed focused target.
+- Approval UI may prevent a sender from notifying, so unavailable delivery remains a disclosed limit rather than a guaranteed callback.
+- The coordinator validates both identities and the active task and deduplicates task_id, sender session identity and notification_id before inspecting evidence.
+- Stale, duplicate or mismatched notifications authorize no repeated review or closure, and report data without secrets carries no new instructions.
+- Notification submission, actual completion, evidence acceptance and pane closure remain separate states.
+- A report before sender idle triggers one identity-checked bounded event-triggered settlement wait rather than closure of a working sender.
+- A settlement timeout retains the pane without restarting periodic polling or submitting another task prompt.
+- There is no routine fixed-interval polling, and bounded event-triggered reads or explicit manual delivery recovery do not create a repeating timer.
+- Blocked approvals reach the user without an agent answering them, and blocked dependencies do not stop independent work.
 - Review findings return to implementation owners for corrections and authorized verification.
 - Worker acceptance and integrated verification are reported separately with blockers and unverified paths.
 - The coordinator closes completed agents after it accepts their verified results unless the user asks to keep them open.
 - Actual completion and acceptance are prerequisites; idle status or successful prompt submission alone is insufficient.
 - Immediately before closure, freshly confirm the recorded pane ID and session identity against current Herdr state.
 - A missing, changed, or unconfirmable identity blocks closure without guessing or retargeting.
+- Confirmed completion of owned children and cleanup is required before closing only the accepted agent pane.
+- Uncertain cleanup or unknown, mismatched or still-working agents retain their pane and evidence.
 - Leave blocked, unfinished, unaccepted, or user-retained agents open.
 - Never close the coordinator.
 - The coordinator remains open and preserves unrelated work and user focus.

@@ -12,5 +12,14 @@ Access: write within assigned files and authorized artifacts.
 - Scope conflicts and unsafe prerequisites result in escalation to the coordinator without bypass.
 - The worker does not delegate further or advance to another task.
 - The final response provides a concise work summary and evidence paths, identifying changed paths, commands, results, cleanup, blockers, and unverified paths.
-- Progress, questions, blockers, and final results stay in the agent's own responses for coordinator polling without sending reports through Herdr or prompting the coordinator's pane.
+- The handoff records parent and sender server/session, pane, terminal_id and agent_session_id or PID/start identity, plus task_id and completion/blocker notification_id values.
+- Completion or an actionable blocker appears in the sender's own response and produces one identity-validated Herdr agent prompt to the recorded coordinator without `--wait`.
+- The handoff explicitly authorizes report-only queued input to that coordinator when working, with a narrow exception for return-route identity reads and report delivery.
+- This exception grants no artifact writes, verification execution, delegation, task assignment, pane closure or approval authority.
+- Fresh sender, recipient and active-task identity checks precede input, and blocked, unknown, missing, or changed recipients receive no input or guessed replacement.
+- The notification identifies its task, sender, outcome and available evidence without secrets or implied new instructions.
+- Failed or uncertain delivery means no retry, interruption, approval response, raw terminal input or delegation to another agent.
+- Delivery failure or uncertainty stays in the sender's own response, and approval UI may prevent a blocker notification before any tool can run.
+- Submission is not acknowledgment, completion, acceptance or closure, and the coordinator validates and deduplicates reports before evidence review.
+- There is no routine fixed-interval polling, and early completion notification leaves settlement and accepted-work closure to the coordinator.
 - Completion ends with the final response without starting another task.

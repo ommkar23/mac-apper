@@ -61,13 +61,13 @@
   },
   {
     "id": "C07",
-    "request": "Researcher R is handed off at minute 0, worker W at minute 1, and reviewer V at minute 2; W later surfaces an approval blocker while V continues.",
-    "expectedDecision": "Poll R at minute 3, V at minute 4, and W at minute 6 by their own clocks; surface W's blocker, hold its dependents, and keep unrelated polling scheduled.",
-    "baselineObservation": "Per-agent intervals and surfaced blockers are already correct; the effect of one blocker on independent clocks and dependent launches is not explicit.",
-    "provenance": ["SKILL.md: Poll delegated tasks", "../agent-handoff/SKILL.md: Coordinator polling"],
-    "correction": "Clarify that a blocked branch holds its dependents without resetting other agents' poll clocks or treating the interval as a timeout.",
-    "fidelity": "Static guidance plus arithmetic checks of the worked per-agent schedule using the unchanged 3/5/2-minute defaults.",
-    "limitations": "No real timer, Herdr poll, approval UI, or blocker response is exercised; schedule arithmetic is not an agent decision trial."
+    "request": "A worker reports an actionable blocker while independent research continues; a reviewer sends completion before returning to idle and the same event arrives twice.",
+    "expectedDecision": "Validate the recorded return route and active task, deduplicate before evidence review, hold blocked dependents, and wait once for bounded sender settlement without routine polling or closing working agents.",
+    "baselineObservation": "The retained pre-notification baseline used fixed role intervals and prohibited reports through Herdr; that historical source remains in private baseline evidence rather than active instructions.",
+    "provenance": ["SKILL.md: Receive delegated reports", "../agent-handoff/SKILL.md: Return route and notifications", "../../resources/multi-agent-handoff/coordinator.txt"],
+    "correction": "Replace scheduled reads with one non-waiting identity-checked notification, explicit working-recipient queue permission, fail-closed delivery and event-triggered settlement before review.",
+    "fidelity": "Static contracts plus production extension role-resource injection through an offline harness; the focused notification suite captures literal shell transport locally.",
+    "limitations": "No real timer, inter-agent transport, approval UI, acknowledgment, settlement or pane closure is exercised; documentation coverage is not an agent decision trial."
   },
   {
     "id": "C08",
