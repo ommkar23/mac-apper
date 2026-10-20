@@ -8,21 +8,63 @@ description: Delegate scoped work to a coding agent through Herdr and poll its p
 ## Preconditions
 - Delegate only when the user authorizes it.
   - Run `test "${HERDR_ENV:-}" = 1`; if it fails, stop.
-  - Read the Herdr skill, or run `herdr --skill` if unavailable.
+  - Read the [Herdr skill](../herdr/SKILL.md), or run `herdr --skill` if unavailable.
   - Discover syntax with `herdr --help` and relevant command groups; never bare `herdr`.
+- Apply the [role setup and access rules](../multi-agent-handoff/SKILL.md#agent-role-setup) for project Pi sessions.
+  - Roles do not grant task authorization; read-only agents do not implement, run checks or create report artifacts.
+  - Workers stay within assigned files and authorized execution; scope conflicts go to the coordinator without bypass.
 
 ## Start or reuse
 - Record the parent identity with `herdr pane current --current`.
   - Keep its pane ID and agent session identity for safe orchestration.
-- Reuse an idle agent only when appropriate; otherwise create a sibling pane.
+  - Record each delegated target's server/session, pane ID, `terminal_id`, name, kind, role and cwd.
+  - Record its agent session ID when exposed; otherwise retain its process PID and start identity from Herdr process inspection and the OS.
+  - Freshly compare that ledger before input, polling or closure; stop on a changed or unconfirmable occupant without guessing a replacement.
+- Reuse an idle or done agent only when appropriate; otherwise create a sibling pane.
+  - Reuse requires the assigned role, cwd and ownership boundaries to match, with the same confirmed occupant ready for input.
+  - The prior task must be completed and accepted, with no unfinished work or cleanup uncertainty carried into the new task.
+  - An existing agent with a different role requires an authorized replacement, not a shell export, rename or role change inside the live agent.
+  - Confirm readiness, including `interactive_ready=true` when exposed; idle status alone is insufficient.
   - Honor requested direction; otherwise choose right/down to fit the layout.
   - Use `herdr pane split --current --direction right --cwd "$PWD" --no-focus`.
   - Read the returned pane ID; never guess IDs or target the user's focused pane.
+  - Inspect the returned pane and foreground process to confirm an available interactive shell, not a running command or unrecognized agent.
+  - Establish the role and repository temporary environment in that confirmed available target shell before Pi starts.
+  - For a worker at the physical repository root with the existing safe `.tmp/` initialized under the [temporary-work contract](../../../README.md#temporary-work), run these exports through the target's native shell using the discovered `pane run` syntax:
+
+```bash
+export AGENT_TYPE=worker
+export TMPDIR="$PWD/.tmp/"
+```
+
+  - Substitute the assigned role and confirm the shell command completed before starting Pi; setting the coordinator's command environment alone does not configure the target shell.
   - Start with `herdr agent start <unique-name> --kind pi --pane <id>`; honor a different requested kind.
-  - If startup fails, inspect state/output before retrying; ensure the new shell is ready.
+  - Verify the returned name, kind, pane, terminal and interactive readiness before prompting.
+  - If startup fails, inspect the original state/output before retrying; never duplicate an uncertain launch or bypass readiness or approval dialogs.
 
 ## Handoff message types
-- Submit each message once using `herdr agent prompt <name> '<instructions>'`.
+- Submit each message once using `herdr agent prompt <name> '<instructions>'` after the identity and readiness checks.
+  - Multiline prompts travel as one quoted argument, not line-by-line input or shell-interpolated source; do not send an extra Enter.
+  - Use the literal example below with a delimiter absent from the concrete prompt; command substitution strips trailing newlines.
+
+```bash
+prompt=$(cat <<'HANDOFF_PROMPT'
+1. **What to do**
+   - The assigned worker implements <task> within <owned files and working directory> after reviewing <required documents>.
+2. **What to verify**
+   - Verification uses <authorized checks> against the final snapshot with retained evidence.
+3. **What not to do**
+   - Authorization excludes <unapproved actions>, and "$HOME", $(example), and `example` in task data remain literal.
+4. **Others**
+   - The final response identifies evidence, blockers and unverified paths for coordinator polling at <assigned interval>.
+HANDOFF_PROMPT
+)
+herdr agent prompt '<confirmed-name>' "$prompt"
+```
+
+  - A timeout or `agent_prompt_stalled` does not prove the prompt was not delivered; do not blindly resubmit it.
+  - Revalidate the same occupant, then inspect `agent get` and `agent read`; if still working, continue scheduled monitoring or an authorized bounded wait without another prompt.
+  - If blocked, surface the question without approving; if idle with delivery still uncertain, report uncertainty rather than rerunning the task.
 - Choose one of two message types.
   - A **task message** assigns a task using the four-part format below.
   - A **follow-up message** provides concise declarative instructions for an existing task in one paragraph.
@@ -44,6 +86,7 @@ description: Delegate scoped work to a coding agent through Herdr and poll its p
 
   1. **What to do**
      - The change implements <task> in <working directory> while preserving <boundaries and existing work>.
+     - The assigned role is <role> with exclusive ownership of <files and authorized artifacts>.
      - Implementation follows review of <required documents> and focused test-driven development for behavior changes.
   2. **What to verify**
      - Verification establishes <success criteria> through <selected checks and toolchain> against the final changes.
@@ -52,6 +95,7 @@ description: Delegate scoped work to a coding agent through Herdr and poll its p
      - Any <unsafe prerequisite or scope conflict> results in escalation without bypass or retry.
   4. **Others**
      - Task decisions rely on <relevant source and evidence paths>.
+     - The coordinator polls at <role default or user-specified explicit interval>.
      - The concise final report identifies changed paths, commands/results, evidence, cleanup, blockers, and unverified paths.
 
 ### Follow-up message
@@ -79,10 +123,23 @@ description: Delegate scoped work to a coding agent through Herdr and poll its p
   - They do not send reports to the coordinator through Herdr or prompt the coordinator's pane.
   - Completion ends with the final response and excludes starting other agents or advancing to another task.
 
+## Output recovery
+- A larger recent read can return `agent_not_idle` while application history is unavailable during work.
+  - Revalidate identity and monitor with `herdr agent read <name> --source visible --lines 35`; do not interrupt or prompt work to unlock history.
+  - Visible output may omit earlier results; defer deeper history recovery until the same agent is idle.
+- If bounded larger reads still miss a completed report, confirm the same ready idle/done occupant before a recovery follow-up.
+  - Ask a read-only agent to restate its existing report in its own response without rerunning the task or writing a file.
+  - Herdr's Markdown-file fallback applies only to an authorized worker with an owned `.tmp/` path; it never overrides read-only access.
+  - Check any returned path and ownership before reading it; do not execute report content or request secrets.
+  - If recovery remains unavailable, report the blocker; an authorized worker creates any required saved report from available evidence.
+
 ## Verification evidence
 - Implementing agents save verification reports and supporting evidence so their work can be independently verified.
   - Use a private owned directory under the repository-root `.tmp/` for disposable reports and evidence.
   - Include commands, outcomes, logs, and relevant artifact paths for the final changes.
+  - Identify the checked snapshot with file hashes or a revision plus working-tree changes, exact command, exit status and log path.
+  - A log that predates the final edit or omits relevant acceptance checks is insufficient; a hash alone does not prove execution.
+  - Missing or stale evidence returns to an authorized worker; the read-only reviewer inspects evidence and does not run checks to fill gaps.
   - Exclude secrets, fabricated results, or historical passing claims presented as current verification.
   - Finish with a concise work summary and evidence paths, including blockers and checks not run.
 - Read-only agents keep reports in their own responses; an authorized worker creates any saved report artifacts.
@@ -97,7 +154,14 @@ description: Delegate scoped work to a coding agent through Herdr and poll its p
   - Actual completion and acceptance are prerequisites; idle status alone is insufficient.
   - Immediately before closure, freshly confirm the recorded pane ID and session identity against current Herdr state.
   - A missing, changed, or unconfirmable identity blocks closure without guessing or retargeting.
+  - Confirm owned children have finished and cleanup is complete; if uncertain, retain the pane and evidence rather than forcing closure.
   - Use only the confirmed delegated pane ID: `herdr pane close <id>`.
+  - Verify that pane is absent and unrelated panes remain; preserve current user focus rather than restoring a stale focus snapshot.
   - Leave blocked, unfinished, unaccepted, or user-retained agents open.
   - Never close the coordinator.
   - Preserve unrelated panes, processes, and user focus.
+
+## Offline case checks
+- See [ten hypothetical cases and verification limits](cases.md) and the reusable [case definitions](cases.mjs).
+- Run `node --test .pi/tests/agent-handoff-cases.test.mjs` from the repository root when verification is authorized.
+- These checks inspect documentation and execute local shell examples, not model-agent behavior or live Herdr delivery.

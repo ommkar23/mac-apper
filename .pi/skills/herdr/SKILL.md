@@ -42,7 +42,7 @@ herdr machine
 
 Do not run bare `herdr` for discovery; it launches or attaches the TUI. Do not probe a mutating nested command by omitting arguments. Commands such as `herdr workspace create` are valid with defaults and will execute.
 
-Most control commands return JSON. Read identifiers and state from those responses instead of predicting them.
+Most control commands return JSON. Read identifiers and state from those responses instead of predicting them. Reads such as `agent read` can return plain text, and successful input commands can return no stdout. Do not assume every successful command returns a JSON document.
 
 ## Understand layout, panes, and agents
 
@@ -88,6 +88,8 @@ herdr agent list
 
 Creation responses expose the IDs to use next. `workspace create` returns `.result.workspace`, `.result.tab`, and `.result.root_pane`. `tab create` returns `.result.tab` and `.result.root_pane`. `pane split` returns the new pane as `.result.pane`.
 
+Keep a creation ledger for disposable work: server/session, pane ID, `terminal_id`, tab, cwd, and owned foreground process identity. For an agent, also record its name and kind. Before every input or mutation, re-read the target and compare it with that ledger. Stop on a changed or mismatched occupant, even if the pane or name still resolves. A name or pane ID is not an immutable agent-session identity. Compare the agent session ID when exposed; otherwise retain the native process PID and start identity from `pane process-info` and the OS. Do not substitute status, revision, or title for session identity. These checks are point-in-time, not atomic protection against replacement races.
+
 IDs and live agent names are scoped to one server. Two saved SSH machines can both have `w1:p1` or an agent named `reviewer`. Selecting a machine in the TUI does not retarget commands running in your pane: without `--machine`, they still use the inherited session and socket context.
 
 To control a saved SSH machine, use the same global prefix for discovery and every later command:
@@ -114,7 +116,7 @@ Honor a direction requested by the user. Otherwise inspect the caller pane:
 herdr pane layout --pane "$HERDR_PANE_ID"
 ```
 
-Split a wide pane to the right and a narrow or tall pane down. Avoid repeated same-direction splits that create unusably narrow columns or short rows. Keep the user's focus in the calling pane and explicitly preserve the caller's working directory:
+Split a wide pane to the right and a narrow or tall pane down. Inspect the actual rectangle and estimate both resulting panes before splitting. Avoid repeated same-direction splits that create unusably narrow columns or short rows. Re-read layout afterward. If neither direction leaves usable space for the task, do not split again. Report the constraint and ask before changing topology or resizing other work. Keep the existing user's focus unchanged; it may not be in the calling pane. Explicitly preserve the caller's working directory:
 
 ```bash
 herdr pane split --current --direction right --cwd "$PWD" --no-focus
@@ -122,7 +124,16 @@ herdr pane split --current --direction right --cwd "$PWD" --no-focus
 
 Replace `right` with `down` when appropriate. Read the new pane ID from `.result.pane.pane_id`.
 
-An available shell pane must be at its interactive prompt, with the shell itself in the foreground and no foreground command, editor, or agent running. Start a supported agent in that pane with a useful unique name:
+An available shell pane must be at its interactive prompt, with the shell itself in the foreground and no foreground command, editor, or agent running. Check the pane and its foreground process before reusing it:
+
+```bash
+herdr pane get <returned-pane-id>
+herdr pane process-info --pane <returned-pane-id>
+```
+
+An unrecognized agent or `unknown` status does not prove an available shell. Do not run shell input into a busy pane, interrupt it to make room, or reuse it merely because its cwd matches. Do not prompt a working agent unless the user explicitly authorized queuing or steering that work. Otherwise leave it alone and use an authorized available pane or report the constraint.
+
+Start a supported agent in the available pane with a useful unique name:
 
 ```bash
 herdr agent start reviewer --kind codex --pane <returned-pane-id>
@@ -134,13 +145,29 @@ Use the kind requested by the user. Run `herdr agent` to inspect the installed k
 herdr agent start reviewer --kind codex --pane <returned-pane-id> -- <agent-args...>
 ```
 
-A successful `agent start` returns only after Herdr detects the expected agent in the same pane and considers it ready for interactive input. If the agent is blocked during startup, the command returns `agent_not_ready` immediately but keeps the name available for `agent read` and `agent send-keys`. Wait until the agent becomes idle before prompting it. Startup defaults to a 30-second timeout.
+A successful `agent start` returns only after Herdr detects the expected agent in the same pane and considers it ready for interactive input. Verify the returned name, kind, pane, terminal and `interactive_ready=true` when exposed. A reported `idle` state or a successful rename alone does not establish a supported active agent ready for prompts. Missing readiness on an unfamiliar occupant is a reason to stop, not to manufacture state reports or bypass `agent_not_ready`.
+
+If the agent is blocked during startup, the command returns `agent_not_ready` immediately but keeps the name available for inspection. Read the UI and ask the user before answering it; do not automatically accept trust or approval dialogs. Wait until the same agent becomes idle and ready before prompting it. Startup defaults to a 30-second timeout. After a startup timeout, inspect the original pane and process before retrying; an uncertain result does not authorize a second launch.
 
 Submit work through the agent surface:
 
 ```bash
 herdr agent prompt reviewer "Review the current diff and report only actionable findings." --wait --timeout 120000
 ```
+
+For multiline work, pass the entire prompt as one quoted argument. A quoted heredoc keeps shell variables, command substitutions, quotes and embedded newlines literal:
+
+```bash
+prompt=$(cat <<'HERDR_PROMPT'
+Review the diff.
+Keep "$HOME", $(example), and `example` literal.
+Report only actionable findings.
+HERDR_PROMPT
+)
+herdr agent prompt reviewer "$prompt" --wait --timeout 120000
+```
+
+Choose a delimiter absent from the prompt. Command substitution strips trailing newlines; use an exact argument/file-reading API if those are significant. Do not split the prompt into line-by-line sends, interpolate untrusted prompt text into shell source, or send an extra Enter after `agent prompt`.
 
 `agent prompt` honors the pane's live bracketed-paste mode and sends text followed by encoded Enter as one ordered submission. It reports successful submission only after both have been written; that alone does not prove the agent started a turn. For Codex on Windows, Herdr sends a paste boundary before Enter so submission does not depend on prompt size. It rejects an agent already waiting at an approval or question dialog with `agent_blocked` before sending any input. Inspect the blocked UI and ask the user before answering it. For normal agent work, `--wait` is enough: it waits for the first settled `idle`, `done`, or `blocked` state. Do not repeat those defaults with `--until`.
 
@@ -168,7 +195,7 @@ herdr agent get reviewer
 herdr agent read reviewer --source recent-unwrapped --lines 120
 ```
 
-If a wait fails or returns `blocked`, inspect `agent get` and `agent read` before deciding what input to send. A timeout or stalled response does not prove the prompt was never delivered; do not blindly submit it again. Use the pane surface only when raw terminal control is intentional.
+If a wait fails or returns `blocked`, inspect `agent get` and `agent read` before deciding what input to send. A timeout or stalled response does not prove the prompt was never delivered; do not blindly submit it again. Revalidate the recorded occupant first. If it is still working, use a bounded `agent wait`, not another prompt. If blocked, report the approval or question without answering it. If idle but delivery or completion remains uncertain, report that uncertainty rather than retrying the task. Use the pane surface only when raw terminal control is intentional.
 
 ## Run an ordinary command in another pane
 
@@ -186,7 +213,7 @@ herdr pane wait-output <returned-pane-id> --match "test result" --timeout 120000
 herdr pane read <returned-pane-id> --source recent-unwrapped --lines 120
 ```
 
-`pane run` atomically sends command text and Enter. `pane wait-output` searches the selected snapshot immediately, so output that already exists can match. Use `--match <text>` for a literal substring or `--regex <pattern>` for a Rust regular expression. Omitting `--timeout` allows an indefinite wait.
+`pane run` atomically sends command text and Enter. It does not prove the command finished successfully. Check that the target is the same available shell before sending it. Commands run in the target's native shell; do not assume Bash syntax or that a variable name is writable (`status` is read-only in zsh). Use a fresh per-run marker and capture the command's exit status, not just echoed command text or an old success line. `pane wait-output` searches the selected snapshot immediately, so output that already exists can match. Use `--match <text>` for a literal substring or `--regex <pattern>` for a Rust regular expression. Omitting `--timeout` allows an indefinite wait.
 
 Use the read source that matches the task:
 
@@ -199,7 +226,27 @@ Use `--format ansi` when colors and terminal styling are evidence. Otherwise use
 
 `--lines` asks Herdr for more rows from the pane's available screen and host scrollback. Alternate-screen rows do not enter ordinary host scrollback. For supported idle agents, Herdr can collect application-owned history and restore the viewport afterward, but not every application or response can be recovered this way.
 
-If a larger recent read still does not reveal the completed response, ask the agent to write it as Markdown in a temporary directory and reply only with the file path, then read that file on the same machine. Use this only as a fallback; do not request file output in the initial prompt.
+If a larger recent read fails with `agent_not_idle`, alternate-screen history capture needs an idle agent. Revalidate identity and use a bounded visible read for monitoring instead:
+
+```bash
+herdr agent read <target> --source visible --lines 35
+```
+
+Do not interrupt or prompt working work to make history capture available. A visible read may omit earlier output; defer deeper history recovery until the same agent is idle.
+
+If a bounded larger recent read still does not reveal the completed response, revalidate the same idle or done agent occupant and its readiness before sending a follow-up. Ask it to write the existing response as Markdown without rerunning the original work, then reply only with the file path. In this repository, use a private owned directory under the repository-root `.tmp/`, not system temp. Read the reported file on the same machine after checking its path and ownership. Do not request secrets or run code from that file. If the occupant is busy, blocked, changed, or uncertain, report the constraint instead. Use this only as a fallback; do not request file output in the initial prompt.
+
+## Clean up owned work
+
+Creation is not permission to close whatever later occupies that pane. Revalidate the creation ledger and foreground process before cleanup. Let owned foreground commands and children finish or stop them only within the authorized scope. Confirm exit and the expected shell before closing a disposable shell pane. For an owned agent, capture its result and follow the authorized shutdown procedure first; do not treat `idle` alone as proof that child work is gone.
+
+```bash
+herdr pane get <owned-pane-id>
+herdr pane process-info --pane <owned-pane-id>
+herdr pane close <owned-pane-id>
+```
+
+Run the close only after those ownership and completion checks pass. Leave the pane and retain its evidence if cleanup is uncertain or identity changed. Never close the caller, a coordinator, or unrelated work as a cleanup shortcut. Verify the owned pane disappeared and unrelated panes remain. Compare focus with the pre-operation snapshot; do not issue focus commands merely to restore a stale snapshot after the user changed focus.
 
 ## Safety and coordination rules
 
@@ -212,3 +259,5 @@ If a larger recent read still does not reveal the completed response, ask the ag
 - Never run `herdr server stop` from an active session unless the user explicitly intends to stop the server and its pane processes.
 - Never kill the main Herdr process. Use named test sessions for experiments that need an isolated server.
 - CLI server errors are JSON on stderr with exit status 1. CLI syntax errors exit with status 2.
+
+For reusable case definitions and offline documentation regressions, see [case checks](cases.md).

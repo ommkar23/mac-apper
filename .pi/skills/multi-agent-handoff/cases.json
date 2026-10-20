@@ -1,0 +1,102 @@
+[
+  {
+    "id": "C01",
+    "request": "Delegate a parser fix to a new worker while a reviewer is already running; a coordinator-side AGENT_TYPE=worker prefix is proposed as setup.",
+    "expectedDecision": "Configure the confirmed target shell before Pi starts, retain completion and startup identity/readiness evidence, and never repurpose the running reviewer.",
+    "baselineObservation": "The baseline already rejects coordinator-only environment setup and role reuse, but leaves export completion evidence unspecified.",
+    "provenance": ["SKILL.md: Agent role setup", "../../extensions/multi-agent-handoff.ts: role captured by factory", "../herdr/SKILL.md: Start and coordinate an agent"],
+    "correction": "Require a fresh shell completion marker and exit status, then link role setup to the same ready startup identity.",
+    "fidelity": "Static guidance plus actual local shell inheritance and production extension handlers called through an offline event harness.",
+    "limitations": "The harness is not Pi startup or Herdr transport; supplied worker startup provenance is not an independently repeated launch."
+  },
+  {
+    "id": "C02",
+    "request": "Two workers change Sources/Parser.swift and Tests/ParserTests.swift in the same checkout, with separate evidence directories and an agreed unchanged parser API.",
+    "expectedDecision": "Launch independently after agreement, assigning exclusive files and private evidence paths without worktrees or incidental shared-file edits.",
+    "baselineObservation": "Exclusive ownership and shared cwd are explicit; directory grants versus nested files and evidence-directory overlap are not illustrated.",
+    "provenance": ["SKILL.md: Divide the request", "../../resources/multi-agent-handoff/coordinator.txt: exclusive file ownership"],
+    "correction": "Record concrete source and artifact ownership, including directory descendants, before launch.",
+    "fidelity": "Static guidance plus real concurrent writes to two disjoint local fixture files and byte checks of an untouched shared file.",
+    "limitations": "Filesystem isolation in a fixture does not prove agents honor ownership, prevent replacement races, or detect all path aliases."
+  },
+  {
+    "id": "C03",
+    "request": "Two branches both need Package.swift; one owns the Sources directory while the other also asks for Sources/Shared.swift.",
+    "expectedDecision": "Reject overlapping grants, reserve Package.swift for one later reconciliation owner, and wait for affected writers to finish before transferring ownership.",
+    "baselineObservation": "The baseline prohibits concurrent edits and reserves shared files, but does not make quiescent ownership transfer explicit.",
+    "provenance": ["SKILL.md: Divide the request", "SKILL.md: Aggregate and reconcile"],
+    "correction": "Require confirmed end of affected editing before any transfer and reissue an explicit task for changed ownership.",
+    "fidelity": "Static documentation regression and concrete hypothetical overlap review.",
+    "limitations": "No live writers, handoff, automatic lock, or coordinator overlap detection is exercised."
+  },
+  {
+    "id": "C04",
+    "request": "Worker B implements a consumer of Worker A's new response schema while Worker C independently updates a help page; A has only reported that editing finished.",
+    "expectedDecision": "Run C independently, but hold B until the producer interface and required evidence are accepted at an identified snapshot.",
+    "baselineObservation": "Later waves are required for dependent work, but the difference between finished editing and accepted producer output is implicit.",
+    "provenance": ["SKILL.md: Divide the request", "SKILL.md: Review and revise"],
+    "correction": "Define a dependency launch gate tied to accepted inputs and invalidate it when those inputs change.",
+    "fidelity": "Static guidance plus real Node import/assertion runs before and after a producer module is staged in private scratch.",
+    "limitations": "Module readiness is executable evidence of this example only, not evidence that a coordinator correctly schedules workers."
+  },
+  {
+    "id": "C05",
+    "request": "A read-only reviewer cannot recover a final response and is asked to follow Herdr's Markdown-file fallback, then rerun a missing test while the coordinator fixes a typo.",
+    "expectedDecision": "Keep reviewer and coordinator read-only, leave findings in responses, and assign report artifacts, correction, and authorized verification to a worker.",
+    "baselineObservation": "Role restrictions are explicit, but the linked Herdr fallback asks the occupant to write a report without a local role-specific qualification.",
+    "provenance": ["SKILL.md: Access and user interaction", "../herdr/SKILL.md: missing completed-response fallback", "../../resources/multi-agent-handoff/reviewer.txt"],
+    "correction": "State that Herdr report-file fallback never grants write access to read-only roles.",
+    "fidelity": "Static guidance and production extension handler/role-resource checks in an offline event harness.",
+    "limitations": "Role text is prompt guidance, not tool enforcement; no reviewer, fallback prompt, or real missing-output recovery is run."
+  },
+  {
+    "id": "C06",
+    "request": "A worker disappears while owning Config.swift; another worker offers to take it over and also change an unassigned deployment script using a brief follow-up.",
+    "expectedDecision": "Freeze the affected branch, resolve the original writer's identity and editing state before reassignment, and require an authorized new task for changed scope.",
+    "baselineObservation": "Task versus follow-up scope and unavailable-worker boundaries are clear; disappearance is not explicitly distinguished from safe ownership release.",
+    "provenance": ["SKILL.md: Access and user interaction", "SKILL.md: Review and revise", "../agent-handoff/SKILL.md: Handoff message types"],
+    "correction": "Treat worker loss as uncertainty rather than release; retain artifacts and escalate if editing cannot be ruled out.",
+    "fidelity": "Static documentation regression and concrete hypothetical lost-worker review.",
+    "limitations": "No worker is stopped, replaced, signaled, or manufactured as lost; liveness and authorized replacement remain unverified."
+  },
+  {
+    "id": "C07",
+    "request": "Researcher R is handed off at minute 0, worker W at minute 1, and reviewer V at minute 2; W later surfaces an approval blocker while V continues.",
+    "expectedDecision": "Poll R at minute 3, V at minute 4, and W at minute 6 by their own clocks; surface W's blocker, hold its dependents, and keep unrelated polling scheduled.",
+    "baselineObservation": "Per-agent intervals and surfaced blockers are already correct; the effect of one blocker on independent clocks and dependent launches is not explicit.",
+    "provenance": ["SKILL.md: Poll delegated tasks", "../agent-handoff/SKILL.md: Coordinator polling"],
+    "correction": "Clarify that a blocked branch holds its dependents without resetting other agents' poll clocks or treating the interval as a timeout.",
+    "fidelity": "Static guidance plus arithmetic checks of the worked per-agent schedule using the unchanged 3/5/2-minute defaults.",
+    "limitations": "No real timer, Herdr poll, approval UI, or blocker response is exercised; schedule arithmetic is not an agent decision trial."
+  },
+  {
+    "id": "C08",
+    "request": "A reviewer receives a passing test log for parser snapshot A, but the worker edits the parser to snapshot B before acceptance and the shared checkout has no new commit.",
+    "expectedDecision": "Bind review and command evidence to actual relevant file hashes, reject stale acceptance, and return required reruns to an authorized worker.",
+    "baselineObservation": "The baseline asks for a reviewed snapshot and preserved hashes, but does not explicitly invalidate evidence after subsequent input edits or distinguish HEAD from dirty bytes.",
+    "provenance": ["SKILL.md: Review and revise", "SKILL.md: Verify the integrated result", "../../GUIDANCE.yaml: completion"],
+    "correction": "Record reviewed/check input hashes, command context and exit status, and invalidate affected evidence when inputs change.",
+    "fidelity": "Static guidance plus real passing/failing child assertions against a mutable fixture and SHA-256 comparisons before and after its change.",
+    "limitations": "This proves fixture evidence becomes stale; it does not establish a race-free snapshot, complete dependency inventory, or real reviewer acceptance."
+  },
+  {
+    "id": "C09",
+    "request": "A reviewer finds a boundary-condition defect in Worker A's file after both A and B complete; B offers a quick fix in A's file and the reviewer offers to run tests.",
+    "expectedDecision": "Return concrete findings and previously authorized checks to A through an in-scope follow-up, then review the revised snapshot; unavailable A requires explicit ownership reassignment.",
+    "baselineObservation": "Returning rejected work to its original owner, in-scope follow-ups, and read-only review are already explicit and need preservation, not a new policy.",
+    "provenance": ["SKILL.md: Review and revise", "../agent-handoff/SKILL.md: Follow-up message", "../../resources/multi-agent-handoff/reviewer.txt"],
+    "correction": "Preserve the original-owner rule and apply the clarified ownership-transfer gate only when that owner is unavailable.",
+    "fidelity": "Static regression with a concrete hypothetical defect and existing message-format review.",
+    "limitations": "No real finding is sent, worker prompted, code corrected, or revised result accepted by another agent."
+  },
+  {
+    "id": "C10",
+    "request": "Both branches pass individually, but combined links have not been checked; one worker is user-retained and another pane's occupant identity changed before closure.",
+    "expectedDecision": "Report branch acceptance separately, assign integration verification to an available authorized worker, retain evidence, and close only completed accepted nonretained agents with freshly matching identities and confirmed owned-child cleanup.",
+    "baselineObservation": "Branch versus integration status and default identity-gated closure are explicit; pending integration ownership and evidence retention at closure are not spelled out together.",
+    "provenance": ["SKILL.md: Aggregate and reconcile", "SKILL.md: Review and revise", "../herdr/SKILL.md: Clean up owned work"],
+    "correction": "Track remaining integration ownership separately from branch acceptance, surface unavailable staffing, and state that pane closure does not authorize evidence deletion.",
+    "fidelity": "Static documentation regression and concrete hypothetical integration/closure review.",
+    "limitations": "No pane closes, process cleanup, retention override, or integrated product runtime is exercised; cross-skill acceptance waits for both branches."
+  }
+]

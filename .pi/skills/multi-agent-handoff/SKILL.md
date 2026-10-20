@@ -21,7 +21,8 @@ description: Divide an authorized request among parallel agents in one shared wo
   - The user-facing session uses `AGENT_TYPE=coordinator pi`, or leaves `AGENT_TYPE` unset.
   - Research agents use `researcher`, implementing agents use `worker`, and read-only review agents use `reviewer`.
   - For a new Herdr pane, use the confirmed idle shell and discovered CLI syntax to run `export AGENT_TYPE=worker` through `herdr pane run <confirmed-pane-id> 'export AGENT_TYPE=worker'`, substituting the assigned role.
-  - Confirm the shell command completed before starting Pi through `herdr agent start` as described in agent-handoff.
+  - Confirm the shell command completed with a fresh completion marker and exit status before starting Pi through `herdr agent start` as described in agent-handoff.
+  - Record the role setup against the same shell and startup pane, terminal, process/session identity and readiness evidence required by Herdr.
   - Setting the variable only on the coordinator's `herdr` command does not establish the target pane's environment.
   - Do not reuse a running agent with a different role; escalate for an authorized replacement instead.
   - Role instructions load at session start; resource edits require `/reload`, while an environment change requires restarting Pi from the correctly configured shell.
@@ -41,6 +42,7 @@ description: Divide an authorized request among parallel agents in one shared wo
 - Read-only agents inspect existing files and evidence without modifying files or artifacts.
   - They do not author tests, run tests, builds or probes, launch apps, make live calls or perform filesystem/process cleanup.
   - Their findings and reports stay in agent messages; workers create any required report files, baseline copies, hashes or other evidence artifacts.
+  - Herdr's report-file fallback does not authorize read-only agents to write; an authorized worker saves recoverable response text without rerunning the original work.
   - Coordinator orchestration through Herdr, including role setup, handoff messages and authorized pane closure, remains permitted.
 - All changes decided by the coordinator go through implementing workers.
   - This includes source, tests, documentation, shared-file reconciliation, retained reports and cleanup.
@@ -82,11 +84,20 @@ description: Divide an authorized request among parallel agents in one shared wo
   - Do not create separate worktrees.
   - Do not assign concurrent edits to the same file.
   - Reserve shared files and cross-task changes for reconciliation.
+  - Record source and artifact ownership with concrete paths; directory grants include their descendants.
+  - Treat overlapping directory/file grants and evidence directories as ownership conflicts, not disjoint assignments.
 - Identify dependencies before launching workers.
   - Agree on interfaces and output paths first.
   - Preserve read-only baseline copies when inputs may change.
   - Run independent tasks in parallel.
   - Run dependent tasks in later waves.
+  - Use a dependency launch gate tied to the accepted producer interface, snapshot and required evidence, not merely finished editing.
+  - A changed producer input reopens the affected gate; unrelated independent tasks may continue.
+- Resolve ownership transfer and worker loss before assigning replacement work.
+  - Confirm affected writers have finished editing before transferring any files, including reserved shared files.
+  - Worker loss is not ownership release; retain artifacts and hold the affected branch.
+  - If the coordinator cannot rule out continued editing, escalate rather than launch a competing writer.
+  - Reassignment or scope expansion requires an authorized new task message, not a follow-up or a coordinator/reviewer role change.
 
 ## Hand off
 - Use agent-handoff for each task.
@@ -113,12 +124,17 @@ description: Divide an authorized request among parallel agents in one shared wo
   - Agents do not send reports through Herdr or prompt the coordinator's pane.
   - Surface blocked approvals to the user without granting approval on their behalf.
   - Stop polling after established completion or a surfaced blocker.
+  - A blocked branch holds its dependents without resetting other agents' poll clocks or stopping independent work.
   - Polling intervals do not impose task timeouts or authorize retries or termination.
 
 ## Review and revise
 - Review each completion before accepting it.
   - Give the read-only reviewer completed changes, tests, retained execution evidence and requirements.
   - Identify the reviewed snapshot; preserve baseline copies or hashes when files may change.
+  - Record dirty working-tree file hashes for relevant review and check inputs; a shared Git HEAD alone does not identify those bytes.
+  - Workers record command, cwd, relevant configuration, exit status, logs and input hashes before and after checks without logging secrets.
+  - A subsequent relevant input change invalidates affected review acceptance and execution evidence until an authorized worker reruns required checks and the revised snapshot is reviewed.
+  - Hashes are point-in-time evidence, not a lock or proof of a complete dependency inventory.
   - Inspect the actual files and verification evidence.
   - Compare the result with the task's acceptance criteria.
   - Check for out-of-scope changes and distinguish recorded results from checks not run.
@@ -137,12 +153,15 @@ description: Divide an authorized request among parallel agents in one shared wo
   - Close only that confirmed delegated agent's pane.
   - Leave blocked, unfinished, unaccepted, or user-retained agents open.
   - Never close the coordinator.
+  - Follow Herdr's owned-child completion and cleanup checks; uncertainty retains the pane and artifacts.
+  - Pane closure does not authorize evidence deletion or removal of unrelated temporary work.
 
 ## Aggregate and reconcile
 - Combine accepted results by task branch.
   - Check each branch against its acceptance criteria.
   - Combine the branches into the overall result.
   - Assign reserved-file reconciliation to an implementing worker after relevant workers finish editing.
+  - Track remaining reconciliation and integration checks separately from branch acceptance; assign execution to an available authorized worker or surface the staffing blocker.
   - Route interface, reference and test corrections through the assigned implementing workers.
   - Preserve unrelated user work.
 - Verify the integrated result.
@@ -152,3 +171,19 @@ description: Divide an authorized request among parallel agents in one shared wo
   - Check cross-task behavior and documentation links.
   - Report blockers and unverified paths.
   - Report worker acceptance separately from integration success.
+
+## Offline case checks
+- Read [the ten collaboration cases](cases.json) for concrete requests, expected decisions, baseline observations, provenance and fidelity limits.
+- Run authorized checks from the repository root:
+
+  ```bash
+  node --experimental-strip-types --test .pi/tests/multi-agent-handoff-cases.test.mjs
+  node --experimental-strip-types --test .pi/tests/multi-agent-handoff.test.mjs
+  node --test .pi/tests/herdr-skill.test.mjs
+  ```
+
+- The case suite checks documentation, local executable fixtures and production extension handlers in an offline harness; it does not prove actual agent decisions or live Herdr lifecycle behavior.
+- `MULTI_AGENT_SKILL_FILE` selects a retained skill snapshot for comparison; `HANDOFF_CASE_EVIDENCE_DIR` selects an existing private UUID-scoped `.tmp/multi-agent-handoff-*` directory for retained fixture evidence.
+- Save baseline/final source hashes, commands, exit statuses and logs before claiming a rerun; identify moving cross-skill inputs rather than assuming another branch has passed.
+- Cases without a safe executable fixture remain static hypothetical reviews; unavailable live paths remain unverified.
+- Run cross-skill integration acceptance only after both handoff branches finish and their final snapshots are identified.
